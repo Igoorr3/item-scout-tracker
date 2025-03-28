@@ -16,16 +16,14 @@ interface ApiConfigDialogProps {
 }
 
 const ApiConfigDialog = ({ open, onOpenChange, apiConfig, onSaveConfig }: ApiConfigDialogProps) => {
-  const [sessionId, setSessionId] = useState(apiConfig.sessionId || '');
   const [poesessid, setPoesessid] = useState(apiConfig.poesessid || '');
   const [cfClearance, setCfClearance] = useState(apiConfig.cfClearance || '');
 
   const handleSave = () => {
     onSaveConfig({
-      sessionId,
       poesessid,
       cfClearance,
-      isConfigured: true
+      isConfigured: Boolean(poesessid)
     });
     onOpenChange(false);
   };
@@ -50,24 +48,12 @@ const ApiConfigDialog = ({ open, onOpenChange, apiConfig, onSaveConfig }: ApiCon
               <li>Pressione F12 para abrir as ferramentas de desenvolvedor</li>
               <li>Vá para a aba "Application" (ou "Armazenamento")</li>
               <li>Expanda "Cookies" no menu lateral e selecione o site do Path of Exile</li>
-              <li>Copie o valor dos cookies "POESESSID", "session_id" e "cf_clearance"</li>
+              <li>Copie o valor dos cookies "POESESSID" e "cf_clearance" (este último é opcional)</li>
             </ol>
           </AlertDescription>
         </Alert>
 
         <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="session-id" className="text-right">
-              Session ID
-            </Label>
-            <Input
-              id="session-id"
-              placeholder="Valor do cookie session_id"
-              value={sessionId}
-              onChange={(e) => setSessionId(e.target.value)}
-              className="col-span-3"
-            />
-          </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="poesessid" className="text-right">
               POESESSID
@@ -86,7 +72,7 @@ const ApiConfigDialog = ({ open, onOpenChange, apiConfig, onSaveConfig }: ApiCon
             </Label>
             <Input
               id="cf-clearance"
-              placeholder="Valor do cookie cf_clearance"
+              placeholder="Valor do cookie cf_clearance (opcional)"
               value={cfClearance}
               onChange={(e) => setCfClearance(e.target.value)}
               className="col-span-3"

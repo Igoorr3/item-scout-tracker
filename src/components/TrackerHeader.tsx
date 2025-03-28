@@ -71,7 +71,7 @@ const TrackerHeader = ({ onCreateTracker, onConfigureApi, apiConfigured }: Track
                       <li>Abra o <a href="https://www.pathofexile.com/trade2/search/poe2/Standard" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">site de trade do PoE2</a></li>
                       <li>Pressione F12 para abrir as ferramentas de desenvolvedor</li>
                       <li>Vá para a aba "Application" e encontre os cookies do site</li>
-                      <li>Copie os valores de "POESESSID", "session_id" e "cf_clearance"</li>
+                      <li>Copie os valores de "POESESSID" e "cf_clearance" (este último é opcional)</li>
                       <li>Cole esses valores no formulário de configuração da API</li>
                       <li>Respeite os limites de requisição para evitar bloqueios temporários</li>
                     </ol>

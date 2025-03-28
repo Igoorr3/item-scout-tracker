@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -23,25 +22,20 @@ const Index = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [apiConfig, setApiConfig] = useState<ApiCredentials>({
-    sessionId: '',
     poesessid: '',
     cfClearance: '',
     isConfigured: false
   });
   
-  // Referência para a última requisição para controlar o tempo entre elas
   const lastRequestTime = useRef<number>(0);
 
-  // Carrega as configurações salvas ao iniciar
   useEffect(() => {
     try {
-      // Carrega os trackings salvos
       const savedConfigs = localStorage.getItem('poe-trackings');
       if (savedConfigs) {
         setTrackingConfigs(JSON.parse(savedConfigs));
       }
       
-      // Carrega a configuração da API
       const savedApiConfig = localStorage.getItem('poe-api-config');
       if (savedApiConfig) {
         setApiConfig(JSON.parse(savedApiConfig));
@@ -52,7 +46,6 @@ const Index = () => {
     }
   }, []);
 
-  // Salva os trackings quando mudam
   useEffect(() => {
     try {
       localStorage.setItem('poe-trackings', JSON.stringify(trackingConfigs));
@@ -61,7 +54,6 @@ const Index = () => {
     }
   }, [trackingConfigs]);
   
-  // Salva a configuração da API quando muda
   useEffect(() => {
     try {
       localStorage.setItem('poe-api-config', JSON.stringify(apiConfig));
@@ -70,13 +62,11 @@ const Index = () => {
     }
   }, [apiConfig]);
 
-  // Configura os intervalos de atualização para cada tracking ativo
   useEffect(() => {
     const intervals: Record<string, NodeJS.Timeout> = {};
     
     trackingConfigs.forEach(config => {
       if (config.enabled) {
-        // No mínimo 10 segundos para evitar rate limiting
         const interval = Math.max(config.refreshInterval, 10) * 1000;
         
         intervals[config.id] = setInterval(() => {
@@ -85,7 +75,6 @@ const Index = () => {
       }
     });
     
-    // Limpa os intervalos anteriores
     return () => {
       Object.values(intervals).forEach(interval => clearInterval(interval));
     };
@@ -115,17 +104,14 @@ const Index = () => {
     };
     
     if (editingConfigId) {
-      // Atualiza a configuração existente
       setTrackingConfigs(prev => prev.map(c => c.id === editingConfigId ? configWithTimestamp : c));
       toast.success(`Rastreador "${config.name}" atualizado com sucesso!`);
     } else {
-      // Adiciona uma nova configuração
       setTrackingConfigs(prev => [...prev, configWithTimestamp]);
       toast.success(`Rastreador "${config.name}" criado com sucesso!`);
     }
     setIsDialogOpen(false);
     
-    // Se o rastreador estiver ativo, busca itens imediatamente
     if (config.enabled) {
       fetchItemsForConfig(configWithTimestamp);
     }
@@ -167,7 +153,6 @@ const Index = () => {
   const handleRefreshConfig = (configId: string) => {
     const config = trackingConfigs.find(c => c.id === configId);
     if (config && config.enabled) {
-      // Atualiza o timestamp
       setTrackingConfigs(prev => 
         prev.map(c => c.id === configId ? { 
           ...c, 
@@ -178,25 +163,21 @@ const Index = () => {
     }
   };
 
-  // Busca itens para uma configuração
   const fetchItemsForConfig = async (config: TrackingConfiguration) => {
     try {
       setError(null);
       setIsLoading(true);
-      setActiveTab('items'); // Muda para a aba de itens ao buscar
+      setActiveTab('items');
       
-      // Verifica o tempo desde a última requisição para evitar rate limiting
       const now = Date.now();
       const timeSinceLastRequest = now - lastRequestTime.current;
       
-      // Se a última requisição foi feita há menos de 2 segundos, espera
       if (timeSinceLastRequest < 2000 && apiConfig.isConfigured) {
         const waitTime = 2000 - timeSinceLastRequest;
         toast.info(`Aguardando ${waitTime/1000}s para evitar limite de requisições...`);
         await new Promise(resolve => setTimeout(resolve, waitTime));
       }
       
-      // Atualiza o timestamp da última requisição
       lastRequestTime.current = Date.now();
       
       const fetchedItems = await fetchItems(config, apiConfig);
@@ -216,7 +197,6 @@ const Index = () => {
     }
   };
 
-  // Encontra a configuração que está sendo editada
   const configBeingEdited = editingConfigId 
     ? trackingConfigs.find(c => c.id === editingConfigId) 
     : undefined;

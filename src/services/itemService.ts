@@ -1,4 +1,3 @@
-
 import { Item } from '@/types/items';
 import { TrackingConfiguration } from '@/types/tracking';
 import { ApiCredentials } from '@/types/api';
@@ -96,7 +95,6 @@ export const searchItems = async (config: TrackingConfiguration, apiCredentials:
     // Adiciona cookies se disponíveis
     let cookieString = '';
     if (apiCredentials.poesessid) cookieString += `POESESSID=${apiCredentials.poesessid}; `;
-    if (apiCredentials.sessionId) cookieString += `session_id=${apiCredentials.sessionId}; `;
     if (apiCredentials.cfClearance) cookieString += `cf_clearance=${apiCredentials.cfClearance}; `;
     
     if (cookieString) {
@@ -139,7 +137,6 @@ export const fetchItemDetails = async (itemIds: string[], queryId: string, apiCr
     // Adiciona cookies se disponíveis
     let cookieString = '';
     if (apiCredentials.poesessid) cookieString += `POESESSID=${apiCredentials.poesessid}; `;
-    if (apiCredentials.sessionId) cookieString += `session_id=${apiCredentials.sessionId}; `;
     if (apiCredentials.cfClearance) cookieString += `cf_clearance=${apiCredentials.cfClearance}; `;
     
     if (cookieString) {
