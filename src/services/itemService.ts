@@ -1,6 +1,7 @@
 
 import { Item } from '@/types/items';
 import { TrackingConfiguration } from '@/types/tracking';
+import { ApiCredentials } from '@/types/api';
 import { toast } from "sonner";
 
 // Interface para a resposta da pesquisa inicial
@@ -82,17 +83,24 @@ const buildSearchPayload = (config: TrackingConfiguration) => {
 };
 
 // Realiza a busca inicial para obter IDs dos itens
-export const searchItems = async (config: TrackingConfiguration): Promise<PoeApiSearchResponse> => {
+export const searchItems = async (config: TrackingConfiguration, apiCredentials: ApiCredentials): Promise<PoeApiSearchResponse> => {
   try {
     const payload = buildSearchPayload(config);
     console.log("Enviando payload de busca:", payload);
 
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      "User-Agent": "POE Item Scout/1.0"
+    };
+
+    // Adiciona cookies se disponíveis
+    if (apiCredentials.poesessid) {
+      headers["Cookie"] = `POESESSID=${apiCredentials.poesessid}; session_id=${apiCredentials.sessionId}`;
+    }
+
     const response = await fetch("https://www.pathofexile.com/api/trade2/search/poe2/Standard", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "User-Agent": "POE Item Scout/1.0"
-      },
+      headers,
       body: JSON.stringify(payload)
     });
 
@@ -111,7 +119,7 @@ export const searchItems = async (config: TrackingConfiguration): Promise<PoeApi
 };
 
 // Busca os detalhes dos itens a partir dos IDs
-export const fetchItemDetails = async (itemIds: string[], queryId: string): Promise<PoeItemResponse> => {
+export const fetchItemDetails = async (itemIds: string[], queryId: string, apiCredentials: ApiCredentials): Promise<PoeItemResponse> => {
   try {
     // Limita a 10 itens por requisição, conforme recomendado
     const idsToFetch = itemIds.slice(0, 10).join(",");
@@ -119,11 +127,16 @@ export const fetchItemDetails = async (itemIds: string[], queryId: string): Prom
     
     console.log("Buscando detalhes de itens:", url);
     
-    const response = await fetch(url, {
-      headers: {
-        "User-Agent": "POE Item Scout/1.0"
-      }
-    });
+    const headers: Record<string, string> = {
+      "User-Agent": "POE Item Scout/1.0"
+    };
+
+    // Adiciona cookies se disponíveis
+    if (apiCredentials.poesessid) {
+      headers["Cookie"] = `POESESSID=${apiCredentials.poesessid}; session_id=${apiCredentials.sessionId}`;
+    }
+    
+    const response = await fetch(url, { headers });
 
     if (!response.ok) {
       console.error("Erro na API de detalhes:", await response.text());
@@ -178,63 +191,10 @@ const convertApiResponseToItems = (response: PoeItemResponse): Item[] => {
   });
 };
 
-// Função principal que realiza todo o processo de busca
-export const fetchItems = async (config: TrackingConfiguration): Promise<Item[]> => {
-  try {
-    console.log(`Buscando itens para configuração: ${config.name}`);
-    
-    // Verifica se estamos em desenvolvimento sem acesso real à API
-    if (process.env.NODE_ENV === 'development' && process.env.REACT_APP_USE_MOCK === 'true') {
-      toast.warning("Usando dados simulados para desenvolvimento");
-      // Retorna dados simulados se estiver no modo de desenvolvimento
-      return mockFetchItems(config);
-    }
-    
-    // Passo 1: Busca os IDs dos itens com base nos filtros
-    const searchResponse = await searchItems(config);
-    console.log(`IDs encontrados: ${searchResponse.result.length}`);
-    
-    if (!searchResponse.result || searchResponse.result.length === 0) {
-      return [];
-    }
-    
-    // Espera 1 segundo para evitar rate limiting da API
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Passo 2: Busca os detalhes dos primeiros 10 itens
-    const itemsResponse = await fetchItemDetails(
-      searchResponse.result.slice(0, 10), 
-      searchResponse.id
-    );
-    
-    // Passo 3: Converte para nosso formato
-    const items = convertApiResponseToItems(itemsResponse);
-    console.log(`Itens obtidos: ${items.length}`);
-    
-    return items;
-    
-  } catch (error) {
-    console.error('Erro ao buscar itens:', error);
-    
-    // Se houver erro na API, exibe mensagem com instruções
-    toast.error(
-      "Erro ao acessar a API do Path of Exile 2. Verifique o console para detalhes. " +
-      "Esta API requer autenticação via cookie de sessão."
-    );
-    
-    // Retorna array vazio em caso de erro
-    return [];
-  }
-};
-
-// Função para dados simulados apenas para desenvolvimento/testes
-const mockFetchItems = async (config: TrackingConfiguration): Promise<Item[]> => {
-  console.log(`Usando dados simulados para: ${config.name}`);
+// Função para gerar dados de mock (para desenvolvimento)
+const generateMockItems = (config: TrackingConfiguration): Item[] => {
+  console.log(`Gerando dados simulados para: ${config.name}`);
   
-  // Simula o tempo de resposta da API
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  
-  // Gera itens simulados baseados na configuração
   const items: Item[] = [];
   const count = Math.floor(Math.random() * 6) + 1; // 1-6 itens
   
@@ -355,9 +315,78 @@ const mockFetchItems = async (config: TrackingConfiguration): Promise<Item[]> =>
       averagePrice: avgPrice,
       stats,
       seller: `Player${Math.floor(Math.random() * 1000)}`,
-      listedTime: new Date().toISOString()
+      listedTime: new Date().toISOString(),
+      iconUrl: undefined
     });
   }
   
   return items;
+};
+
+// Função principal que realiza todo o processo de busca
+export const fetchItems = async (config: TrackingConfiguration, apiCredentials: ApiCredentials): Promise<Item[]> => {
+  try {
+    console.log(`Buscando itens para configuração: ${config.name}`);
+    
+    // Se não temos as credenciais da API configuradas, usamos dados simulados
+    if (!apiCredentials.isConfigured) {
+      toast.warning("Usando dados simulados - configure a API para dados reais", {
+        description: "Acesse as configurações para adicionar seus cookies de sessão do Path of Exile"
+      });
+      
+      // Simula o tempo de resposta da API
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Retorna dados simulados
+      return generateMockItems(config);
+    }
+    
+    // Passo 1: Busca os IDs dos itens com base nos filtros
+    const searchResponse = await searchItems(config, apiCredentials);
+    console.log(`IDs encontrados: ${searchResponse.result.length}`);
+    
+    if (!searchResponse.result || searchResponse.result.length === 0) {
+      toast.info("Nenhum item encontrado com esses filtros");
+      return [];
+    }
+    
+    // Espera 2 segundos para evitar rate limiting da API
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // Passo 2: Busca os detalhes dos primeiros 10 itens
+    const itemsResponse = await fetchItemDetails(
+      searchResponse.result.slice(0, 10), 
+      searchResponse.id,
+      apiCredentials
+    );
+    
+    // Passo 3: Converte para nosso formato
+    const items = convertApiResponseToItems(itemsResponse);
+    console.log(`Itens obtidos: ${items.length}`);
+    
+    return items;
+    
+  } catch (error) {
+    console.error('Erro ao buscar itens:', error);
+    
+    // Exibe mensagens de erro mais específicas
+    if (error instanceof Error) {
+      if (error.message.includes('401')) {
+        toast.error("Erro de autenticação na API", {
+          description: "Verifique se os cookies de sessão são válidos e estão atualizados"
+        });
+      } else if (error.message.includes('429')) {
+        toast.error("Limite de requisições excedido", {
+          description: "Aguarde alguns minutos antes de tentar novamente"
+        });
+      } else {
+        toast.error(`Erro ao acessar a API: ${error.message}`);
+      }
+    } else {
+      toast.error("Erro desconhecido ao acessar a API");
+    }
+    
+    // Retorna array vazio em caso de erro
+    return [];
+  }
 };

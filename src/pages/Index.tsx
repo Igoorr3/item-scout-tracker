@@ -7,28 +7,43 @@ import TrackerHeader from '@/components/TrackerHeader';
 import TrackingConfig from '@/components/TrackingConfig';
 import TrackingList from '@/components/TrackingList';
 import ItemList from '@/components/ItemList';
+import ApiConfigDialog from '@/components/ApiConfigDialog';
 import { TrackingConfiguration } from '@/types/tracking';
+import { ApiCredentials } from '@/types/api';
 import { Item } from '@/types/items';
 import { fetchItems } from '@/services/itemService';
 
 const Index = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isApiConfigOpen, setIsApiConfigOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string>('trackers');
   const [trackingConfigs, setTrackingConfigs] = useState<TrackingConfiguration[]>([]);
   const [editingConfigId, setEditingConfigId] = useState<string | null>(null);
   const [items, setItems] = useState<Item[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [apiConfig, setApiConfig] = useState<ApiCredentials>({
+    sessionId: '',
+    poesessid: '',
+    isConfigured: false
+  });
   
   // Referência para a última requisição para controlar o tempo entre elas
   const lastRequestTime = useRef<number>(0);
 
-  // Carrega os trackings salvos ao iniciar
+  // Carrega as configurações salvas ao iniciar
   useEffect(() => {
     try {
+      // Carrega os trackings salvos
       const savedConfigs = localStorage.getItem('poe-trackings');
       if (savedConfigs) {
         setTrackingConfigs(JSON.parse(savedConfigs));
+      }
+      
+      // Carrega a configuração da API
+      const savedApiConfig = localStorage.getItem('poe-api-config');
+      if (savedApiConfig) {
+        setApiConfig(JSON.parse(savedApiConfig));
       }
     } catch (error) {
       console.error('Erro ao carregar configurações:', error);
@@ -44,6 +59,15 @@ const Index = () => {
       console.error('Erro ao salvar configurações:', error);
     }
   }, [trackingConfigs]);
+  
+  // Salva a configuração da API quando muda
+  useEffect(() => {
+    try {
+      localStorage.setItem('poe-api-config', JSON.stringify(apiConfig));
+    } catch (error) {
+      console.error('Erro ao salvar configuração da API:', error);
+    }
+  }, [apiConfig]);
 
   // Configura os intervalos de atualização para cada tracking ativo
   useEffect(() => {
@@ -64,11 +88,22 @@ const Index = () => {
     return () => {
       Object.values(intervals).forEach(interval => clearInterval(interval));
     };
-  }, [trackingConfigs]);
+  }, [trackingConfigs, apiConfig]);
 
   const handleCreateTracker = () => {
     setEditingConfigId(null);
     setIsDialogOpen(true);
+  };
+  
+  const handleConfigureApi = () => {
+    setIsApiConfigOpen(true);
+  };
+  
+  const handleSaveApiConfig = (config: ApiCredentials) => {
+    setApiConfig(config);
+    toast.success("Configuração da API salva com sucesso", {
+      description: "Os rastreadores agora usarão dados reais do Path of Exile 2"
+    });
   };
 
   const handleSaveConfig = (config: TrackingConfiguration) => {
@@ -154,7 +189,7 @@ const Index = () => {
       const timeSinceLastRequest = now - lastRequestTime.current;
       
       // Se a última requisição foi feita há menos de 2 segundos, espera
-      if (timeSinceLastRequest < 2000) {
+      if (timeSinceLastRequest < 2000 && apiConfig.isConfigured) {
         const waitTime = 2000 - timeSinceLastRequest;
         toast.info(`Aguardando ${waitTime/1000}s para evitar limite de requisições...`);
         await new Promise(resolve => setTimeout(resolve, waitTime));
@@ -163,7 +198,7 @@ const Index = () => {
       // Atualiza o timestamp da última requisição
       lastRequestTime.current = Date.now();
       
-      const fetchedItems = await fetchItems(config);
+      const fetchedItems = await fetchItems(config, apiConfig);
       setItems(fetchedItems);
       
       if (fetchedItems.length > 0) {
@@ -173,7 +208,7 @@ const Index = () => {
       }
     } catch (error) {
       console.error('Erro ao buscar itens:', error);
-      setError('Falha ao acessar a API. Verifique se você está logado no site do Path of Exile.');
+      setError('Falha ao acessar a API. Verifique suas configurações de conexão.');
       toast.error('Erro ao buscar itens. Verifique o console para detalhes.');
     } finally {
       setIsLoading(false);
@@ -187,7 +222,11 @@ const Index = () => {
 
   return (
     <div className="container mx-auto p-4 pb-16 relative">
-      <TrackerHeader onCreateTracker={handleCreateTracker} />
+      <TrackerHeader 
+        onCreateTracker={handleCreateTracker} 
+        onConfigureApi={handleConfigureApi}
+        apiConfigured={apiConfig.isConfigured}
+      />
       
       <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-6">
         <TabsList className="grid grid-cols-2 mb-6">
@@ -224,6 +263,13 @@ const Index = () => {
           />
         </DialogContent>
       </Dialog>
+      
+      <ApiConfigDialog 
+        open={isApiConfigOpen}
+        onOpenChange={setIsApiConfigOpen}
+        apiConfig={apiConfig}
+        onSaveConfig={handleSaveApiConfig}
+      />
     </div>
   );
 };

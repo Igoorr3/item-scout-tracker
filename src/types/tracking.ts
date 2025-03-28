@@ -6,4 +6,5 @@ export interface TrackingConfiguration {
   refreshInterval: number;
   enabled: boolean;
   stats: Record<string, number>;
+  lastUpdated?: string;
 }
