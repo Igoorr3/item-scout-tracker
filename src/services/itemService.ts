@@ -94,8 +94,13 @@ export const searchItems = async (config: TrackingConfiguration, apiCredentials:
     };
 
     // Adiciona cookies se disponíveis
-    if (apiCredentials.poesessid) {
-      headers["Cookie"] = `POESESSID=${apiCredentials.poesessid}; session_id=${apiCredentials.sessionId}`;
+    let cookieString = '';
+    if (apiCredentials.poesessid) cookieString += `POESESSID=${apiCredentials.poesessid}; `;
+    if (apiCredentials.sessionId) cookieString += `session_id=${apiCredentials.sessionId}; `;
+    if (apiCredentials.cfClearance) cookieString += `cf_clearance=${apiCredentials.cfClearance}; `;
+    
+    if (cookieString) {
+      headers["Cookie"] = cookieString.trim();
     }
 
     const response = await fetch("https://www.pathofexile.com/api/trade2/search/poe2/Standard", {
@@ -132,8 +137,13 @@ export const fetchItemDetails = async (itemIds: string[], queryId: string, apiCr
     };
 
     // Adiciona cookies se disponíveis
-    if (apiCredentials.poesessid) {
-      headers["Cookie"] = `POESESSID=${apiCredentials.poesessid}; session_id=${apiCredentials.sessionId}`;
+    let cookieString = '';
+    if (apiCredentials.poesessid) cookieString += `POESESSID=${apiCredentials.poesessid}; `;
+    if (apiCredentials.sessionId) cookieString += `session_id=${apiCredentials.sessionId}; `;
+    if (apiCredentials.cfClearance) cookieString += `cf_clearance=${apiCredentials.cfClearance}; `;
+    
+    if (cookieString) {
+      headers["Cookie"] = cookieString.trim();
     }
     
     const response = await fetch(url, { headers });

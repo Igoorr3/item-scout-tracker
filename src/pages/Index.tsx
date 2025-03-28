@@ -25,6 +25,7 @@ const Index = () => {
   const [apiConfig, setApiConfig] = useState<ApiCredentials>({
     sessionId: '',
     poesessid: '',
+    cfClearance: '',
     isConfigured: false
   });
   

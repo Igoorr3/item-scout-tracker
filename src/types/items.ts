@@ -13,4 +13,7 @@ export interface Item {
   expectedPrice: number;
   averagePrice: number;
   stats: ItemStat[];
+  seller?: string;
+  listedTime?: string;
+  iconUrl?: string;
 }
