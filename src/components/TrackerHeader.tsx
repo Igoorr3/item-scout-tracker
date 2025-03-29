@@ -73,7 +73,7 @@ const TrackerHeader = ({ onCreateTracker, onConfigureApi, apiConfigured }: Track
                       <li>Vá para a aba "Application" e encontre os cookies do site</li>
                       <li>Copie os valores de "POESESSID" e <strong>todos</strong> os valores "cf_clearance" (pode haver múltiplos)</li>
                       <li>O User-Agent já vem preenchido, mas você pode atualizá-lo se necessário</li>
-                      <li>Respeite os limites de requisição para evitar bloqueios temporários</li>
+                      <li>Se continuar tendo problemas, tente reiniciar seu navegador e atualizar os cookies</li>
                     </ol>
                   </AccordionContent>
                 </AccordionItem>

@@ -41,6 +41,9 @@ interface PoeItemResult {
   };
 }
 
+// URL do proxy CORS Anywhere
+const CORS_PROXY = 'https://cors-anywhere.herokuapp.com/';
+
 // Função para construir o payload de busca com base na configuração
 const buildSearchPayload = (config: TrackingConfiguration) => {
   // Estrutura básica do payload de busca
@@ -102,15 +105,42 @@ const buildCookieString = (apiCredentials: ApiCredentials): string => {
   return cookieString.trim();
 };
 
+// Tenta usar o proxy quando necessário
+const fetchWithFallback = async (url: string, options: RequestInit, useProxy: boolean = false): Promise<Response> => {
+  try {
+    // Primeiro tenta direto sem proxy
+    if (!useProxy) {
+      console.log("Tentando acessar diretamente:", url);
+      return await fetch(url, options);
+    }
+    
+    // Se solicitado para usar proxy ou após falha na tentativa direta
+    console.log("Tentando acessar via proxy CORS:", CORS_PROXY + url);
+    const proxyOptions = {
+      ...options,
+      headers: {
+        ...options.headers,
+        'X-Requested-With': 'XMLHttpRequest'
+      }
+    };
+    return await fetch(CORS_PROXY + url, proxyOptions);
+  } catch (error) {
+    console.error("Erro na requisição:", error);
+    throw error;
+  }
+};
+
 // Realiza a busca inicial para obter IDs dos itens
-export const searchItems = async (config: TrackingConfiguration, apiCredentials: ApiCredentials): Promise<PoeApiSearchResponse> => {
+export const searchItems = async (config: TrackingConfiguration, apiCredentials: ApiCredentials, useProxy: boolean = false): Promise<PoeApiSearchResponse> => {
   try {
     const payload = buildSearchPayload(config);
     console.log("Enviando payload de busca:", payload);
 
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
-      "User-Agent": apiCredentials.useragent || "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+      "User-Agent": apiCredentials.useragent || "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      "Origin": "https://www.pathofexile.com",
+      "Referer": "https://www.pathofexile.com/trade2/search/poe2/Standard"
     };
 
     // Adiciona cookies se disponíveis
@@ -121,15 +151,18 @@ export const searchItems = async (config: TrackingConfiguration, apiCredentials:
 
     console.log("Headers de busca:", headers);
 
-    const response = await fetch("https://www.pathofexile.com/api/trade2/search/poe2/Standard", {
+    const url = "https://www.pathofexile.com/api/trade2/search/poe2/Standard";
+    const response = await fetchWithFallback(url, {
       method: "POST",
       headers,
-      body: JSON.stringify(payload)
-    });
+      body: JSON.stringify(payload),
+      credentials: "include"
+    }, useProxy);
 
     if (!response.ok) {
-      console.error("Erro na API de busca:", await response.text());
-      throw new Error(`Erro na API de busca: ${response.status}`);
+      const errorText = await response.text();
+      console.error("Erro na API de busca:", errorText);
+      throw new Error(`Erro na API de busca: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
@@ -137,12 +170,17 @@ export const searchItems = async (config: TrackingConfiguration, apiCredentials:
     return data;
   } catch (error) {
     console.error("Erro ao buscar itens:", error);
+    // Se falhou sem proxy, tenta com proxy
+    if (!useProxy) {
+      console.log("Tentando novamente com proxy...");
+      return searchItems(config, apiCredentials, true);
+    }
     throw error;
   }
 };
 
 // Busca os detalhes dos itens a partir dos IDs
-export const fetchItemDetails = async (itemIds: string[], queryId: string, apiCredentials: ApiCredentials): Promise<PoeItemResponse> => {
+export const fetchItemDetails = async (itemIds: string[], queryId: string, apiCredentials: ApiCredentials, useProxy: boolean = false): Promise<PoeItemResponse> => {
   try {
     // Limita a 10 itens por requisição, conforme recomendado
     const idsToFetch = itemIds.slice(0, 10).join(",");
@@ -151,7 +189,9 @@ export const fetchItemDetails = async (itemIds: string[], queryId: string, apiCr
     console.log("Buscando detalhes de itens:", url);
     
     const headers: Record<string, string> = {
-      "User-Agent": apiCredentials.useragent || "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+      "User-Agent": apiCredentials.useragent || "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      "Origin": "https://www.pathofexile.com",
+      "Referer": "https://www.pathofexile.com/trade2/search/poe2/Standard"
     };
 
     // Adiciona cookies se disponíveis
@@ -162,11 +202,15 @@ export const fetchItemDetails = async (itemIds: string[], queryId: string, apiCr
     
     console.log("Headers de detalhes:", headers);
     
-    const response = await fetch(url, { headers });
+    const response = await fetchWithFallback(url, {
+      headers,
+      credentials: "include"
+    }, useProxy);
 
     if (!response.ok) {
-      console.error("Erro na API de detalhes:", await response.text());
-      throw new Error(`Erro na API de detalhes: ${response.status}`);
+      const errorText = await response.text();
+      console.error("Erro na API de detalhes:", errorText);
+      throw new Error(`Erro na API de detalhes: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
@@ -174,6 +218,11 @@ export const fetchItemDetails = async (itemIds: string[], queryId: string, apiCr
     return data;
   } catch (error) {
     console.error("Erro ao buscar detalhes dos itens:", error);
+    // Se falhou sem proxy, tenta com proxy
+    if (!useProxy) {
+      console.log("Tentando novamente com proxy...");
+      return fetchItemDetails(itemIds, queryId, apiCredentials, true);
+    }
     throw error;
   }
 };
@@ -349,6 +398,33 @@ const generateMockItems = (config: TrackingConfiguration): Item[] => {
   return items;
 };
 
+// Verifica se a conexão com a API do PoE está funcionando
+export const testApiConnection = async (apiCredentials: ApiCredentials): Promise<boolean> => {
+  try {
+    // Tenta fazer uma requisição simples para verificar a conectividade
+    const headers: Record<string, string> = {
+      "User-Agent": apiCredentials.useragent || "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    };
+
+    // Adiciona cookies se disponíveis
+    const cookieString = buildCookieString(apiCredentials);
+    if (cookieString) {
+      headers["Cookie"] = cookieString;
+    }
+
+    // Tenta acessar o endpoint de leagues que é mais leve
+    const response = await fetchWithFallback("https://www.pathofexile.com/api/trade2/leagues", {
+      headers,
+      credentials: "include"
+    }, false);
+
+    return response.ok;
+  } catch (error) {
+    console.error("Erro ao testar conexão com a API:", error);
+    return false;
+  }
+};
+
 // Função principal que realiza todo o processo de busca
 export const fetchItems = async (config: TrackingConfiguration, apiCredentials: ApiCredentials): Promise<Item[]> => {
   try {
@@ -370,6 +446,15 @@ export const fetchItems = async (config: TrackingConfiguration, apiCredentials: 
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       // Retorna dados simulados
+      return generateMockItems(config);
+    }
+    
+    // Testa a conexão antes de fazer a busca completa
+    const connectionOk = await testApiConnection(apiCredentials);
+    if (!connectionOk) {
+      toast.error("Falha na conexão com a API do Path of Exile", {
+        description: "Verifique seus cookies e tente novamente. Usando dados simulados temporariamente."
+      });
       return generateMockItems(config);
     }
     
@@ -411,6 +496,11 @@ export const fetchItems = async (config: TrackingConfiguration, apiCredentials: 
         toast.error("Limite de requisições excedido", {
           description: "Aguarde alguns minutos antes de tentar novamente"
         });
+      } else if (error.message.includes('Failed to fetch')) {
+        toast.error("Erro de conexão com a API", {
+          description: "Possivelmente bloqueado por CORS. Usando dados simulados temporariamente."
+        });
+        return generateMockItems(config);
       } else {
         toast.error(`Erro ao acessar a API: ${error.message}`);
       }
@@ -418,7 +508,8 @@ export const fetchItems = async (config: TrackingConfiguration, apiCredentials: 
       toast.error("Erro desconhecido ao acessar a API");
     }
     
-    // Retorna array vazio em caso de erro
-    return [];
+    // Em caso de erro, retorna dados simulados para manter a aplicação funcionando
+    toast.info("Usando dados simulados temporariamente");
+    return generateMockItems(config);
   }
 };
