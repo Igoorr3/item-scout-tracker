@@ -10,7 +10,7 @@ import ApiConfigDialog from '@/components/ApiConfigDialog';
 import { TrackingConfiguration } from '@/types/tracking';
 import { ApiCredentials } from '@/types/api';
 import { Item } from '@/types/items';
-import { fetchItems } from '@/services/itemService';
+import { fetchItems, testApiConnection } from '@/services/itemService';
 
 const Index = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -25,7 +25,8 @@ const Index = () => {
     poesessid: '',
     cfClearance: [],
     useragent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-    isConfigured: false
+    isConfigured: false,
+    useProxy: false
   });
   
   const lastRequestTime = useRef<number>(0);
@@ -107,6 +108,41 @@ const Index = () => {
     toast.success("Configuração da API salva com sucesso", {
       description: "Os rastreadores agora usarão dados reais do Path of Exile 2"
     });
+    
+    testAndNotifyApiConnection(updatedConfig);
+  };
+  
+  const testAndNotifyApiConnection = async (config: ApiCredentials) => {
+    setIsLoading(true);
+    try {
+      const isConnected = await testApiConnection(config);
+      if (isConnected) {
+        toast.success("Conexão com API do PoE2 confirmada", {
+          description: "Os dados reais serão utilizados nos rastreadores"
+        });
+      } else {
+        const isConnectedWithProxy = await testApiConnection({...config, useProxy: true});
+        if (isConnectedWithProxy) {
+          toast.success("Conexão com API do PoE2 estabelecida (via proxy)", {
+            description: "Os dados reais serão utilizados, mas pode haver algum atraso"
+          });
+          const updatedConfig = {...config, useProxy: true};
+          setApiConfig(updatedConfig);
+          localStorage.setItem('poe-api-config', JSON.stringify(updatedConfig));
+        } else {
+          toast.error("Falha na conexão com a API do Path of Exile", {
+            description: "Verifique se seus cookies são válidos e estão atualizados"
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Erro ao testar a API:", error);
+      toast.error("Erro ao testar conexão com a API", {
+        description: "Verifique o console para mais detalhes"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSaveConfig = (config: TrackingConfiguration) => {
@@ -197,8 +233,9 @@ const Index = () => {
         config: config.name,
         api: apiConfig.isConfigured ? "Configurada" : "Não configurada",
         poesessid: apiConfig.poesessid ? "Presente" : "Ausente",
-        cfClearance: apiConfig.cfClearance ? "Presente" : "Ausente",
-        useragent: apiConfig.useragent ? "Configurado" : "Padrão"
+        cfClearance: apiConfig.cfClearance && apiConfig.cfClearance.length > 0 ? "Presente" : "Ausente",
+        useragent: apiConfig.useragent ? "Configurado" : "Padrão",
+        useProxy: apiConfig.useProxy ? "Sim" : "Não"
       });
       
       const fetchedItems = await fetchItems(config, apiConfig);

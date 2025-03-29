@@ -1,3 +1,4 @@
+
 import { Item } from '@/types/items';
 import { TrackingConfiguration } from '@/types/tracking';
 import { ApiCredentials } from '@/types/api';
@@ -41,8 +42,12 @@ interface PoeItemResult {
   };
 }
 
-// URL do proxy CORS Anywhere
-const CORS_PROXY = 'https://cors-anywhere.herokuapp.com/';
+// Lista de proxies CORS disponíveis
+const CORS_PROXIES = [
+  'https://cors-anywhere.herokuapp.com/',
+  'https://api.allorigins.win/raw?url=',
+  'https://corsproxy.io/?'
+];
 
 // Função para construir o payload de busca com base na configuração
 const buildSearchPayload = (config: TrackingConfiguration) => {
@@ -105,42 +110,54 @@ const buildCookieString = (apiCredentials: ApiCredentials): string => {
   return cookieString.trim();
 };
 
-// Tenta usar o proxy quando necessário
-const fetchWithFallback = async (url: string, options: RequestInit, useProxy: boolean = false): Promise<Response> => {
+// Função para tentar diferentes proxies CORS
+const tryWithDifferentProxies = async (url: string, options: RequestInit): Promise<Response> => {
+  let lastError;
+  
+  // Primeiro tenta sem proxy
   try {
-    // Primeiro tenta direto sem proxy
-    if (!useProxy) {
-      console.log("Tentando acessar diretamente:", url);
-      return await fetch(url, options);
-    }
-    
-    // Se solicitado para usar proxy ou após falha na tentativa direta
-    console.log("Tentando acessar via proxy CORS:", CORS_PROXY + url);
-    const proxyOptions = {
-      ...options,
-      headers: {
-        ...options.headers,
-        'X-Requested-With': 'XMLHttpRequest'
-      }
-    };
-    return await fetch(CORS_PROXY + url, proxyOptions);
+    console.log("Tentando acessar diretamente:", url);
+    return await fetch(url, options);
   } catch (error) {
-    console.error("Erro na requisição:", error);
-    throw error;
+    console.log("Falha ao acessar diretamente:", error);
+    lastError = error;
   }
+  
+  // Se falhar, tenta com cada proxy na lista
+  for (const proxy of CORS_PROXIES) {
+    try {
+      console.log(`Tentando acessar via proxy ${proxy}:`, url);
+      const proxyUrl = proxy + encodeURIComponent(url);
+      const proxyOptions = {
+        ...options,
+        headers: {
+          ...options.headers,
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      };
+      return await fetch(proxyUrl, proxyOptions);
+    } catch (error) {
+      console.log(`Falha ao acessar via proxy ${proxy}:`, error);
+      lastError = error;
+    }
+  }
+  
+  // Se todas as tentativas falharem, lança o último erro
+  throw lastError;
 };
 
 // Realiza a busca inicial para obter IDs dos itens
-export const searchItems = async (config: TrackingConfiguration, apiCredentials: ApiCredentials, useProxy: boolean = false): Promise<PoeApiSearchResponse> => {
+export const searchItems = async (config: TrackingConfiguration, apiCredentials: ApiCredentials): Promise<PoeApiSearchResponse> => {
   try {
     const payload = buildSearchPayload(config);
-    console.log("Enviando payload de busca:", payload);
+    console.log("Enviando payload de busca:", JSON.stringify(payload, null, 2));
 
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
-      "User-Agent": apiCredentials.useragent || "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      "User-Agent": apiCredentials.useragent,
       "Origin": "https://www.pathofexile.com",
-      "Referer": "https://www.pathofexile.com/trade2/search/poe2/Standard"
+      "Referer": "https://www.pathofexile.com/trade2/search/poe2/Standard",
+      "Accept": "application/json"
     };
 
     // Adiciona cookies se disponíveis
@@ -152,16 +169,27 @@ export const searchItems = async (config: TrackingConfiguration, apiCredentials:
     console.log("Headers de busca:", headers);
 
     const url = "https://www.pathofexile.com/api/trade2/search/poe2/Standard";
-    const response = await fetchWithFallback(url, {
-      method: "POST",
-      headers,
-      body: JSON.stringify(payload),
-      credentials: "include"
-    }, useProxy);
+    
+    let response;
+    if (apiCredentials.useProxy) {
+      response = await tryWithDifferentProxies(url, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(payload),
+        credentials: "include"
+      });
+    } else {
+      response = await fetch(url, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(payload),
+        credentials: "include"
+      });
+    }
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Erro na API de busca:", errorText);
+      console.error(`Erro na API de busca: Status ${response.status}`, errorText);
       throw new Error(`Erro na API de busca: ${response.status} - ${errorText}`);
     }
 
@@ -170,17 +198,21 @@ export const searchItems = async (config: TrackingConfiguration, apiCredentials:
     return data;
   } catch (error) {
     console.error("Erro ao buscar itens:", error);
-    // Se falhou sem proxy, tenta com proxy
-    if (!useProxy) {
-      console.log("Tentando novamente com proxy...");
-      return searchItems(config, apiCredentials, true);
+    
+    // Se já estamos usando proxy, não tente novamente
+    if (apiCredentials.useProxy) {
+      throw error;
     }
-    throw error;
+    
+    // Tentar novamente com proxy
+    console.log("Tentando novamente com proxy...");
+    const updatedCredentials = { ...apiCredentials, useProxy: true };
+    return searchItems(config, updatedCredentials);
   }
 };
 
 // Busca os detalhes dos itens a partir dos IDs
-export const fetchItemDetails = async (itemIds: string[], queryId: string, apiCredentials: ApiCredentials, useProxy: boolean = false): Promise<PoeItemResponse> => {
+export const fetchItemDetails = async (itemIds: string[], queryId: string, apiCredentials: ApiCredentials): Promise<PoeItemResponse> => {
   try {
     // Limita a 10 itens por requisição, conforme recomendado
     const idsToFetch = itemIds.slice(0, 10).join(",");
@@ -189,9 +221,10 @@ export const fetchItemDetails = async (itemIds: string[], queryId: string, apiCr
     console.log("Buscando detalhes de itens:", url);
     
     const headers: Record<string, string> = {
-      "User-Agent": apiCredentials.useragent || "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      "User-Agent": apiCredentials.useragent,
       "Origin": "https://www.pathofexile.com",
-      "Referer": "https://www.pathofexile.com/trade2/search/poe2/Standard"
+      "Referer": "https://www.pathofexile.com/trade2/search/poe2/Standard",
+      "Accept": "application/json"
     };
 
     // Adiciona cookies se disponíveis
@@ -202,14 +235,22 @@ export const fetchItemDetails = async (itemIds: string[], queryId: string, apiCr
     
     console.log("Headers de detalhes:", headers);
     
-    const response = await fetchWithFallback(url, {
-      headers,
-      credentials: "include"
-    }, useProxy);
+    let response;
+    if (apiCredentials.useProxy) {
+      response = await tryWithDifferentProxies(url, {
+        headers,
+        credentials: "include"
+      });
+    } else {
+      response = await fetch(url, {
+        headers,
+        credentials: "include"
+      });
+    }
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Erro na API de detalhes:", errorText);
+      console.error(`Erro na API de detalhes: Status ${response.status}`, errorText);
       throw new Error(`Erro na API de detalhes: ${response.status} - ${errorText}`);
     }
 
@@ -218,12 +259,16 @@ export const fetchItemDetails = async (itemIds: string[], queryId: string, apiCr
     return data;
   } catch (error) {
     console.error("Erro ao buscar detalhes dos itens:", error);
-    // Se falhou sem proxy, tenta com proxy
-    if (!useProxy) {
-      console.log("Tentando novamente com proxy...");
-      return fetchItemDetails(itemIds, queryId, apiCredentials, true);
+    
+    // Se já estamos usando proxy, não tente novamente
+    if (apiCredentials.useProxy) {
+      throw error;
     }
-    throw error;
+    
+    // Tentar novamente com proxy
+    console.log("Tentando novamente com proxy...");
+    const updatedCredentials = { ...apiCredentials, useProxy: true };
+    return fetchItemDetails(itemIds, queryId, updatedCredentials);
   }
 };
 
@@ -403,7 +448,10 @@ export const testApiConnection = async (apiCredentials: ApiCredentials): Promise
   try {
     // Tenta fazer uma requisição simples para verificar a conectividade
     const headers: Record<string, string> = {
-      "User-Agent": apiCredentials.useragent || "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+      "User-Agent": apiCredentials.useragent,
+      "Origin": "https://www.pathofexile.com",
+      "Referer": "https://www.pathofexile.com/trade2/search/poe2/Standard",
+      "Accept": "application/json"
     };
 
     // Adiciona cookies se disponíveis
@@ -413,15 +461,38 @@ export const testApiConnection = async (apiCredentials: ApiCredentials): Promise
     }
 
     // Tenta acessar o endpoint de leagues que é mais leve
-    const response = await fetchWithFallback("https://www.pathofexile.com/api/trade2/leagues", {
-      headers,
-      credentials: "include"
-    }, false);
+    let response;
+    if (apiCredentials.useProxy) {
+      response = await tryWithDifferentProxies("https://www.pathofexile.com/api/trade2/leagues", {
+        headers,
+        credentials: "include"
+      });
+    } else {
+      response = await fetch("https://www.pathofexile.com/api/trade2/leagues", {
+        headers,
+        credentials: "include"
+      });
+    }
 
-    return response.ok;
+    if (!response.ok) {
+      console.error(`Teste de API falhou com status: ${response.status}`);
+      return false;
+    }
+    
+    console.log("Teste de API bem sucedido");
+    return true;
   } catch (error) {
     console.error("Erro ao testar conexão com a API:", error);
-    return false;
+    
+    // Se já estamos usando proxy, não tente novamente
+    if (apiCredentials.useProxy) {
+      return false;
+    }
+    
+    // Tentar novamente com proxy
+    console.log("Tentando teste de API novamente com proxy...");
+    const updatedCredentials = { ...apiCredentials, useProxy: true };
+    return testApiConnection(updatedCredentials);
   }
 };
 
@@ -433,7 +504,8 @@ export const fetchItems = async (config: TrackingConfiguration, apiCredentials: 
       poesessid: apiCredentials.poesessid ? "Configurado" : "Não configurado", 
       cfClearance: apiCredentials.cfClearance && apiCredentials.cfClearance.length > 0 ? 
         `Configurado (${apiCredentials.cfClearance.length} valores)` : "Não configurado",
-      useragent: apiCredentials.useragent ? "Configurado" : "Padrão"
+      useragent: apiCredentials.useragent ? "Configurado" : "Padrão",
+      useProxy: apiCredentials.useProxy ? "Sim" : "Não"
     });
     
     // Se não temos as credenciais da API configuradas, usamos dados simulados
@@ -453,9 +525,23 @@ export const fetchItems = async (config: TrackingConfiguration, apiCredentials: 
     const connectionOk = await testApiConnection(apiCredentials);
     if (!connectionOk) {
       toast.error("Falha na conexão com a API do Path of Exile", {
-        description: "Verifique seus cookies e tente novamente. Usando dados simulados temporariamente."
+        description: "Verificando com proxy alternativo..."
       });
-      return generateMockItems(config);
+      
+      // Tentar novamente com proxy
+      const testWithProxy = await testApiConnection({...apiCredentials, useProxy: true});
+      if (!testWithProxy) {
+        toast.error("Falha na conexão com a API mesmo usando proxy", {
+          description: "Verifique seus cookies e tente novamente. Usando dados simulados temporariamente."
+        });
+        return generateMockItems(config);
+      }
+      
+      // Se funcionou com proxy, atualiza a configuração
+      apiCredentials = {...apiCredentials, useProxy: true};
+      toast.success("Conexão estabelecida usando proxy", {
+        description: "Os dados reais serão obtidos normalmente"
+      });
     }
     
     // Passo 1: Busca os IDs dos itens com base nos filtros
@@ -468,6 +554,7 @@ export const fetchItems = async (config: TrackingConfiguration, apiCredentials: 
     }
     
     // Espera 2 segundos para evitar rate limiting da API
+    toast.info("Aguardando para evitar limite de requisições...");
     await new Promise(resolve => setTimeout(resolve, 2000));
     
     // Passo 2: Busca os detalhes dos primeiros 10 itens
@@ -496,10 +583,22 @@ export const fetchItems = async (config: TrackingConfiguration, apiCredentials: 
         toast.error("Limite de requisições excedido", {
           description: "Aguarde alguns minutos antes de tentar novamente"
         });
-      } else if (error.message.includes('Failed to fetch')) {
+      } else if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
         toast.error("Erro de conexão com a API", {
-          description: "Possivelmente bloqueado por CORS. Usando dados simulados temporariamente."
+          description: "Tentando com proxies alternativos... Se persistir, verifique sua conexão de internet."
         });
+        
+        // Tenta novamente com proxy ativado
+        try {
+          const updatedCredentials = {...apiCredentials, useProxy: true};
+          const items = await fetchItems(config, updatedCredentials);
+          if (items.length > 0) {
+            return items;
+          }
+        } catch (retryError) {
+          console.error("Falha na segunda tentativa com proxy:", retryError);
+        }
+        
         return generateMockItems(config);
       } else {
         toast.error(`Erro ao acessar a API: ${error.message}`);

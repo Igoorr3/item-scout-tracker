@@ -70,10 +70,11 @@ const TrackerHeader = ({ onCreateTracker, onConfigureApi, apiConfigured }: Track
                       <li>Faça login no site oficial do <a href="https://www.pathofexile.com" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Path of Exile</a></li>
                       <li>Abra o <a href="https://www.pathofexile.com/trade2/search/poe2/Standard" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">site de trade do PoE2</a></li>
                       <li>Pressione F12 para abrir as ferramentas de desenvolvedor</li>
-                      <li>Vá para a aba "Application" e encontre os cookies do site</li>
-                      <li>Copie os valores de "POESESSID" e <strong>todos</strong> os valores "cf_clearance" (pode haver múltiplos)</li>
-                      <li>O User-Agent já vem preenchido, mas você pode atualizá-lo se necessário</li>
-                      <li>Se continuar tendo problemas, tente reiniciar seu navegador e atualizar os cookies</li>
+                      <li>Vá para a aba "Network" e faça uma busca no site</li>
+                      <li>Clique na requisição "Standard" (POST) e copie os cookies da aba Headers</li>
+                      <li>Identifique e copie o valor de "POESESSID" e <strong>todos</strong> os valores "cf_clearance" (pode haver múltiplos)</li>
+                      <li>Se continuar tendo problemas, ative a opção "Usar Proxy" nas configurações</li>
+                      <li>Aguarde 2-3 segundos entre requisições para evitar o bloqueio de rate limiting</li>
                     </ol>
                   </AccordionContent>
                 </AccordionItem>

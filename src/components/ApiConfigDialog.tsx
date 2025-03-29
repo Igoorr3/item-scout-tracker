@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { ApiCredentials } from '@/types/api';
 import { InfoIcon, Plus, Trash2 } from 'lucide-react';
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -23,6 +24,7 @@ const ApiConfigDialog = ({ open, onOpenChange, apiConfig, onSaveConfig }: ApiCon
       : ['']
   );
   const [useragent, setUseragent] = useState(apiConfig.useragent || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+  const [useProxy, setUseProxy] = useState(apiConfig.useProxy || false);
 
   const handleSave = () => {
     // Filtra valores vazios de cf_clearance
@@ -30,9 +32,10 @@ const ApiConfigDialog = ({ open, onOpenChange, apiConfig, onSaveConfig }: ApiCon
     
     onSaveConfig({
       poesessid,
-      cfClearance: filteredCfClearance.length > 0 ? filteredCfClearance : undefined,
+      cfClearance: filteredCfClearance.length > 0 ? filteredCfClearance : [],
       useragent,
-      isConfigured: Boolean(poesessid)
+      isConfigured: Boolean(poesessid),
+      useProxy
     });
     onOpenChange(false);
   };
@@ -74,9 +77,10 @@ const ApiConfigDialog = ({ open, onOpenChange, apiConfig, onSaveConfig }: ApiCon
               <li>Faça login no site oficial do <a href="https://www.pathofexile.com" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Path of Exile</a></li>
               <li>Abra o <a href="https://www.pathofexile.com/trade2/search/poe2/Standard" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">site de trade do PoE2</a></li>
               <li>Pressione F12 para abrir as ferramentas de desenvolvedor</li>
-              <li>Vá para a aba "Application" (ou "Armazenamento")</li>
-              <li>Expanda "Cookies" no menu lateral e selecione o site do Path of Exile</li>
-              <li>Copie o valor dos cookies "POESESSID" e <strong>todos</strong> os valores "cf_clearance" (pode haver mais de um)</li>
+              <li>Vá para a aba "Network" (ou "Rede")</li>
+              <li>Faça uma busca no site para gerar as requisições</li>
+              <li>Clique na requisição "Standard" (POST) e copie os cookies da aba Headers</li>
+              <li>Identifique e copie o valor de "POESESSID" e <strong>todos</strong> os valores "cf_clearance"</li>
             </ol>
           </AlertDescription>
         </Alert>
@@ -143,6 +147,22 @@ const ApiConfigDialog = ({ open, onOpenChange, apiConfig, onSaveConfig }: ApiCon
               onChange={(e) => setUseragent(e.target.value)}
               className="col-span-3"
             />
+          </div>
+          
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="use-proxy" className="text-right">
+              Usar Proxy
+            </Label>
+            <div className="flex items-center space-x-2 col-span-3">
+              <Switch 
+                id="use-proxy" 
+                checked={useProxy}
+                onCheckedChange={setUseProxy}
+              />
+              <Label htmlFor="use-proxy" className="text-sm text-muted-foreground">
+                Ative se estiver tendo problemas de CORS ou bloqueio de requisições
+              </Label>
+            </div>
           </div>
         </div>
 
