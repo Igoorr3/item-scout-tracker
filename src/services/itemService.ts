@@ -1,4 +1,3 @@
-
 import { Item } from '@/types/items';
 import { TrackingConfiguration } from '@/types/tracking';
 import { ApiCredentials } from '@/types/api';
@@ -82,6 +81,27 @@ const buildSearchPayload = (config: TrackingConfiguration) => {
   return payload;
 };
 
+// Função para construir os cookies como string para os cabeçalhos HTTP
+const buildCookieString = (apiCredentials: ApiCredentials): string => {
+  let cookieString = '';
+  
+  // Adiciona POESESSID se disponível
+  if (apiCredentials.poesessid) {
+    cookieString += `POESESSID=${apiCredentials.poesessid}; `;
+  }
+  
+  // Adiciona todos os cf_clearance se disponíveis
+  if (apiCredentials.cfClearance && apiCredentials.cfClearance.length > 0) {
+    apiCredentials.cfClearance.forEach(clearance => {
+      if (clearance && clearance.trim()) {
+        cookieString += `cf_clearance=${clearance}; `;
+      }
+    });
+  }
+  
+  return cookieString.trim();
+};
+
 // Realiza a busca inicial para obter IDs dos itens
 export const searchItems = async (config: TrackingConfiguration, apiCredentials: ApiCredentials): Promise<PoeApiSearchResponse> => {
   try {
@@ -94,12 +114,9 @@ export const searchItems = async (config: TrackingConfiguration, apiCredentials:
     };
 
     // Adiciona cookies se disponíveis
-    let cookieString = '';
-    if (apiCredentials.poesessid) cookieString += `POESESSID=${apiCredentials.poesessid}; `;
-    if (apiCredentials.cfClearance) cookieString += `cf_clearance=${apiCredentials.cfClearance}; `;
-    
+    const cookieString = buildCookieString(apiCredentials);
     if (cookieString) {
-      headers["Cookie"] = cookieString.trim();
+      headers["Cookie"] = cookieString;
     }
 
     console.log("Headers de busca:", headers);
@@ -138,12 +155,9 @@ export const fetchItemDetails = async (itemIds: string[], queryId: string, apiCr
     };
 
     // Adiciona cookies se disponíveis
-    let cookieString = '';
-    if (apiCredentials.poesessid) cookieString += `POESESSID=${apiCredentials.poesessid}; `;
-    if (apiCredentials.cfClearance) cookieString += `cf_clearance=${apiCredentials.cfClearance}; `;
-    
+    const cookieString = buildCookieString(apiCredentials);
     if (cookieString) {
-      headers["Cookie"] = cookieString.trim();
+      headers["Cookie"] = cookieString;
     }
     
     console.log("Headers de detalhes:", headers);
@@ -341,7 +355,8 @@ export const fetchItems = async (config: TrackingConfiguration, apiCredentials: 
     console.log(`Buscando itens para configuração: ${config.name}`);
     console.log("Credenciais da API:", { 
       poesessid: apiCredentials.poesessid ? "Configurado" : "Não configurado", 
-      cfClearance: apiCredentials.cfClearance ? "Configurado" : "Não configurado",
+      cfClearance: apiCredentials.cfClearance && apiCredentials.cfClearance.length > 0 ? 
+        `Configurado (${apiCredentials.cfClearance.length} valores)` : "Não configurado",
       useragent: apiCredentials.useragent ? "Configurado" : "Padrão"
     });
     

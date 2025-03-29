@@ -1,7 +1,7 @@
 
 export interface ApiCredentials {
   poesessid: string;
-  cfClearance?: string;
+  cfClearance?: string[];
   useragent?: string;
   isConfigured: boolean;
 }

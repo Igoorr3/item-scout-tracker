@@ -23,7 +23,7 @@ const Index = () => {
   const [error, setError] = useState<string | null>(null);
   const [apiConfig, setApiConfig] = useState<ApiCredentials>({
     poesessid: '',
-    cfClearance: '',
+    cfClearance: [],
     useragent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     isConfigured: false
   });
@@ -39,7 +39,13 @@ const Index = () => {
       
       const savedApiConfig = localStorage.getItem('poe-api-config');
       if (savedApiConfig) {
-        setApiConfig(JSON.parse(savedApiConfig));
+        const parsedConfig = JSON.parse(savedApiConfig) as ApiCredentials;
+        if (typeof parsedConfig.cfClearance === 'string' && parsedConfig.cfClearance) {
+          parsedConfig.cfClearance = [parsedConfig.cfClearance];
+        } else if (!Array.isArray(parsedConfig.cfClearance)) {
+          parsedConfig.cfClearance = [];
+        }
+        setApiConfig(parsedConfig);
       }
     } catch (error) {
       console.error('Erro ao carregar configurações:', error);
@@ -91,7 +97,13 @@ const Index = () => {
   };
   
   const handleSaveApiConfig = (config: ApiCredentials) => {
-    setApiConfig(config);
+    const updatedConfig = {
+      ...config,
+      cfClearance: Array.isArray(config.cfClearance) ? config.cfClearance : 
+                   config.cfClearance ? [config.cfClearance] : []
+    };
+    
+    setApiConfig(updatedConfig);
     toast.success("Configuração da API salva com sucesso", {
       description: "Os rastreadores agora usarão dados reais do Path of Exile 2"
     });
