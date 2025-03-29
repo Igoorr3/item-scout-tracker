@@ -18,11 +18,13 @@ interface ApiConfigDialogProps {
 const ApiConfigDialog = ({ open, onOpenChange, apiConfig, onSaveConfig }: ApiConfigDialogProps) => {
   const [poesessid, setPoesessid] = useState(apiConfig.poesessid || '');
   const [cfClearance, setCfClearance] = useState(apiConfig.cfClearance || '');
+  const [useragent, setUseragent] = useState(apiConfig.useragent || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
 
   const handleSave = () => {
     onSaveConfig({
       poesessid,
       cfClearance,
+      useragent,
       isConfigured: Boolean(poesessid)
     });
     onOpenChange(false);
@@ -75,6 +77,18 @@ const ApiConfigDialog = ({ open, onOpenChange, apiConfig, onSaveConfig }: ApiCon
               placeholder="Valor do cookie cf_clearance (opcional)"
               value={cfClearance}
               onChange={(e) => setCfClearance(e.target.value)}
+              className="col-span-3"
+            />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="useragent" className="text-right">
+              User-Agent
+            </Label>
+            <Input
+              id="useragent"
+              placeholder="Valor do User-Agent do navegador"
+              value={useragent}
+              onChange={(e) => setUseragent(e.target.value)}
               className="col-span-3"
             />
           </div>

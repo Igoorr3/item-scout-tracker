@@ -24,6 +24,7 @@ const Index = () => {
   const [apiConfig, setApiConfig] = useState<ApiCredentials>({
     poesessid: '',
     cfClearance: '',
+    useragent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     isConfigured: false
   });
   
@@ -179,6 +180,14 @@ const Index = () => {
       }
       
       lastRequestTime.current = Date.now();
+      
+      console.log("Buscando itens com as seguintes configurações:", {
+        config: config.name,
+        api: apiConfig.isConfigured ? "Configurada" : "Não configurada",
+        poesessid: apiConfig.poesessid ? "Presente" : "Ausente",
+        cfClearance: apiConfig.cfClearance ? "Presente" : "Ausente",
+        useragent: apiConfig.useragent ? "Configurado" : "Padrão"
+      });
       
       const fetchedItems = await fetchItems(config, apiConfig);
       setItems(fetchedItems);

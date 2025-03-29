@@ -1,3 +1,4 @@
+
 import { Item } from '@/types/items';
 import { TrackingConfiguration } from '@/types/tracking';
 import { ApiCredentials } from '@/types/api';
@@ -89,7 +90,7 @@ export const searchItems = async (config: TrackingConfiguration, apiCredentials:
 
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
-      "User-Agent": "POE Item Scout/1.0"
+      "User-Agent": apiCredentials.useragent || "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     };
 
     // Adiciona cookies se disponíveis
@@ -100,6 +101,8 @@ export const searchItems = async (config: TrackingConfiguration, apiCredentials:
     if (cookieString) {
       headers["Cookie"] = cookieString.trim();
     }
+
+    console.log("Headers de busca:", headers);
 
     const response = await fetch("https://www.pathofexile.com/api/trade2/search/poe2/Standard", {
       method: "POST",
@@ -131,7 +134,7 @@ export const fetchItemDetails = async (itemIds: string[], queryId: string, apiCr
     console.log("Buscando detalhes de itens:", url);
     
     const headers: Record<string, string> = {
-      "User-Agent": "POE Item Scout/1.0"
+      "User-Agent": apiCredentials.useragent || "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     };
 
     // Adiciona cookies se disponíveis
@@ -142,6 +145,8 @@ export const fetchItemDetails = async (itemIds: string[], queryId: string, apiCr
     if (cookieString) {
       headers["Cookie"] = cookieString.trim();
     }
+    
+    console.log("Headers de detalhes:", headers);
     
     const response = await fetch(url, { headers });
 
@@ -334,6 +339,11 @@ const generateMockItems = (config: TrackingConfiguration): Item[] => {
 export const fetchItems = async (config: TrackingConfiguration, apiCredentials: ApiCredentials): Promise<Item[]> => {
   try {
     console.log(`Buscando itens para configuração: ${config.name}`);
+    console.log("Credenciais da API:", { 
+      poesessid: apiCredentials.poesessid ? "Configurado" : "Não configurado", 
+      cfClearance: apiCredentials.cfClearance ? "Configurado" : "Não configurado",
+      useragent: apiCredentials.useragent ? "Configurado" : "Padrão"
+    });
     
     // Se não temos as credenciais da API configuradas, usamos dados simulados
     if (!apiCredentials.isConfigured) {
@@ -350,7 +360,7 @@ export const fetchItems = async (config: TrackingConfiguration, apiCredentials: 
     
     // Passo 1: Busca os IDs dos itens com base nos filtros
     const searchResponse = await searchItems(config, apiCredentials);
-    console.log(`IDs encontrados: ${searchResponse.result.length}`);
+    console.log(`IDs encontrados: ${searchResponse.result?.length || 0}`);
     
     if (!searchResponse.result || searchResponse.result.length === 0) {
       toast.info("Nenhum item encontrado com esses filtros");

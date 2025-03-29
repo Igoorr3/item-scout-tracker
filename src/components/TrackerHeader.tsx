@@ -59,8 +59,8 @@ const TrackerHeader = ({ onCreateTracker, onConfigureApi, apiConfigured }: Track
           <>
             <AlertCircle className="h-4 w-4 text-amber-500" />
             <AlertDescription className="text-sm">
-              <strong>Acesso à API do PoE2:</strong> Para usar dados reais, você precisa configurar seus cookies 
-              de sessão clicando no botão "Configurar API" acima.
+              <strong>Acesso à API do PoE2:</strong> Para usar dados reais, clique no botão "Configurar API" 
+              acima e insira seu POESESSID e outros dados necessários.
               
               <Accordion type="single" collapsible className="mt-2">
                 <AccordionItem value="instructions">
@@ -72,7 +72,7 @@ const TrackerHeader = ({ onCreateTracker, onConfigureApi, apiConfigured }: Track
                       <li>Pressione F12 para abrir as ferramentas de desenvolvedor</li>
                       <li>Vá para a aba "Application" e encontre os cookies do site</li>
                       <li>Copie os valores de "POESESSID" e "cf_clearance" (este último é opcional)</li>
-                      <li>Cole esses valores no formulário de configuração da API</li>
+                      <li>O User-Agent já vem preenchido, mas você pode atualizá-lo se necessário</li>
                       <li>Respeite os limites de requisição para evitar bloqueios temporários</li>
                     </ol>
                   </AccordionContent>
