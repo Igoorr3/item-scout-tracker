@@ -5,4 +5,5 @@ export interface ApiCredentials {
   useragent: string;
   isConfigured: boolean;
   useProxy?: boolean;
+  customHeaders?: boolean;
 }

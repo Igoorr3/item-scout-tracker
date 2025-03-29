@@ -73,6 +73,7 @@ const TrackerHeader = ({ onCreateTracker, onConfigureApi, apiConfigured }: Track
                       <li>Vá para a aba "Network" e faça uma busca no site</li>
                       <li>Clique na requisição "Standard" (POST) e copie os cookies da aba Headers</li>
                       <li>Identifique e copie o valor de "POESESSID" e <strong>todos</strong> os valores "cf_clearance" (pode haver múltiplos)</li>
+                      <li>Copie também o User-Agent do seu navegador (necessário para autenticação)</li>
                       <li>Se continuar tendo problemas, ative a opção "Usar Proxy" nas configurações</li>
                       <li>Aguarde 2-3 segundos entre requisições para evitar o bloqueio de rate limiting</li>
                     </ol>

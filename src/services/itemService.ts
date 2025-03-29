@@ -44,9 +44,11 @@ interface PoeItemResult {
 
 // Lista de proxies CORS disponíveis
 const CORS_PROXIES = [
-  'https://cors-anywhere.herokuapp.com/',
+  'https://corsproxy.io/?',
   'https://api.allorigins.win/raw?url=',
-  'https://corsproxy.io/?'
+  'https://cors-anywhere.herokuapp.com/',
+  'https://crossorigin.me/',
+  'https://cors-proxy.htmldriven.com/?url='
 ];
 
 // Função para construir o payload de busca com base na configuração
@@ -110,14 +112,45 @@ const buildCookieString = (apiCredentials: ApiCredentials): string => {
   return cookieString.trim();
 };
 
+// Função para construir todos os cabeçalhos necessários para a API
+const buildHeaders = (apiCredentials: ApiCredentials, isSearch: boolean = false): Record<string, string> => {
+  const headers: Record<string, string> = {
+    "User-Agent": apiCredentials.useragent,
+    "Accept": "application/json",
+    "Origin": "https://www.pathofexile.com",
+    "Referer": "https://www.pathofexile.com/trade2/search/poe2/Standard"
+  };
+
+  if (isSearch) {
+    headers["Content-Type"] = "application/json";
+  }
+
+  // Adiciona cookies se disponíveis
+  const cookieString = buildCookieString(apiCredentials);
+  if (cookieString) {
+    headers["Cookie"] = cookieString;
+  }
+
+  return headers;
+};
+
 // Função para tentar diferentes proxies CORS
 const tryWithDifferentProxies = async (url: string, options: RequestInit): Promise<Response> => {
   let lastError;
   
+  // Se opções não incluem cabeçalhos, inicializa como objeto vazio
+  if (!options.headers) {
+    options.headers = {};
+  }
+  
   // Primeiro tenta sem proxy
   try {
     console.log("Tentando acessar diretamente:", url);
-    return await fetch(url, options);
+    return await fetch(url, {
+      ...options,
+      mode: 'cors',
+      credentials: 'include'
+    });
   } catch (error) {
     console.log("Falha ao acessar diretamente:", error);
     lastError = error;
@@ -131,9 +164,11 @@ const tryWithDifferentProxies = async (url: string, options: RequestInit): Promi
       const proxyOptions = {
         ...options,
         headers: {
-          ...options.headers,
+          ...options.headers as Record<string, string>,
           'X-Requested-With': 'XMLHttpRequest'
-        }
+        },
+        mode: 'cors' as RequestMode,
+        credentials: 'include' as RequestCredentials
       };
       return await fetch(proxyUrl, proxyOptions);
     } catch (error) {
@@ -152,20 +187,7 @@ export const searchItems = async (config: TrackingConfiguration, apiCredentials:
     const payload = buildSearchPayload(config);
     console.log("Enviando payload de busca:", JSON.stringify(payload, null, 2));
 
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-      "User-Agent": apiCredentials.useragent,
-      "Origin": "https://www.pathofexile.com",
-      "Referer": "https://www.pathofexile.com/trade2/search/poe2/Standard",
-      "Accept": "application/json"
-    };
-
-    // Adiciona cookies se disponíveis
-    const cookieString = buildCookieString(apiCredentials);
-    if (cookieString) {
-      headers["Cookie"] = cookieString;
-    }
-
+    const headers = buildHeaders(apiCredentials, true);
     console.log("Headers de busca:", headers);
 
     const url = "https://www.pathofexile.com/api/trade2/search/poe2/Standard";
@@ -175,15 +197,15 @@ export const searchItems = async (config: TrackingConfiguration, apiCredentials:
       response = await tryWithDifferentProxies(url, {
         method: "POST",
         headers,
-        body: JSON.stringify(payload),
-        credentials: "include"
+        body: JSON.stringify(payload)
       });
     } else {
       response = await fetch(url, {
         method: "POST",
         headers,
         body: JSON.stringify(payload),
-        credentials: "include"
+        credentials: "include",
+        mode: "cors"
       });
     }
 
@@ -214,37 +236,25 @@ export const searchItems = async (config: TrackingConfiguration, apiCredentials:
 // Busca os detalhes dos itens a partir dos IDs
 export const fetchItemDetails = async (itemIds: string[], queryId: string, apiCredentials: ApiCredentials): Promise<PoeItemResponse> => {
   try {
-    // Limita a 10 itens por requisição, conforme recomendado
+    // Limita a 10 itens por requisição, conforme recomendado na documentação da API
     const idsToFetch = itemIds.slice(0, 10).join(",");
     const url = `https://www.pathofexile.com/api/trade2/fetch/${idsToFetch}?query=${queryId}&realm=poe2`;
     
     console.log("Buscando detalhes de itens:", url);
     
-    const headers: Record<string, string> = {
-      "User-Agent": apiCredentials.useragent,
-      "Origin": "https://www.pathofexile.com",
-      "Referer": "https://www.pathofexile.com/trade2/search/poe2/Standard",
-      "Accept": "application/json"
-    };
-
-    // Adiciona cookies se disponíveis
-    const cookieString = buildCookieString(apiCredentials);
-    if (cookieString) {
-      headers["Cookie"] = cookieString;
-    }
-    
+    const headers = buildHeaders(apiCredentials);
     console.log("Headers de detalhes:", headers);
     
     let response;
     if (apiCredentials.useProxy) {
       response = await tryWithDifferentProxies(url, {
         headers,
-        credentials: "include"
       });
     } else {
       response = await fetch(url, {
         headers,
-        credentials: "include"
+        credentials: "include",
+        mode: "cors"
       });
     }
 
@@ -446,31 +456,20 @@ const generateMockItems = (config: TrackingConfiguration): Item[] => {
 // Verifica se a conexão com a API do PoE está funcionando
 export const testApiConnection = async (apiCredentials: ApiCredentials): Promise<boolean> => {
   try {
-    // Tenta fazer uma requisição simples para verificar a conectividade
-    const headers: Record<string, string> = {
-      "User-Agent": apiCredentials.useragent,
-      "Origin": "https://www.pathofexile.com",
-      "Referer": "https://www.pathofexile.com/trade2/search/poe2/Standard",
-      "Accept": "application/json"
-    };
-
-    // Adiciona cookies se disponíveis
-    const cookieString = buildCookieString(apiCredentials);
-    if (cookieString) {
-      headers["Cookie"] = cookieString;
-    }
+    const headers = buildHeaders(apiCredentials);
+    console.log("Headers para teste de API:", headers);
 
     // Tenta acessar o endpoint de leagues que é mais leve
     let response;
     if (apiCredentials.useProxy) {
       response = await tryWithDifferentProxies("https://www.pathofexile.com/api/trade2/leagues", {
-        headers,
-        credentials: "include"
+        headers
       });
     } else {
       response = await fetch("https://www.pathofexile.com/api/trade2/leagues", {
         headers,
-        credentials: "include"
+        credentials: "include",
+        mode: "cors"
       });
     }
 
@@ -479,7 +478,8 @@ export const testApiConnection = async (apiCredentials: ApiCredentials): Promise
       return false;
     }
     
-    console.log("Teste de API bem sucedido");
+    const data = await response.json();
+    console.log("Teste de API bem sucedido:", data);
     return true;
   } catch (error) {
     console.error("Erro ao testar conexão com a API:", error);
@@ -505,7 +505,8 @@ export const fetchItems = async (config: TrackingConfiguration, apiCredentials: 
       cfClearance: apiCredentials.cfClearance && apiCredentials.cfClearance.length > 0 ? 
         `Configurado (${apiCredentials.cfClearance.length} valores)` : "Não configurado",
       useragent: apiCredentials.useragent ? "Configurado" : "Padrão",
-      useProxy: apiCredentials.useProxy ? "Sim" : "Não"
+      useProxy: apiCredentials.useProxy ? "Sim" : "Não",
+      customHeaders: apiCredentials.customHeaders ? "Sim" : "Não"
     });
     
     // Se não temos as credenciais da API configuradas, usamos dados simulados

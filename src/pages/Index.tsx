@@ -101,7 +101,8 @@ const Index = () => {
     const updatedConfig = {
       ...config,
       cfClearance: Array.isArray(config.cfClearance) ? config.cfClearance : 
-                   config.cfClearance ? [config.cfClearance] : []
+                   config.cfClearance ? [config.cfClearance] : [],
+      customHeaders: true,
     };
     
     setApiConfig(updatedConfig);
@@ -120,21 +121,23 @@ const Index = () => {
         toast.success("Conexão com API do PoE2 confirmada", {
           description: "Os dados reais serão utilizados nos rastreadores"
         });
-      } else {
-        const isConnectedWithProxy = await testApiConnection({...config, useProxy: true});
-        if (isConnectedWithProxy) {
-          toast.success("Conexão com API do PoE2 estabelecida (via proxy)", {
-            description: "Os dados reais serão utilizados, mas pode haver algum atraso"
-          });
-          const updatedConfig = {...config, useProxy: true};
-          setApiConfig(updatedConfig);
-          localStorage.setItem('poe-api-config', JSON.stringify(updatedConfig));
-        } else {
-          toast.error("Falha na conexão com a API do Path of Exile", {
-            description: "Verifique se seus cookies são válidos e estão atualizados"
-          });
-        }
+        return;
       }
+      
+      const isConnectedWithProxy = await testApiConnection({...config, useProxy: true});
+      if (isConnectedWithProxy) {
+        toast.success("Conexão com API do PoE2 estabelecida (via proxy)", {
+          description: "Os dados reais serão utilizados, mas pode haver algum atraso"
+        });
+        const updatedConfig = {...config, useProxy: true};
+        setApiConfig(updatedConfig);
+        localStorage.setItem('poe-api-config', JSON.stringify(updatedConfig));
+        return;
+      }
+      
+      toast.error("Falha na conexão com a API do Path of Exile", {
+        description: "Verifique se seus cookies são válidos e estão atualizados"
+      });
     } catch (error) {
       console.error("Erro ao testar a API:", error);
       toast.error("Erro ao testar conexão com a API", {
@@ -235,7 +238,8 @@ const Index = () => {
         poesessid: apiConfig.poesessid ? "Presente" : "Ausente",
         cfClearance: apiConfig.cfClearance && apiConfig.cfClearance.length > 0 ? "Presente" : "Ausente",
         useragent: apiConfig.useragent ? "Configurado" : "Padrão",
-        useProxy: apiConfig.useProxy ? "Sim" : "Não"
+        useProxy: apiConfig.useProxy ? "Sim" : "Não",
+        customHeaders: apiConfig.customHeaders ? "Sim" : "Não"
       });
       
       const fetchedItems = await fetchItems(config, apiConfig);
