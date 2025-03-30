@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ApiCredentials, ApiDebugInfo } from '@/types/api';
-import { InfoIcon, AlertCircle, Bug, Copy, Check } from 'lucide-react';
+import { InfoIcon, AlertCircle, Bug, Copy, Check, ExternalLink } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -44,6 +45,8 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
   const [useDirectQuery, setUseDirectQuery] = useState(false);
   const [copied, setCopied] = useState(false);
   const [debugInfo, setDebugInfo] = useState<ApiDebugInfo>({});
+  const [respectRateLimit, setRespectRateLimit] = useState(true);
+  const [rateLimitDelay, setRateLimitDelay] = useState(2000);
 
   const buildCookieString = (): string => {
     let cookieString = '';
@@ -103,7 +106,9 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
       ...debugInfo,
       requestTimestamp: startTime,
       requestUrl: searchUrl,
-      requestPayload: JSON.parse(searchPayload)
+      requestPayload: JSON.parse(searchPayload),
+      requestMethod: "POST",
+      headers: buildHeaders(true)
     });
     
     try {
@@ -154,8 +159,23 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
         }
       }
       
+      setDebugInfo(prev => ({
+        ...prev,
+        statusCode: response.status
+      }));
+      
       if (!response.ok) {
         const errorText = await response.text();
+        
+        // Check for rate limiting
+        if (response.status === 429) {
+          setDebugInfo(prev => ({
+            ...prev,
+            rateLimited: true
+          }));
+          throw new Error(`API Rate limit reached. Please wait before trying again. Status: ${response.status}`);
+        }
+        
         throw new Error(`API error: ${response.status} - ${errorText}`);
       }
       
@@ -164,7 +184,8 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
       setDebugInfo({
         ...debugInfo,
         responseTimestamp: new Date().toISOString(),
-        responseData: data
+        responseData: data,
+        statusCode: response.status
       });
       
       if (data.id && data.result && data.result.length > 0) {
@@ -176,6 +197,8 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
         
         setItemIds(data.result.slice(0, 10));
         
+        // Format the fetch URL according to the POE trade API standard
+        // https://www.pathofexile.com/api/trade2/fetch/ID1,ID2,...?query=QUERYID&realm=poe2
         const fetchUrlBase = 'https://www.pathofexile.com/api/trade2/fetch/';
         const itemIdsStr = data.result.slice(0, 10).join(',');
         const newFetchUrl = `${fetchUrlBase}${itemIdsStr}?query=${data.id}&realm=poe2`;
@@ -212,9 +235,22 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
     setErrorMessage('');
     setFetchResponse('');
     
+    // Apply rate limiting if enabled
+    if (respectRateLimit && rateLimitDelay > 0) {
+      toast.info(`Respeitando limite de requisições: aguardando ${rateLimitDelay/1000}s`);
+      await new Promise(resolve => setTimeout(resolve, rateLimitDelay));
+    }
+    
     try {
       let response;
       const headers = buildHeaders();
+      
+      setDebugInfo(prev => ({
+        ...prev,
+        requestUrl: fetchUrl,
+        requestMethod: "GET",
+        headers: headers
+      }));
       
       try {
         console.log("Making direct fetch request with headers:", headers);
@@ -256,17 +292,39 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
         }
       }
       
+      setDebugInfo(prev => ({
+        ...prev,
+        statusCode: response.status
+      }));
+      
       if (!response.ok) {
+        if (response.status === 429) {
+          setDebugInfo(prev => ({
+            ...prev,
+            rateLimited: true
+          }));
+          throw new Error(`API Rate limit reached. Please wait before trying again. Status: ${response.status}`);
+        }
+        
         const errorText = await response.text();
         throw new Error(`API error: ${response.status} - ${errorText}`);
       }
       
       const data = await response.json();
       setFetchResponse(JSON.stringify(data, null, 2));
+      setDebugInfo(prev => ({
+        ...prev,
+        responseTimestamp: new Date().toISOString(),
+        responseData: data
+      }));
       setActiveTab('results');
     } catch (error) {
       console.error("Fetch request error:", error);
       setErrorMessage(error instanceof Error ? error.message : "Unknown error");
+      setDebugInfo(prev => ({
+        ...prev,
+        error: error instanceof Error ? error.message : "Unknown error"
+      }));
     } finally {
       setIsLoading(false);
     }
@@ -296,13 +354,47 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
           </AlertDescription>
         </Alert>
 
-        <div className="flex items-center space-x-2 mb-4">
-          <Switch 
-            id="direct-query" 
-            checked={useDirectQuery}
-            onCheckedChange={setUseDirectQuery}
-          />
-          <Label htmlFor="direct-query">Usar formato de consulta direta (como no site oficial)</Label>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div>
+            <div className="flex items-center space-x-2">
+              <Switch 
+                id="direct-query" 
+                checked={useDirectQuery}
+                onCheckedChange={setUseDirectQuery}
+              />
+              <Label htmlFor="direct-query">Usar formato de consulta direta</Label>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              O formato direto permite acessar os resultados no site oficial do PoE2
+            </p>
+          </div>
+          
+          <div>
+            <div className="flex items-center space-x-2">
+              <Switch 
+                id="respect-rate-limit" 
+                checked={respectRateLimit}
+                onCheckedChange={setRespectRateLimit}
+              />
+              <Label htmlFor="respect-rate-limit">Respeitar limite de requisições</Label>
+            </div>
+            <div className="flex items-center gap-2 mt-2">
+              <Label htmlFor="rate-limit-delay" className="whitespace-nowrap text-xs">
+                Delay (ms):
+              </Label>
+              <Input 
+                id="rate-limit-delay" 
+                type="number" 
+                value={rateLimitDelay} 
+                onChange={(e) => setRateLimitDelay(Number(e.target.value))}
+                className="h-7 text-xs"
+                min={500}
+                max={10000}
+                step={500}
+                disabled={!respectRateLimit}
+              />
+            </div>
+          </div>
         </div>
 
         {queryId && (
@@ -313,9 +405,10 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
                 href={`https://www.pathofexile.com/trade2/search/poe2/${queryId}`} 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="text-xs font-mono text-blue-500 hover:underline break-all"
+                className="text-xs font-mono text-blue-500 hover:underline break-all flex items-center gap-1"
               >
                 https://www.pathofexile.com/trade2/search/poe2/{queryId}
+                <ExternalLink size={12} />
               </a>
             </div>
             <Button
@@ -391,6 +484,9 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
                   onChange={(e) => setFetchUrl(e.target.value)}
                   className="font-mono text-xs"
                 />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Exemplo: https://www.pathofexile.com/api/trade2/fetch/ID1,ID2,...?query=QUERY_ID&realm=poe2
+                </p>
               </div>
               
               <div className="space-y-2">
@@ -543,7 +639,8 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
                   <li>Acessar diretamente no site (segunda URL)</li>
                   <li>Buscar detalhes dos itens via API fetch</li>
                 </ul>
-                <p className="mt-2">A aplicação tentará usar ambos os métodos para garantir compatibilidade.</p>
+                <p className="mt-2">Para detalhes do item, use o formato:</p>
+                <p className="font-mono bg-muted p-1 rounded mt-1">https://www.pathofexile.com/api/trade2/fetch/ID1,ID2,...?query=QUERY_ID&realm=poe2</p>
               </AccordionContent>
             </AccordionItem>
 

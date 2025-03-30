@@ -3,7 +3,9 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Item } from '@/types/items';
 import ItemCard from './ItemCard';
-import { AlertTriangle, Loader2 } from 'lucide-react';
+import { AlertTriangle, Loader2, ExternalLink } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import { toast } from 'sonner';
 
 interface ItemListProps {
   title: string;
@@ -15,13 +17,35 @@ interface ItemListProps {
 const ItemList = ({ title, items, isLoading = false, error }: ItemListProps) => {
   // Encontrar itens com boas ofertas (30% ou mais abaixo do preço esperado)
   const goodDeals = items.filter(item => item.price <= item.expectedPrice * 0.7);
+
+  // Função para abrir URL de trade
+  const openTradeUrl = (url?: string) => {
+    if (url) {
+      window.open(url, '_blank');
+    } else {
+      toast.error("URL de trade não disponível para este item");
+    }
+  };
   
   return (
     <Card className="bg-card border-primary/20 shadow-lg">
       <CardHeader className="border-b border-border">
-        <CardTitle className="text-primary">
-          {title} {items.length > 0 && <span className="text-sm font-normal ml-2">({items.length} items)</span>}
-          {goodDeals.length > 0 && <span className="text-sm font-normal text-green-500 ml-2">• {goodDeals.length} boas ofertas!</span>}
+        <CardTitle className="text-primary flex items-center justify-between">
+          <div>
+            {title} {items.length > 0 && <span className="text-sm font-normal ml-2">({items.length} items)</span>}
+            {goodDeals.length > 0 && <span className="text-sm font-normal text-green-500 ml-2">• {goodDeals.length} boas ofertas!</span>}
+          </div>
+          
+          {items.length > 0 && items[0].tradeUrl && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => openTradeUrl(items[0].tradeUrl)}
+              className="flex items-center gap-1 text-xs h-7 px-2"
+            >
+              Ver no site <ExternalLink size={12} />
+            </Button>
+          )}
         </CardTitle>
       </CardHeader>
       <CardContent className="p-4">
@@ -47,7 +71,10 @@ const ItemList = ({ title, items, isLoading = false, error }: ItemListProps) => 
             {goodDeals.length > 0 && (
               <>
                 <div className="col-span-1 md:col-span-2 mb-2">
-                  <h3 className="text-green-500 font-medium border-b border-green-500/20 pb-1">Melhores Ofertas</h3>
+                  <h3 className="text-green-500 font-medium border-b border-green-500/20 pb-1 flex items-center justify-between">
+                    <span>Melhores Ofertas</span>
+                    <span className="text-xs text-muted-foreground">30% abaixo do preço médio</span>
+                  </h3>
                 </div>
                 {goodDeals.map((item) => (
                   <ItemCard key={item.id} item={item} />
