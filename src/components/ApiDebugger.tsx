@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -46,7 +45,6 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
   const [copied, setCopied] = useState(false);
   const [debugInfo, setDebugInfo] = useState<ApiDebugInfo>({});
 
-  // Build cookie string for HTTP headers
   const buildCookieString = (): string => {
     let cookieString = '';
     
@@ -65,7 +63,6 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
     return cookieString.trim();
   };
 
-  // Build headers for API requests
   const buildHeaders = (isSearchRequest: boolean = false): Record<string, string> => {
     const headers: Record<string, string> = {
       "User-Agent": apiCredentials.useragent || 'Mozilla/5.0',
@@ -86,7 +83,6 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
     return headers;
   };
 
-  // Generate direct query URL based on queryId
   useEffect(() => {
     if (queryId) {
       const directQueryUrl = `https://www.pathofexile.com/trade2/search/poe2/${queryId}`;
@@ -94,7 +90,6 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
     }
   }, [queryId]);
 
-  // Handle search request
   const handleSearchRequest = async () => {
     setIsLoading(true);
     setErrorMessage('');
@@ -112,7 +107,6 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
     });
     
     try {
-      // Try direct request first
       let response;
       const headers = buildHeaders(true);
       
@@ -130,7 +124,6 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
       } catch (directError) {
         console.error("Direct request failed:", directError);
         
-        // Try with CORS proxies
         const CORS_PROXIES = [
           'https://corsproxy.io/?',
           'https://api.allorigins.win/raw?url='
@@ -174,7 +167,6 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
         responseData: data
       });
       
-      // Extract query ID and item IDs for fetch request
       if (data.id && data.result && data.result.length > 0) {
         setQueryId(data.id);
         setDebugInfo(prev => ({
@@ -184,13 +176,11 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
         
         setItemIds(data.result.slice(0, 10));
         
-        // Create fetch URL
         const fetchUrlBase = 'https://www.pathofexile.com/api/trade2/fetch/';
         const itemIdsStr = data.result.slice(0, 10).join(',');
         const newFetchUrl = `${fetchUrlBase}${itemIdsStr}?query=${data.id}&realm=poe2`;
         setFetchUrl(newFetchUrl);
         
-        // Generate and log the direct trade site URL
         const directTradeUrl = `https://www.pathofexile.com/trade2/search/poe2/${data.id}`;
         console.log("Direct trade site URL:", directTradeUrl);
         setDebugInfo(prev => ({
@@ -212,7 +202,6 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
     }
   };
 
-  // Handle fetch request
   const handleFetchRequest = async () => {
     if (!fetchUrl) {
       setErrorMessage("Fetch URL is empty. Run a search request first.");
@@ -224,7 +213,6 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
     setFetchResponse('');
     
     try {
-      // Try direct request first
       let response;
       const headers = buildHeaders();
       
@@ -239,7 +227,6 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
       } catch (directError) {
         console.error("Direct fetch request failed:", directError);
         
-        // Try with CORS proxies
         const CORS_PROXIES = [
           'https://corsproxy.io/?',
           'https://api.allorigins.win/raw?url='
@@ -571,7 +558,7 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
                   
                   <div>
                     <h4 className="font-medium mb-1">Para obter novos cookies cf_clearance:</h4>
-                    <p className="text-xs">Abra as ferramentas de desenvolvedor (F12), vá para a aba Application > Storage > Cookies > www.pathofexile.com e copie os valores de cf_clearance.</p>
+                    <p className="text-xs">Abra as ferramentas de desenvolvedor (F12), vá para a aba Application {'>'}  Storage {'>'}  Cookies {'>'}  www.pathofexile.com e copie os valores de cf_clearance.</p>
                   </div>
                   
                   <div>
