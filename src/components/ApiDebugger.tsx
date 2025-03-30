@@ -1,14 +1,17 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ApiCredentials } from '@/types/api';
-import { InfoIcon, AlertCircle, Bug } from 'lucide-react';
+import { ApiCredentials, ApiDebugInfo } from '@/types/api';
+import { InfoIcon, AlertCircle, Bug, Copy, Check } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
 
 interface ApiDebuggerProps {
   apiCredentials: ApiCredentials;
@@ -20,9 +23,13 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
   const [searchPayload, setSearchPayload] = useState(JSON.stringify({
     query: {
       status: { option: "online" },
+      stats: [{
+        type: "and",
+        filters: []
+      }],
       filters: {
         type_filters: {
-          filters: { category: { option: "Crossbow" } }
+          filters: { category: { option: "weapon.warstaff" } }
         }
       }
     },
@@ -35,6 +42,9 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
   const [activeTab, setActiveTab] = useState('payload');
   const [queryId, setQueryId] = useState('');
   const [itemIds, setItemIds] = useState<string[]>([]);
+  const [useDirectQuery, setUseDirectQuery] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<ApiDebugInfo>({});
 
   // Build cookie string for HTTP headers
   const buildCookieString = (): string => {
@@ -76,6 +86,14 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
     return headers;
   };
 
+  // Generate direct query URL based on queryId
+  useEffect(() => {
+    if (queryId) {
+      const directQueryUrl = `https://www.pathofexile.com/trade2/search/poe2/${queryId}`;
+      console.log("Direct query URL generated:", directQueryUrl);
+    }
+  }, [queryId]);
+
   // Handle search request
   const handleSearchRequest = async () => {
     setIsLoading(true);
@@ -85,6 +103,14 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
     setQueryId('');
     setItemIds([]);
     
+    const startTime = new Date().toISOString();
+    setDebugInfo({
+      ...debugInfo,
+      requestTimestamp: startTime,
+      requestUrl: searchUrl,
+      requestPayload: JSON.parse(searchPayload)
+    });
+    
     try {
       // Try direct request first
       let response;
@@ -92,6 +118,8 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
       
       try {
         console.log("Making direct search request with headers:", headers);
+        console.log("Search payload:", searchPayload);
+        
         response = await fetch(searchUrl, {
           method: "POST",
           headers,
@@ -140,10 +168,20 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
       
       const data = await response.json();
       setSearchResponse(JSON.stringify(data, null, 2));
+      setDebugInfo({
+        ...debugInfo,
+        responseTimestamp: new Date().toISOString(),
+        responseData: data
+      });
       
       // Extract query ID and item IDs for fetch request
       if (data.id && data.result && data.result.length > 0) {
         setQueryId(data.id);
+        setDebugInfo(prev => ({
+          ...prev,
+          queryId: data.id
+        }));
+        
         setItemIds(data.result.slice(0, 10));
         
         // Create fetch URL
@@ -152,11 +190,23 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
         const newFetchUrl = `${fetchUrlBase}${itemIdsStr}?query=${data.id}&realm=poe2`;
         setFetchUrl(newFetchUrl);
         
+        // Generate and log the direct trade site URL
+        const directTradeUrl = `https://www.pathofexile.com/trade2/search/poe2/${data.id}`;
+        console.log("Direct trade site URL:", directTradeUrl);
+        setDebugInfo(prev => ({
+          ...prev,
+          queryString: directTradeUrl
+        }));
+        
         setActiveTab('fetch');
       }
     } catch (error) {
       console.error("Search request error:", error);
       setErrorMessage(error instanceof Error ? error.message : "Unknown error");
+      setDebugInfo({
+        ...debugInfo,
+        error: error instanceof Error ? error.message : "Unknown error"
+      });
     } finally {
       setIsLoading(false);
     }
@@ -235,6 +285,14 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
     }
   };
 
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      toast.success("URL copiada para a área de transferência");
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
   return (
     <Card className="mt-6">
       <CardHeader className="bg-muted/50">
@@ -250,6 +308,39 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
             Este é um depurador para entender como a API do PoE2 funciona. Use-o para verificar se suas credenciais estão corretas e se as requisições estão sendo enviadas corretamente.
           </AlertDescription>
         </Alert>
+
+        <div className="flex items-center space-x-2 mb-4">
+          <Switch 
+            id="direct-query" 
+            checked={useDirectQuery}
+            onCheckedChange={setUseDirectQuery}
+          />
+          <Label htmlFor="direct-query">Usar formato de consulta direta (como no site oficial)</Label>
+        </div>
+
+        {queryId && (
+          <div className="mb-4 p-3 bg-blue-500/10 border border-blue-500/30 rounded-md flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium">Link direto para busca no site oficial:</p>
+              <a 
+                href={`https://www.pathofexile.com/trade2/search/poe2/${queryId}`} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-xs font-mono text-blue-500 hover:underline break-all"
+              >
+                https://www.pathofexile.com/trade2/search/poe2/{queryId}
+              </a>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              className="ml-2 flex-shrink-0"
+              onClick={() => copyToClipboard(`https://www.pathofexile.com/trade2/search/poe2/${queryId}`)}
+            >
+              {copied ? <Check size={14} /> : <Copy size={14} />}
+            </Button>
+          </div>
+        )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">
           <TabsList className="grid grid-cols-3 mb-4">
@@ -411,8 +502,8 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
                               <div className="grid grid-cols-2 gap-2">
                                 <div>
                                   <p><strong>ID:</strong> {item.id}</p>
-                                  <p><strong>Preço:</strong> {item.listing.price.amount} {item.listing.price.currency}</p>
-                                  <p><strong>Vendedor:</strong> {item.listing.account.name}</p>
+                                  <p><strong>Preço:</strong> {item.listing.price?.amount} {item.listing.price?.currency}</p>
+                                  <p><strong>Vendedor:</strong> {item.listing.account?.name}</p>
                                 </div>
                                 <div>
                                   <p><strong>Tipo:</strong> {item.item.typeLine}</p>
@@ -449,6 +540,45 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
                 <pre className="bg-muted p-4 rounded-md overflow-auto text-xs">
                   {JSON.stringify(buildHeaders(true), null, 2)}
                 </pre>
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="url-format">
+              <AccordionTrigger className="text-sm">Formato de URL e Query</AccordionTrigger>
+              <AccordionContent className="text-xs space-y-2">
+                <p>O Path of Exile Trade API trabalha com dois formatos de URL:</p>
+                <ol className="list-decimal pl-5 space-y-1">
+                  <li><strong>API direta:</strong> https://www.pathofexile.com/api/trade2/search/poe2/Standard</li>
+                  <li><strong>API via site:</strong> https://www.pathofexile.com/trade2/search/poe2/[QUERY_ID]</li>
+                </ol>
+                <p className="mt-2">Após uma busca bem-sucedida, você pode usar o query ID retornado para:</p>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li>Acessar diretamente no site (segunda URL)</li>
+                  <li>Buscar detalhes dos itens via API fetch</li>
+                </ul>
+                <p className="mt-2">A aplicação tentará usar ambos os métodos para garantir compatibilidade.</p>
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="debugging-tools">
+              <AccordionTrigger className="text-sm">Ferramentas de diagnóstico</AccordionTrigger>
+              <AccordionContent>
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="font-medium mb-1">Para verificar se o POESESSID é válido:</h4>
+                    <p className="text-xs">Tente acessar <a href="https://www.pathofexile.com/my-account" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">sua conta</a> em uma nova janela. Se conseguir acessar, o POESESSID está válido.</p>
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-medium mb-1">Para obter novos cookies cf_clearance:</h4>
+                    <p className="text-xs">Abra as ferramentas de desenvolvedor (F12), vá para a aba Application > Storage > Cookies > www.pathofexile.com e copie os valores de cf_clearance.</p>
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-medium mb-1">Para comparar payloads:</h4>
+                    <p className="text-xs">No site oficial, faça uma busca e inspecione a requisição "Standard" (POST). Compare o payload com o que está sendo usado aqui.</p>
+                  </div>
+                </div>
               </AccordionContent>
             </AccordionItem>
           </Accordion>

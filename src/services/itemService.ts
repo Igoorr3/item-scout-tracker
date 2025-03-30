@@ -1,7 +1,7 @@
 
 import { Item } from '@/types/items';
 import { TrackingConfiguration } from '@/types/tracking';
-import { ApiCredentials } from '@/types/api';
+import { ApiCredentials, ApiDebugInfo } from '@/types/api';
 import { toast } from "sonner";
 
 // Interface para a resposta da pesquisa inicial
@@ -53,17 +53,24 @@ const CORS_PROXIES = [
 
 // Função para construir o payload de busca com base na configuração
 const buildSearchPayload = (config: TrackingConfiguration) => {
-  // Estrutura básica do payload de busca
+  // Estrutura básica do payload de busca, baseada no formato observado no site oficial
   const payload: any = {
     query: {
       status: { option: "online" },
-      filters: {}
+      stats: [{
+        type: "and",
+        filters: []
+      }]
     },
     sort: { price: "asc" }
   };
 
   // Adiciona o tipo de item
   if (config.itemType) {
+    if (!payload.query.filters) {
+      payload.query.filters = {};
+    }
+
     payload.query.filters.type_filters = {
       filters: { category: { option: config.itemType } }
     };
@@ -71,10 +78,12 @@ const buildSearchPayload = (config: TrackingConfiguration) => {
 
   // Adiciona filtros para estatísticas
   if (Object.keys(config.stats).length > 0) {
-    payload.query.stats = [{ 
-      type: "and",
-      filters: []
-    }];
+    if (!payload.query.stats) {
+      payload.query.stats = [{ 
+        type: "and",
+        filters: []
+      }];
+    }
 
     for (const [statId, minValue] of Object.entries(config.stats)) {
       // Converte o ID da estatística para o formato da API
@@ -190,6 +199,7 @@ export const searchItems = async (config: TrackingConfiguration, apiCredentials:
     const headers = buildHeaders(apiCredentials, true);
     console.log("Headers de busca:", headers);
 
+    // Usa o formato de URL correto
     const url = "https://www.pathofexile.com/api/trade2/search/poe2/Standard";
     
     let response;
@@ -212,11 +222,23 @@ export const searchItems = async (config: TrackingConfiguration, apiCredentials:
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`Erro na API de busca: Status ${response.status}`, errorText);
+      
+      // Verifica se a resposta é HTML (possível Cloudflare challenge)
+      if (errorText.includes('<!DOCTYPE html>') || errorText.includes('<html')) {
+        throw new Error(`Proteção Cloudflare ativada. Você precisa atualizar seus cookies cf_clearance.`);
+      }
+      
       throw new Error(`Erro na API de busca: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
     console.log("Resposta da API de busca:", data);
+    
+    // Verifique se temos um ID e resultados
+    if (!data.id || !data.result) {
+      throw new Error("Resposta da API inválida - formato inesperado");
+    }
+    
     return data;
   } catch (error) {
     console.error("Erro ao buscar itens:", error);
@@ -261,6 +283,12 @@ export const fetchItemDetails = async (itemIds: string[], queryId: string, apiCr
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`Erro na API de detalhes: Status ${response.status}`, errorText);
+      
+      // Verifica se a resposta é HTML (possível Cloudflare challenge)
+      if (errorText.includes('<!DOCTYPE html>') || errorText.includes('<html')) {
+        throw new Error(`Proteção Cloudflare ativada. Você precisa atualizar seus cookies cf_clearance.`);
+      }
+      
       throw new Error(`Erro na API de detalhes: ${response.status} - ${errorText}`);
     }
 
@@ -282,6 +310,94 @@ export const fetchItemDetails = async (itemIds: string[], queryId: string, apiCr
   }
 };
 
+// Tenta buscar usando o formato de consulta direta
+export const fetchItemsByDirectQuery = async (queryId: string, apiCredentials: ApiCredentials): Promise<Item[]> => {
+  try {
+    const url = `https://www.pathofexile.com/trade2/search/poe2/${queryId}`;
+    console.log(`Tentando acessar consulta direta: ${url}`);
+    
+    const headers = buildHeaders(apiCredentials);
+    
+    let response;
+    try {
+      response = await fetch(url, {
+        method: "GET",
+        headers,
+        credentials: "include",
+        mode: "cors"
+      });
+    } catch (directError) {
+      console.error("Erro ao acessar consulta direta:", directError);
+      
+      // Tenta com proxy
+      for (const proxy of CORS_PROXIES) {
+        try {
+          const proxyUrl = proxy + encodeURIComponent(url);
+          response = await fetch(proxyUrl, {
+            method: "GET",
+            headers: {
+              ...headers,
+              'X-Requested-With': 'XMLHttpRequest'
+            }
+          });
+          break;
+        } catch (error) {
+          console.error(`Falha com proxy ${proxy}:`, error);
+        }
+      }
+    }
+    
+    if (!response || !response.ok) {
+      throw new Error(`Não foi possível acessar a consulta direta: ${response?.status || 'falha na rede'}`);
+    }
+    
+    // A resposta será HTML, precisamos extrair os dados JSON embutidos
+    const html = await response.text();
+    
+    // Tenta encontrar dados JSON no HTML
+    const scriptPattern = /<script\s+id="main-page-data"\s+type="application\/json">([^<]+)<\/script>/;
+    const match = html.match(scriptPattern);
+    
+    if (!match || !match[1]) {
+      throw new Error("Não foi possível encontrar dados do item no HTML");
+    }
+    
+    try {
+      const pageData = JSON.parse(match[1]);
+      // Extrai dados de itens do pageData
+      if (pageData.items && Array.isArray(pageData.items)) {
+        // Converter para o formato do Item
+        return pageData.items.map((item: any) => {
+          // Adapta o formato do site para o nosso formato Item
+          return {
+            id: item.id || `direct-${Date.now()}`,
+            name: item.name || item.typeLine || "Item desconhecido",
+            category: item.typeLine || "Desconhecido",
+            rarity: item.rarity || "normal",
+            price: item.price?.amount || 0,
+            expectedPrice: item.price?.amount || 0,
+            averagePrice: item.price?.amount || 0,
+            stats: item.properties?.map((prop: any) => ({
+              name: prop.name,
+              value: prop.values?.[0]?.[0] || "N/A"
+            })) || [],
+            seller: item.account?.name || "Desconhecido",
+            listedTime: item.indexed || new Date().toISOString(),
+            iconUrl: item.icon
+          };
+        });
+      }
+    } catch (parseError) {
+      console.error("Erro ao parsear dados do HTML:", parseError);
+    }
+    
+    return [];
+  } catch (error) {
+    console.error("Erro ao buscar via consulta direta:", error);
+    return [];
+  }
+};
+
 // Converte as respostas da API para nosso formato de Item
 const convertApiResponseToItems = (response: PoeItemResponse): Item[] => {
   if (!response.result || !Array.isArray(response.result)) {
@@ -293,13 +409,13 @@ const convertApiResponseToItems = (response: PoeItemResponse): Item[] => {
     const stats = (result.item.properties || []).map(prop => {
       return {
         name: prop.name,
-        value: prop.values[0][0]
+        value: prop.values?.[0]?.[0] || "N/A"
       };
     });
     
     // Obtém o preço e moeda
-    const price = result.listing.price.amount;
-    const currency = result.listing.price.currency;
+    const price = result.listing.price?.amount || 0;
+    const currency = result.listing.price?.currency || "chaos";
     
     // Estima preço esperado e médio (poderia ser melhorado com dados históricos)
     const expectedPrice = price; // Simplificado - idealmente seria baseado em dados históricos
@@ -307,14 +423,14 @@ const convertApiResponseToItems = (response: PoeItemResponse): Item[] => {
     
     return {
       id: result.id,
-      name: result.item.name || result.item.typeLine,
-      category: result.item.typeLine,
-      rarity: result.item.rarity,
+      name: result.item.name || result.item.typeLine || "Item sem nome",
+      category: result.item.typeLine || "Desconhecido",
+      rarity: result.item.rarity || "normal",
       price: price,
       expectedPrice: expectedPrice,
       averagePrice: avgPrice,
       stats: stats,
-      seller: result.listing.account.name,
+      seller: result.listing.account?.name || "Desconhecido",
       listedTime: result.listing.indexed,
       iconUrl: result.item.icon
     };
@@ -475,6 +591,13 @@ export const testApiConnection = async (apiCredentials: ApiCredentials): Promise
 
     if (!response.ok) {
       console.error(`Teste de API falhou com status: ${response.status}`);
+      
+      // Verifica se a resposta é HTML (possível Cloudflare challenge)
+      const responseText = await response.text();
+      if (responseText.includes('<!DOCTYPE html>') || responseText.includes('<html')) {
+        console.error("Resposta Cloudflare detectada. Necessário atualizar cookies.");
+      }
+      
       return false;
     }
     
@@ -554,6 +677,17 @@ export const fetchItems = async (config: TrackingConfiguration, apiCredentials: 
       return [];
     }
     
+    // Verifica se devemos usar a consulta direta (via site) em vez da API
+    if (apiCredentials.directQuery && searchResponse.id) {
+      toast.info("Tentando obter dados via consulta direta...");
+      const directItems = await fetchItemsByDirectQuery(searchResponse.id, apiCredentials);
+      if (directItems.length > 0) {
+        toast.success(`Encontrados ${directItems.length} itens via consulta direta`);
+        return directItems;
+      }
+      toast.info("Consulta direta não retornou itens, voltando para API padrão");
+    }
+    
     // Espera 2 segundos para evitar rate limiting da API
     toast.info("Aguardando para evitar limite de requisições...");
     await new Promise(resolve => setTimeout(resolve, 2000));
@@ -599,8 +733,10 @@ export const fetchItems = async (config: TrackingConfiguration, apiCredentials: 
         } catch (retryError) {
           console.error("Falha na segunda tentativa com proxy:", retryError);
         }
-        
-        return generateMockItems(config);
+      } else if (error.message.includes('Cloudflare')) {
+        toast.error("Proteção Cloudflare detectada", {
+          description: "É necessário atualizar o cookie cf_clearance. Use o Debug API para mais detalhes."
+        });
       } else {
         toast.error(`Erro ao acessar a API: ${error.message}`);
       }

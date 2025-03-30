@@ -16,4 +16,5 @@ export interface Item {
   seller?: string;
   listedTime?: string;
   iconUrl?: string;
+  tradeUrl?: string; // URL direta para o site de trade
 }

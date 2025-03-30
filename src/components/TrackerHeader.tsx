@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Sparkles, AlertCircle, InfoIcon, Settings, Bug } from 'lucide-react';
+import { PlusCircle, Sparkles, AlertCircle, InfoIcon, Settings, Bug, FileSearch } from 'lucide-react';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { ApiCredentials } from '@/types/api';
@@ -91,7 +91,8 @@ const TrackerHeader = ({
                       <li>Clique na requisição "Standard" (POST) e copie os cookies da aba Headers</li>
                       <li>Identifique e copie o valor de "POESESSID" e <strong>todos</strong> os valores "cf_clearance" (pode haver múltiplos)</li>
                       <li>Copie também o User-Agent do seu navegador (necessário para autenticação)</li>
-                      <li>Se continuar tendo problemas, ative a opção "Usar Debug API" para testar suas credenciais e entender o processo de requisição</li>
+                      <li>Use o modo de Debug API para testar suas credenciais e verificar exatamente como as requisições estão sendo enviadas</li>
+                      <li>Compare os payloads do site oficial com os payloads do debugger para garantir que estão idênticos</li>
                       <li>Aguarde 2-3 segundos entre requisições para evitar o bloqueio de rate limiting</li>
                     </ol>
                   </AccordionContent>
