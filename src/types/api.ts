@@ -8,7 +8,7 @@ export interface ApiCredentials {
   customHeaders?: boolean;
   debugMode?: boolean;
   directQuery?: boolean;
-  forceSimulation?: boolean;
+  forceSimulation?: boolean; // Will always be false
   notifyGoodDeals?: boolean;
   respectRateLimit?: boolean;  // Add option to wait between requests to avoid rate limiting
   rateLimitDelay?: number;     // Delay in milliseconds between API calls (default 2000ms)

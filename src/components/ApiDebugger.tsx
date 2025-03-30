@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -167,7 +166,6 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
       if (!response.ok) {
         const errorText = await response.text();
         
-        // Check for rate limiting
         if (response.status === 429) {
           setDebugInfo(prev => ({
             ...prev,
@@ -197,8 +195,6 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
         
         setItemIds(data.result.slice(0, 10));
         
-        // Format the fetch URL according to the POE trade API standard
-        // https://www.pathofexile.com/api/trade2/fetch/ID1,ID2,...?query=QUERYID&realm=poe2
         const fetchUrlBase = 'https://www.pathofexile.com/api/trade2/fetch/';
         const itemIdsStr = data.result.slice(0, 10).join(',');
         const newFetchUrl = `${fetchUrlBase}${itemIdsStr}?query=${data.id}&realm=poe2`;
@@ -235,7 +231,6 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
     setErrorMessage('');
     setFetchResponse('');
     
-    // Apply rate limiting if enabled
     if (respectRateLimit && rateLimitDelay > 0) {
       toast.info(`Respeitando limite de requisições: aguardando ${rateLimitDelay/1000}s`);
       await new Promise(resolve => setTimeout(resolve, rateLimitDelay));

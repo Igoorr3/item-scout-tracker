@@ -27,10 +27,12 @@ const ApiConfigDialog = ({ open, onOpenChange, apiConfig, onSaveConfig }: ApiCon
   const [useragent, setUseragent] = useState(apiConfig.useragent || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
   const [useProxy, setUseProxy] = useState(apiConfig.useProxy || false);
   const [directQuery, setDirectQuery] = useState(apiConfig.directQuery || false);
-  const [forceSimulation, setForceSimulation] = useState(apiConfig.forceSimulation || false);
+  const [forceSimulation, setForceSimulation] = useState(false); // Always start with false
   const [notifyGoodDeals, setNotifyGoodDeals] = useState(apiConfig.notifyGoodDeals || true);
   const [respectRateLimit, setRespectRateLimit] = useState(apiConfig.respectRateLimit ?? true);
   const [rateLimitDelay, setRateLimitDelay] = useState(apiConfig.rateLimitDelay || 2000);
+  const [useBatchQuery, setUseBatchQuery] = useState(apiConfig.useBatchQuery || true);
+  const [preferDirectLink, setPreferDirectLink] = useState(apiConfig.preferDirectLink || true);
   const [activeTab, setActiveTab] = useState('auth');
 
   const handleSave = () => {
@@ -44,10 +46,13 @@ const ApiConfigDialog = ({ open, onOpenChange, apiConfig, onSaveConfig }: ApiCon
       isConfigured: Boolean(poesessid),
       useProxy,
       directQuery,
-      forceSimulation,
+      forceSimulation: false, // Always false - No simulated data
       notifyGoodDeals,
       respectRateLimit,
-      rateLimitDelay
+      rateLimitDelay,
+      useBatchQuery,
+      preferDirectLink,
+      customHeaders: true
     });
     onOpenChange(false);
   };
@@ -181,7 +186,7 @@ const ApiConfigDialog = ({ open, onOpenChange, apiConfig, onSaveConfig }: ApiCon
                   <Switch 
                     id="use-proxy" 
                     checked={useProxy}
-                    onCheckedChange={setUseProxy}
+                    onCheckedChange={(checked: boolean) => setUseProxy(checked)}
                   />
                   <Label htmlFor="use-proxy" className="text-sm text-muted-foreground">
                     Ative se estiver tendo problemas de CORS ou bloqueio de requisições
@@ -197,7 +202,7 @@ const ApiConfigDialog = ({ open, onOpenChange, apiConfig, onSaveConfig }: ApiCon
                   <Switch 
                     id="direct-query" 
                     checked={directQuery}
-                    onCheckedChange={setDirectQuery}
+                    onCheckedChange={(checked: boolean) => setDirectQuery(checked)}
                   />
                   <Label htmlFor="direct-query" className="text-sm text-muted-foreground">
                     Tenta extrair dados diretamente da página de busca (como no site)
@@ -213,10 +218,42 @@ const ApiConfigDialog = ({ open, onOpenChange, apiConfig, onSaveConfig }: ApiCon
                   <Switch 
                     id="notify-deals" 
                     checked={notifyGoodDeals}
-                    onCheckedChange={setNotifyGoodDeals}
+                    onCheckedChange={(checked: boolean) => setNotifyGoodDeals(checked)}
                   />
                   <Label htmlFor="notify-deals" className="text-sm text-muted-foreground">
                     Destaca e notifica sobre itens com preços abaixo da média
+                  </Label>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="batch-query" className="text-right">
+                  Consulta em Lote
+                </Label>
+                <div className="flex items-center space-x-2 col-span-3">
+                  <Switch 
+                    id="batch-query" 
+                    checked={useBatchQuery}
+                    onCheckedChange={(checked: boolean) => setUseBatchQuery(checked)}
+                  />
+                  <Label htmlFor="batch-query" className="text-sm text-muted-foreground">
+                    Buscar 10 itens de cada vez (formato da API oficial)
+                  </Label>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="direct-link" className="text-right">
+                  Links Diretos
+                </Label>
+                <div className="flex items-center space-x-2 col-span-3">
+                  <Switch 
+                    id="direct-link" 
+                    checked={preferDirectLink}
+                    onCheckedChange={(checked: boolean) => setPreferDirectLink(checked)}
+                  />
+                  <Label htmlFor="direct-link" className="text-sm text-muted-foreground">
+                    Usar links diretos para o site de trade quando disponíveis
                   </Label>
                 </div>
               </div>
@@ -233,7 +270,7 @@ const ApiConfigDialog = ({ open, onOpenChange, apiConfig, onSaveConfig }: ApiCon
                   <Switch 
                     id="respect-rate-limit" 
                     checked={respectRateLimit}
-                    onCheckedChange={setRespectRateLimit}
+                    onCheckedChange={(checked: boolean) => setRespectRateLimit(checked)}
                   />
                   <Label htmlFor="respect-rate-limit" className="text-sm text-muted-foreground">
                     Aguardar entre requisições para evitar bloqueios da API
@@ -260,22 +297,6 @@ const ApiConfigDialog = ({ open, onOpenChange, apiConfig, onSaveConfig }: ApiCon
                   <p className="text-xs text-muted-foreground">
                     Tempo de espera entre requisições. Recomendado: 2000ms (2 segundos)
                   </p>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="force-simulation" className="text-right">
-                  Forçar Simulação
-                </Label>
-                <div className="flex items-center space-x-2 col-span-3">
-                  <Switch 
-                    id="force-simulation" 
-                    checked={forceSimulation}
-                    onCheckedChange={setForceSimulation}
-                  />
-                  <Label htmlFor="force-simulation" className="text-sm text-muted-foreground">
-                    Usar sempre dados simulados (para testes ou quando a API estiver indisponível)
-                  </Label>
                 </div>
               </div>
             </div>

@@ -37,6 +37,11 @@ interface PoeItemResult {
     ilvl?: number;
     verified: boolean;
     icon?: string;
+    extended?: {
+      dps?: number;
+      pdps?: number;
+      edps?: number;
+    };
   };
 }
 
@@ -422,6 +427,20 @@ const convertApiResponseToItems = (response: PoeItemResponse, queryId: string): 
     const expectedPrice = price;
     const avgPrice = price;
     
+    // Extract DPS from the extended property if available
+    let dpsStats = [];
+    if (result.item.extended) {
+      if (result.item.extended.dps) {
+        dpsStats.push({ name: 'DPS', value: result.item.extended.dps });
+      }
+      if (result.item.extended.pdps) {
+        dpsStats.push({ name: 'pDPS', value: result.item.extended.pdps });
+      }
+      if (result.item.extended.edps) {
+        dpsStats.push({ name: 'eDPS', value: result.item.extended.edps });
+      }
+    }
+    
     // Generate trade URL for the item
     const tradeUrl = `https://www.pathofexile.com/trade2/search/poe2/${queryId}/${result.id}`;
     
@@ -433,145 +452,13 @@ const convertApiResponseToItems = (response: PoeItemResponse, queryId: string): 
       price: price,
       expectedPrice: expectedPrice,
       averagePrice: avgPrice,
-      stats: stats,
+      stats: [...stats, ...dpsStats],
       seller: result.listing.account?.name || "Desconhecido",
       listedTime: result.listing.indexed,
       iconUrl: result.item.icon,
       tradeUrl: tradeUrl
     };
   });
-};
-
-/**
- * Generate realistic mock items for testing
- */
-const generateMockItems = (config: TrackingConfiguration): Item[] => {
-  console.log(`Gerando dados simulados para: ${config.name}`);
-  
-  const items: Item[] = [];
-  const count = Math.floor(Math.random() * 6) + 1;
-  
-  for (let i = 0; i < count; i++) {
-    let basePrice = 0;
-    let priceVariation = 0;
-    let baseDps = 0;
-    
-    if (config.itemType.includes('Crossbow')) {
-      basePrice = 15 + Math.random() * 15;
-      priceVariation = 0.3;
-      baseDps = 600 + Math.random() * 150;
-    } else if (config.itemType.includes('Bow')) {
-      basePrice = 10 + Math.random() * 20;
-      priceVariation = 0.25;
-      baseDps = 500 + Math.random() * 200;
-    } else if (config.itemType.includes('Two-Handed')) {
-      basePrice = 8 + Math.random() * 12;
-      priceVariation = 0.2;
-      baseDps = 450 + Math.random() * 150;
-    } else if (config.itemType.includes('One-Handed')) {
-      basePrice = 5 + Math.random() * 10;
-      priceVariation = 0.15;
-      baseDps = 350 + Math.random() * 100;
-    } else {
-      basePrice = 3 + Math.random() * 5;
-      priceVariation = 0.1;
-      baseDps = 200 + Math.random() * 100;
-    }
-    
-    const expectedPrice = basePrice;
-    
-    const isVeryGoodDeal = Math.random() > 0.8;
-    const priceRatio = isVeryGoodDeal 
-      ? 0.5 + Math.random() * 0.2
-      : 1 + (Math.random() * 2 - 1) * priceVariation;
-      
-    const price = Math.round(expectedPrice * priceRatio * 100) / 100;
-    
-    const avgPrice = (expectedPrice + price) / 2;
-    
-    const stats = [];
-    
-    if (config.stats.dps !== undefined || config.stats.pdps !== undefined || config.stats.edps !== undefined) {
-      const dps = Math.round(baseDps);
-      const pdps = Math.round(dps * 0.7);
-      const edps = Math.round(dps * 0.3);
-      
-      stats.push({ name: 'DPS', value: dps });
-      stats.push({ name: 'pDPS', value: pdps });
-      stats.push({ name: 'eDPS', value: edps });
-    }
-    
-    if (config.stats.attack_speed !== undefined) {
-      stats.push({ name: 'Attack Speed', value: (1 + Math.random() * 0.8).toFixed(2) });
-    }
-    
-    if (config.stats.crit_chance !== undefined) {
-      stats.push({ name: 'Critical Strike Chance', value: (5 + Math.random() * 7).toFixed(1) + '%' });
-    }
-    
-    if (config.itemType.includes('Armour')) {
-      stats.push({ name: 'Armour', value: Math.floor(100 + Math.random() * 400) });
-    }
-    
-    if (config.itemType.includes('Boots')) {
-      stats.push({ name: 'Movement Speed', value: Math.floor(20 + Math.random() * 15) + '%' });
-    }
-    
-    let prefix = '';
-    if (Math.random() > 0.8) {
-      prefix = ['Maligno', 'Celestial', 'Solar', 'Divino', 'Corrupto'][Math.floor(Math.random() * 5)] + ' ';
-    }
-    
-    const namesByType: Record<string, string[]> = {
-      'Crossbow': ['Gale Core', 'Arbalest', 'Siege Engine', 'Decimator', 'Skirmisher'],
-      'Bow': ['Spine Bow', 'Death Harp', 'Maraketh Bow', 'Imperial Bow', 'Harbinger Bow'],
-      'Sword': ['Greatsword', 'Tiger Blade', 'Exquisite Blade', 'Infernal Sword', 'Highland Blade'],
-      'Axe': ['Reaver Axe', 'Decapitator', 'Void Axe', 'Headsman Axe', 'Sundering Axe'],
-      'Mace': ['Mallet', 'Destroyer', 'Karui Maul', 'Imperial Maul', 'Terror Maul'],
-      'Staff': ['Coiled Staff', 'Eclipse Staff', 'Judgement Staff', 'Moon Staff', 'Royal Staff'],
-      'default': ['Armamento', 'Relíquia', 'Tesouro', 'Artefato', 'Engenhoca']
-    };
-    
-    let nameCategory = 'default';
-    for (const [category, _] of Object.entries(namesByType)) {
-      if (config.itemType.includes(category)) {
-        nameCategory = category;
-        break;
-      }
-    }
-    
-    const name = prefix + namesByType[nameCategory][Math.floor(Math.random() * namesByType[nameCategory].length)];
-    
-    const rarityRoll = Math.random();
-    let rarity = 'normal';
-    if (rarityRoll > 0.95) {
-      rarity = 'unique';
-    } else if (rarityRoll > 0.7) {
-      rarity = 'rare';
-    } else if (rarityRoll > 0.4) {
-      rarity = 'magic';
-    }
-    
-    const fakeTradeId = Math.random().toString(36).substring(2, 10);
-    const tradeUrl = `https://www.pathofexile.com/trade2/search/poe2/fake-${fakeTradeId}`;
-    
-    items.push({
-      id: `item-${Date.now()}-${i}`,
-      name,
-      category: config.itemType,
-      rarity,
-      price,
-      expectedPrice,
-      averagePrice: avgPrice,
-      stats,
-      seller: `Player${Math.floor(Math.random() * 1000)}`,
-      listedTime: new Date().toISOString(),
-      iconUrl: undefined,
-      tradeUrl: isVeryGoodDeal ? tradeUrl : undefined
-    });
-  }
-  
-  return items;
 };
 
 /**
@@ -637,24 +524,11 @@ export const fetchItems = async (config: TrackingConfiguration, apiCredentials: 
       respectRateLimit: apiCredentials.respectRateLimit ? "Sim" : "Não"
     });
     
-    if (apiCredentials.forceSimulation) {
-      toast.info("Usando dados simulados conforme solicitado", {
-        description: "Você optou por usar dados simulados em vez de dados reais"
-      });
-      
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      return generateMockItems(config);
-    }
-    
     if (!apiCredentials.isConfigured) {
-      toast.warning("Usando dados simulados - configure a API para dados reais", {
+      toast.error("Configuração da API incompleta", {
         description: "Acesse as configurações para adicionar seus cookies de sessão do Path of Exile"
       });
-      
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      return generateMockItems(config);
+      return [];
     }
     
     const connectionOk = await testApiConnection(apiCredentials);
@@ -666,9 +540,9 @@ export const fetchItems = async (config: TrackingConfiguration, apiCredentials: 
       const testWithProxy = await testApiConnection({...apiCredentials, useProxy: true});
       if (!testWithProxy) {
         toast.error("Falha na conexão com a API mesmo usando proxy", {
-          description: "Verifique seus cookies e tente novamente. Usando dados simulados temporariamente."
+          description: "Verifique seus cookies e tente novamente."
         });
-        return generateMockItems(config);
+        return [];
       }
       
       apiCredentials = {...apiCredentials, useProxy: true};
@@ -758,7 +632,6 @@ export const fetchItems = async (config: TrackingConfiguration, apiCredentials: 
       toast.error("Erro desconhecido ao acessar a API");
     }
     
-    toast.info("Usando dados simulados temporariamente");
-    return generateMockItems(config);
+    return [];
   }
 };

@@ -19,9 +19,12 @@ const ItemList = ({ title, items, isLoading = false, error }: ItemListProps) => 
   const goodDeals = items.filter(item => item.price <= item.expectedPrice * 0.7);
 
   // Função para abrir URL de trade
-  const openTradeUrl = (url?: string) => {
+  const openTradeUrl = (url?: string, item?: Item) => {
     if (url) {
       window.open(url, '_blank');
+      if (item) {
+        toast.info(`Abrindo item ${item.name} no site de trade`);
+      }
     } else {
       toast.error("URL de trade não disponível para este item");
     }
@@ -40,7 +43,7 @@ const ItemList = ({ title, items, isLoading = false, error }: ItemListProps) => 
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={() => openTradeUrl(items[0].tradeUrl)}
+              onClick={() => openTradeUrl(items[0].tradeUrl, items[0])}
               className="flex items-center gap-1 text-xs h-7 px-2"
             >
               Ver no site <ExternalLink size={12} />
