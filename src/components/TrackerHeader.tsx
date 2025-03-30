@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Sparkles, AlertCircle, InfoIcon, Settings } from 'lucide-react';
+import { PlusCircle, Sparkles, AlertCircle, InfoIcon, Settings, Bug } from 'lucide-react';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { ApiCredentials } from '@/types/api';
@@ -10,9 +10,17 @@ interface TrackerHeaderProps {
   onCreateTracker: () => void;
   onConfigureApi: () => void;
   apiConfigured: boolean;
+  onToggleDebugMode: () => void;
+  debugMode: boolean;
 }
 
-const TrackerHeader = ({ onCreateTracker, onConfigureApi, apiConfigured }: TrackerHeaderProps) => {
+const TrackerHeader = ({ 
+  onCreateTracker, 
+  onConfigureApi, 
+  apiConfigured, 
+  onToggleDebugMode, 
+  debugMode 
+}: TrackerHeaderProps) => {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-2 gap-4">
@@ -34,6 +42,15 @@ const TrackerHeader = ({ onCreateTracker, onConfigureApi, apiConfigured }: Track
           >
             <Settings className="mr-2 h-4 w-4" />
             {apiConfigured ? "Editar Cookies" : "Configurar API"}
+          </Button>
+          
+          <Button
+            onClick={onToggleDebugMode}
+            variant="outline"
+            className={`flex-shrink-0 ${debugMode ? 'border-amber-500 text-amber-500' : ''}`}
+          >
+            <Bug className="mr-2 h-4 w-4" />
+            {debugMode ? "Ocultar Debug" : "Debug API"}
           </Button>
           
           <Button 
@@ -66,7 +83,7 @@ const TrackerHeader = ({ onCreateTracker, onConfigureApi, apiConfigured }: Track
                 <AccordionItem value="instructions">
                   <AccordionTrigger className="text-sm py-2">Ver instruções detalhadas</AccordionTrigger>
                   <AccordionContent>
-                    <ol className="list-decimal pl-5 space-y-2 text-sm">
+                    <ol className="list-decimal pl-5 space-y-2 text-xs">
                       <li>Faça login no site oficial do <a href="https://www.pathofexile.com" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Path of Exile</a></li>
                       <li>Abra o <a href="https://www.pathofexile.com/trade2/search/poe2/Standard" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">site de trade do PoE2</a></li>
                       <li>Pressione F12 para abrir as ferramentas de desenvolvedor</li>
@@ -74,7 +91,7 @@ const TrackerHeader = ({ onCreateTracker, onConfigureApi, apiConfigured }: Track
                       <li>Clique na requisição "Standard" (POST) e copie os cookies da aba Headers</li>
                       <li>Identifique e copie o valor de "POESESSID" e <strong>todos</strong> os valores "cf_clearance" (pode haver múltiplos)</li>
                       <li>Copie também o User-Agent do seu navegador (necessário para autenticação)</li>
-                      <li>Se continuar tendo problemas, ative a opção "Usar Proxy" nas configurações</li>
+                      <li>Se continuar tendo problemas, ative a opção "Usar Debug API" para testar suas credenciais e entender o processo de requisição</li>
                       <li>Aguarde 2-3 segundos entre requisições para evitar o bloqueio de rate limiting</li>
                     </ol>
                   </AccordionContent>

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -7,6 +8,7 @@ import TrackingConfig from '@/components/TrackingConfig';
 import TrackingList from '@/components/TrackingList';
 import ItemList from '@/components/ItemList';
 import ApiConfigDialog from '@/components/ApiConfigDialog';
+import ApiDebugger from '@/components/ApiDebugger';
 import { TrackingConfiguration } from '@/types/tracking';
 import { ApiCredentials } from '@/types/api';
 import { Item } from '@/types/items';
@@ -21,12 +23,14 @@ const Index = () => {
   const [items, setItems] = useState<Item[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [debugMode, setDebugMode] = useState(false);
   const [apiConfig, setApiConfig] = useState<ApiCredentials>({
     poesessid: '',
     cfClearance: [],
     useragent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     isConfigured: false,
-    useProxy: false
+    useProxy: false,
+    debugMode: false
   });
   
   const lastRequestTime = useRef<number>(0);
@@ -47,6 +51,10 @@ const Index = () => {
           parsedConfig.cfClearance = [];
         }
         setApiConfig(parsedConfig);
+        
+        if (parsedConfig.debugMode) {
+          setDebugMode(true);
+        }
       }
     } catch (error) {
       console.error('Erro ao carregar configurações:', error);
@@ -97,12 +105,31 @@ const Index = () => {
     setIsApiConfigOpen(true);
   };
   
+  const handleToggleDebugMode = () => {
+    const newDebugMode = !debugMode;
+    setDebugMode(newDebugMode);
+    
+    // Save debug mode in API config
+    const updatedApiConfig = {
+      ...apiConfig,
+      debugMode: newDebugMode
+    };
+    setApiConfig(updatedApiConfig);
+    localStorage.setItem('poe-api-config', JSON.stringify(updatedApiConfig));
+    
+    toast.info(newDebugMode ? 
+      "Modo de depuração ativado. Use-o para testar suas credenciais e entender a API." : 
+      "Modo de depuração desativado."
+    );
+  };
+  
   const handleSaveApiConfig = (config: ApiCredentials) => {
     const updatedConfig = {
       ...config,
       cfClearance: Array.isArray(config.cfClearance) ? config.cfClearance : 
                    config.cfClearance ? [config.cfClearance] : [],
       customHeaders: true,
+      debugMode
     };
     
     setApiConfig(updatedConfig);
@@ -269,7 +296,11 @@ const Index = () => {
         onCreateTracker={handleCreateTracker} 
         onConfigureApi={handleConfigureApi}
         apiConfigured={apiConfig.isConfigured}
+        onToggleDebugMode={handleToggleDebugMode}
+        debugMode={debugMode}
       />
+      
+      {debugMode && <ApiDebugger apiCredentials={apiConfig} />}
       
       <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-6">
         <TabsList className="grid grid-cols-2 mb-6">

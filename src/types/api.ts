@@ -6,4 +6,5 @@ export interface ApiCredentials {
   isConfigured: boolean;
   useProxy?: boolean;
   customHeaders?: boolean;
+  debugMode?: boolean;
 }
