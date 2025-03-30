@@ -558,7 +558,7 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
                   
                   <div>
                     <h4 className="font-medium mb-1">Para obter novos cookies cf_clearance:</h4>
-                    <p className="text-xs">Abra as ferramentas de desenvolvedor (F12), vá para a aba Application {'>'}  Storage {'>'}  Cookies {'>'}  www.pathofexile.com e copie os valores de cf_clearance.</p>
+                    <p className="text-xs">Abra as ferramentas de desenvolvedor (F12), vá para a aba Application {'>'} Storage {'>'} Cookies {'>'} www.pathofexile.com e copie os valores de cf_clearance.</p>
                   </div>
                   
                   <div>

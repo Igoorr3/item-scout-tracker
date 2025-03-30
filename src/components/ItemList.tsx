@@ -13,11 +13,15 @@ interface ItemListProps {
 }
 
 const ItemList = ({ title, items, isLoading = false, error }: ItemListProps) => {
+  // Encontrar itens com boas ofertas (30% ou mais abaixo do preço esperado)
+  const goodDeals = items.filter(item => item.price <= item.expectedPrice * 0.7);
+  
   return (
     <Card className="bg-card border-primary/20 shadow-lg">
       <CardHeader className="border-b border-border">
         <CardTitle className="text-primary">
           {title} {items.length > 0 && <span className="text-sm font-normal ml-2">({items.length} items)</span>}
+          {goodDeals.length > 0 && <span className="text-sm font-normal text-green-500 ml-2">• {goodDeals.length} boas ofertas!</span>}
         </CardTitle>
       </CardHeader>
       <CardContent className="p-4">
@@ -40,9 +44,29 @@ const ItemList = ({ title, items, isLoading = false, error }: ItemListProps) => 
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {items.map((item) => (
-              <ItemCard key={item.id} item={item} />
-            ))}
+            {goodDeals.length > 0 && (
+              <>
+                <div className="col-span-1 md:col-span-2 mb-2">
+                  <h3 className="text-green-500 font-medium border-b border-green-500/20 pb-1">Melhores Ofertas</h3>
+                </div>
+                {goodDeals.map((item) => (
+                  <ItemCard key={item.id} item={item} />
+                ))}
+                
+                {items.length > goodDeals.length && (
+                  <div className="col-span-1 md:col-span-2 mt-4 mb-2">
+                    <h3 className="text-muted-foreground font-medium border-b border-border pb-1">Outros Itens</h3>
+                  </div>
+                )}
+              </>
+            )}
+            
+            {items
+              .filter(item => !goodDeals.includes(item))
+              .map((item) => (
+                <ItemCard key={item.id} item={item} />
+              ))
+            }
           </div>
         )}
       </CardContent>

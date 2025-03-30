@@ -4,7 +4,8 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Item } from '@/types/items';
-import { ArrowUpDown, DollarSign, Target } from 'lucide-react';
+import { ArrowUpDown, DollarSign, Target, ExternalLink } from 'lucide-react';
+import { Button } from "@/components/ui/button";
 
 interface ItemCardProps {
   item: Item;
@@ -23,9 +24,33 @@ const ItemCard = ({ item }: ItemCardProps) => {
 
   // Verifica se o preço é uma boa oferta (menos que o preço previsto)
   const isGoodDeal = item.price < item.expectedPrice;
+  
+  // Calcula a porcentagem de diferença para o preço esperado
+  const priceDiffPercentage = isGoodDeal 
+    ? ((1 - item.price / item.expectedPrice) * 100).toFixed(0)
+    : ((item.price / item.expectedPrice - 1) * 100).toFixed(0);
+  
+  // Determina classes CSS baseadas na diferença de preço
+  const getPriceDiffClasses = () => {
+    if (isGoodDeal) {
+      const diff = parseFloat(priceDiffPercentage);
+      if (diff >= 30) return "text-green-500 font-bold";
+      if (diff >= 15) return "text-green-400";
+      return "text-green-300";
+    } else {
+      return "text-red-400";
+    }
+  };
+
+  // Abre o link de trade direto no site
+  const openTradeLink = () => {
+    if (item.tradeUrl) {
+      window.open(item.tradeUrl, '_blank');
+    }
+  };
 
   return (
-    <Card className="poe-item">
+    <Card className={`poe-item transition-all duration-200 ${isGoodDeal ? 'border-green-500/40' : 'border-border'} hover:shadow-lg`}>
       <CardContent className="p-3 pb-0">
         <div className="flex flex-col">
           <div className="flex justify-between items-start mb-2">
@@ -74,23 +99,37 @@ const ItemCard = ({ item }: ItemCardProps) => {
               <TooltipTrigger asChild>
                 <div className="flex items-center">
                   <ArrowUpDown size={16} className="mr-1" />
-                  <span className={isGoodDeal ? 'text-green-500' : 'text-red-500'}>
+                  <span className={getPriceDiffClasses()}>
                     {isGoodDeal 
-                      ? `${((1 - item.price / item.expectedPrice) * 100).toFixed(0)}% abaixo` 
-                      : `${((item.price / item.expectedPrice - 1) * 100).toFixed(0)}% acima`}
+                      ? `${priceDiffPercentage}% abaixo` 
+                      : `${priceDiffPercentage}% acima`}
                   </span>
                 </div>
               </TooltipTrigger>
               <TooltipContent>
                 {isGoodDeal 
-                  ? `Este item está ${((1 - item.price / item.expectedPrice) * 100).toFixed(0)}% abaixo do preço esperado` 
-                  : `Este item está ${((item.price / item.expectedPrice - 1) * 100).toFixed(0)}% acima do preço esperado`}
+                  ? `Este item está ${priceDiffPercentage}% abaixo do preço esperado` 
+                  : `Este item está ${priceDiffPercentage}% acima do preço esperado`}
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
           
-          <div className={`${isGoodDeal ? 'poe-fire-icon' : ''} text-sm`}>
-            {isGoodDeal ? 'Boa oferta!' : 'Preço normal'}
+          <div className="flex items-center gap-2">
+            {item.tradeUrl && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-7 px-2 text-muted-foreground hover:text-primary"
+                onClick={openTradeLink}
+              >
+                <ExternalLink size={14} className="mr-1" />
+                Ver
+              </Button>
+            )}
+            
+            <div className={`${isGoodDeal ? 'poe-fire-icon' : ''} text-sm ${isGoodDeal && parseInt(priceDiffPercentage) >= 20 ? 'font-bold text-green-500' : ''}`}>
+              {isGoodDeal ? parseInt(priceDiffPercentage) >= 30 ? 'Excelente oferta!' : 'Boa oferta!' : 'Preço normal'}
+            </div>
           </div>
         </div>
       </CardFooter>

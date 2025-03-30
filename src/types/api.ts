@@ -8,6 +8,8 @@ export interface ApiCredentials {
   customHeaders?: boolean;
   debugMode?: boolean;
   directQuery?: boolean;  // Nova opção para usar o formato de consulta direta como no site
+  forceSimulation?: boolean;  // Nova opção para forçar dados simulados
+  notifyGoodDeals?: boolean;  // Nova opção para notificar sobre boas ofertas
 }
 
 export interface ApiDebugInfo {
