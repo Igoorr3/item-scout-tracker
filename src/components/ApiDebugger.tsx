@@ -7,11 +7,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ApiCredentials, ApiDebugInfo } from '@/types/api';
-import { InfoIcon, AlertCircle, Bug, Copy, Check, ExternalLink, Download } from 'lucide-react';
+import { InfoIcon, AlertCircle, Bug, Copy, Check, ExternalLink, Download, Code } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { parseCurlCommand, extractCredentialsFromCurl } from '@/utils/curlParser';
 
 interface ApiDebuggerProps {
   apiCredentials: ApiCredentials;
@@ -51,6 +52,9 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
   const [customOrigin, setCustomOrigin] = useState('https://www.pathofexile.com');
   const [customReferrer, setCustomReferrer] = useState('https://www.pathofexile.com/trade2/search/poe2/Standard');
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
+  const [curlCommand, setCurlCommand] = useState('');
+  const [showCurlInput, setShowCurlInput] = useState(false);
+  const [parsedCurlInfo, setParsedCurlInfo] = useState<any>(null);
 
   const buildCookieString = (): string => {
     let cookieString = '';
@@ -112,6 +116,83 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
       console.log("Direct query URL generated:", directQueryUrl);
     }
   }, [queryId]);
+
+  const handleCurlParse = () => {
+    try {
+      if (!curlCommand.trim()) {
+        toast.error("Por favor, insira um comando cURL");
+        return;
+      }
+      
+      const parsed = parseCurlCommand(curlCommand);
+      setParsedCurlInfo(parsed);
+      
+      if (parsed.url) {
+        if (parsed.url.includes('/api/trade2/search/')) {
+          setSearchUrl(parsed.url);
+          toast.success("URL de busca atualizada do comando cURL");
+        }
+        
+        if (parsed.url.includes('/api/trade2/fetch/')) {
+          setFetchUrl(parsed.url);
+          toast.success("URL de fetch atualizada do comando cURL");
+        }
+      }
+      
+      if (parsed.body) {
+        try {
+          // Try to format it as JSON
+          const formattedJson = JSON.stringify(JSON.parse(parsed.body), null, 2);
+          setSearchPayload(formattedJson);
+          toast.success("Payload de busca atualizado do comando cURL");
+        } catch (e) {
+          console.log("Body não é um JSON válido:", e);
+        }
+      }
+      
+      // Extract credentials
+      const credentials = extractCredentialsFromCurl(parsed);
+      
+      // Show information about what was extracted
+      let extractedInfo = [];
+      
+      if (credentials.poesessid) {
+        extractedInfo.push("POESESSID");
+      }
+      
+      if (credentials.cfClearance && credentials.cfClearance.length > 0) {
+        extractedInfo.push("cf_clearance");
+      }
+      
+      if (credentials.useragent) {
+        extractedInfo.push("User-Agent");
+      }
+      
+      if (extractedInfo.length > 0) {
+        toast.success(`Extraído do cURL: ${extractedInfo.join(", ")}`);
+      } else {
+        toast.warning("Não foi possível extrair credenciais do comando cURL");
+      }
+    } catch (error) {
+      console.error("Erro ao analisar comando cURL:", error);
+      toast.error("Erro ao analisar comando cURL. Verifique se o formato está correto.");
+    }
+  };
+
+  const applyCurlCredentials = () => {
+    if (!parsedCurlInfo) return;
+    
+    const credentials = extractCredentialsFromCurl(parsedCurlInfo);
+    
+    // Create event to simulate changes
+    const event = new CustomEvent("curl-credentials-extracted", {
+      detail: credentials
+    });
+    
+    document.dispatchEvent(event);
+    
+    toast.success("Credenciais do cURL aplicadas. Atualize a página de configurações para ver as mudanças.");
+  };
 
   const handleSearchRequest = async () => {
     setIsLoading(true);
@@ -482,6 +563,70 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
               />
             </div>
           </div>
+        </div>
+        
+        {/* New cURL Command Input Section */}
+        <div className="mb-4 border border-blue-500/20 rounded-md p-3 bg-blue-500/5">
+          <div className="flex items-center space-x-2 mb-2">
+            <Switch 
+              id="show-curl-input" 
+              checked={showCurlInput}
+              onCheckedChange={setShowCurlInput}
+            />
+            <Label htmlFor="show-curl-input" className="font-medium">Usar comando cURL</Label>
+            <Code size={16} className="text-blue-500" />
+          </div>
+          
+          {showCurlInput && (
+            <div className="space-y-3">
+              <p className="text-xs text-muted-foreground">
+                Cole um comando cURL copiado das ferramentas de desenvolvedor do navegador (Network tab) para extrair automaticamente as credenciais e parâmetros.
+              </p>
+              
+              <Textarea 
+                value={curlCommand}
+                onChange={(e) => setCurlCommand(e.target.value)}
+                className="font-mono text-xs h-24"
+                placeholder='curl "https://www.pathofexile.com/api/trade2/search/poe2/Standard" -X POST -H "User-Agent: Mozilla/5.0..." -H "Cookie: POESESSID=abc123; cf_clearance=xyz789..."'
+              />
+              
+              <div className="flex gap-2">
+                <Button 
+                  onClick={handleCurlParse} 
+                  variant="outline"
+                  size="sm"
+                  className="text-xs"
+                >
+                  Analisar cURL
+                </Button>
+                
+                {parsedCurlInfo && (
+                  <Button 
+                    onClick={applyCurlCredentials} 
+                    variant="outline"
+                    size="sm"
+                    className="text-xs"
+                  >
+                    Aplicar Credenciais
+                  </Button>
+                )}
+              </div>
+              
+              {parsedCurlInfo && (
+                <div className="mt-2 p-2 border border-gray-200 dark:border-gray-800 rounded-md bg-muted/30 text-xs">
+                  <p className="font-medium mb-1">Informações extraídas:</p>
+                  <ul className="list-disc pl-5 space-y-1">
+                    {parsedCurlInfo.url && <li>URL: <span className="font-mono">{parsedCurlInfo.url}</span></li>}
+                    {parsedCurlInfo.method && <li>Método: {parsedCurlInfo.method}</li>}
+                    {parsedCurlInfo.cookies?.POESESSID && <li>POESESSID: <span className="font-mono">{parsedCurlInfo.cookies.POESESSID.substring(0, 8)}...</span></li>}
+                    {parsedCurlInfo.cookies?.cf_clearance && <li>cf_clearance: <span className="font-mono">{parsedCurlInfo.cookies.cf_clearance.substring(0, 8)}...</span></li>}
+                    {parsedCurlInfo.headers?.['User-Agent'] && <li>User-Agent: <span className="font-mono">{parsedCurlInfo.headers['User-Agent'].substring(0, 20)}...</span></li>}
+                    {parsedCurlInfo.body && <li>Body: <span className="font-mono">{parsedCurlInfo.body.length} caracteres</span></li>}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
         </div>
         
         <div className="mb-4">

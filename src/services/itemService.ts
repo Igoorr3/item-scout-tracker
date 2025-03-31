@@ -1,4 +1,3 @@
-
 import { Item } from '@/types/items';
 import { TrackingConfiguration } from '@/types/tracking';
 import { ApiCredentials, ApiDebugInfo } from '@/types/api';
@@ -67,7 +66,6 @@ interface PoeItemResult {
   };
 }
 
-// CORS proxies used for handling API calls when direct access fails
 const CORS_PROXIES = [
   'https://corsproxy.io/?',
   'https://api.allorigins.win/raw?url=',
@@ -76,9 +74,25 @@ const CORS_PROXIES = [
   'https://cors-proxy.htmldriven.com/?url='
 ];
 
-/**
- * Builds the search payload based on the tracking configuration
- */
+let curlExtractedCredentials: any = null;
+
+document.addEventListener("curl-credentials-extracted", ((event: any) => {
+  curlExtractedCredentials = event.detail;
+  console.log("cURL credentials extracted:", curlExtractedCredentials);
+  
+  localStorage.setItem('poe_curl_credentials', JSON.stringify(curlExtractedCredentials));
+}) as EventListener);
+
+try {
+  const saved = localStorage.getItem('poe_curl_credentials');
+  if (saved) {
+    curlExtractedCredentials = JSON.parse(saved);
+    console.log("Loaded saved cURL credentials:", curlExtractedCredentials);
+  }
+} catch (e) {
+  console.error("Error loading saved cURL credentials:", e);
+}
+
 const buildSearchPayload = (config: TrackingConfiguration) => {
   const payload: any = {
     query: {
@@ -123,17 +137,22 @@ const buildSearchPayload = (config: TrackingConfiguration) => {
   return payload;
 };
 
-/**
- * Builds cookie string from API credentials
- */
 const buildCookieString = (apiCredentials: ApiCredentials): string => {
   let cookieString = '';
   
-  if (apiCredentials.poesessid) {
+  if (curlExtractedCredentials?.poesessid) {
+    cookieString += `POESESSID=${curlExtractedCredentials.poesessid}; `;
+  } else if (apiCredentials.poesessid) {
     cookieString += `POESESSID=${apiCredentials.poesessid}; `;
   }
   
-  if (apiCredentials.cfClearance && apiCredentials.cfClearance.length > 0) {
+  if (curlExtractedCredentials?.cfClearance?.length > 0) {
+    curlExtractedCredentials.cfClearance.forEach((clearance: string) => {
+      if (clearance && clearance.trim()) {
+        cookieString += `cf_clearance=${clearance}; `;
+      }
+    });
+  } else if (apiCredentials.cfClearance && apiCredentials.cfClearance.length > 0) {
     apiCredentials.cfClearance.forEach(clearance => {
       if (clearance && clearance.trim()) {
         cookieString += `cf_clearance=${clearance}; `;
@@ -144,15 +163,12 @@ const buildCookieString = (apiCredentials: ApiCredentials): string => {
   return cookieString.trim();
 };
 
-/**
- * Builds headers for API requests - Improved with proper headers
- */
 const buildHeaders = (apiCredentials: ApiCredentials, isSearch: boolean = false): Record<string, string> => {
   const headers: Record<string, string> = {
-    "User-Agent": apiCredentials.useragent || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    "User-Agent": curlExtractedCredentials?.useragent || apiCredentials.useragent || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     "Accept": "application/json",
-    "Origin": apiCredentials.originHeader || "https://www.pathofexile.com",
-    "Referer": apiCredentials.referrerHeader || "https://www.pathofexile.com/trade2/search/poe2/Standard",
+    "Origin": curlExtractedCredentials?.originHeader || apiCredentials.originHeader || "https://www.pathofexile.com",
+    "Referer": curlExtractedCredentials?.referrerHeader || apiCredentials.referrerHeader || "https://www.pathofexile.com/trade2/search/poe2/Standard",
     "Connection": "keep-alive",
     "sec-ch-ua": '"Chromium";v="120", "Not A(Brand";v="24"',
     "sec-ch-ua-mobile": "?0",
@@ -173,19 +189,23 @@ const buildHeaders = (apiCredentials: ApiCredentials, isSearch: boolean = false)
     headers["Cookie"] = cookieString;
   }
   
-  // Add special headers to help bypass Cloudflare if enabled
   if (apiCredentials.bypassCloudflare) {
     headers["Accept-Language"] = "en-US,en;q=0.9";
     headers["Accept-Encoding"] = "gzip, deflate, br";
     headers["X-Requested-With"] = "XMLHttpRequest";
   }
+  
+  if (curlExtractedCredentials?.otherHeaders) {
+    Object.entries(curlExtractedCredentials.otherHeaders).forEach(([key, value]) => {
+      if (!headers[key]) {
+        headers[key] = value as string;
+      }
+    });
+  }
 
   return headers;
 };
 
-/**
- * Try different CORS proxies if direct fetch fails
- */
 const tryWithDifferentProxies = async (url: string, options: RequestInit): Promise<Response> => {
   let lastError;
   
@@ -228,9 +248,6 @@ const tryWithDifferentProxies = async (url: string, options: RequestInit): Promi
   throw lastError;
 };
 
-/**
- * Search for items matching configuration
- */
 export const searchItems = async (config: TrackingConfiguration, apiCredentials: ApiCredentials): Promise<PoeApiSearchResponse> => {
   try {
     const payload = buildSearchPayload(config);
@@ -259,12 +276,10 @@ export const searchItems = async (config: TrackingConfiguration, apiCredentials:
     }
 
     if (!response.ok) {
-      // Check for rate limiting (status 429)
       if (response.status === 429) {
         throw new Error("API rate limit reached. Please wait before trying again.");
       }
       
-      // Check for authorization errors (status 401 or 403)
       if (response.status === 401 || response.status === 403) {
         throw new Error(`Erro de autorização: ${response.status}. Verifique seus cookies de sessão.`);
       }
@@ -290,7 +305,6 @@ export const searchItems = async (config: TrackingConfiguration, apiCredentials:
   } catch (error) {
     console.error("Erro ao buscar itens:", error);
     
-    // If not already trying with proxy, try with proxy
     if (apiCredentials.useProxy) {
       throw error;
     }
@@ -301,13 +315,8 @@ export const searchItems = async (config: TrackingConfiguration, apiCredentials:
   }
 };
 
-/**
- * Fetch item details from search results
- * Following the pattern: https://www.pathofexile.com/api/trade2/fetch/ID1,ID2,...?query=QUERY_ID&realm=poe2
- */
 export const fetchItemDetails = async (itemIds: string[], queryId: string, apiCredentials: ApiCredentials): Promise<PoeItemResponse> => {
   try {
-    // Only fetch 10 items at once, per the API's design
     const idsToFetch = itemIds.slice(0, 10).join(",");
     const url = `https://www.pathofexile.com/api/trade2/fetch/${idsToFetch}?query=${queryId}&realm=poe2`;
     
@@ -316,7 +325,6 @@ export const fetchItemDetails = async (itemIds: string[], queryId: string, apiCr
     const headers = buildHeaders(apiCredentials);
     console.log("Headers de detalhes:", headers);
     
-    // Apply rate limiting if enabled
     if (apiCredentials.respectRateLimit && apiCredentials.rateLimitDelay) {
       console.log(`Respeitando limite de requisições: aguardando ${apiCredentials.rateLimitDelay}ms`);
       await new Promise(resolve => setTimeout(resolve, apiCredentials.rateLimitDelay));
@@ -371,9 +379,6 @@ export const fetchItemDetails = async (itemIds: string[], queryId: string, apiCr
   }
 };
 
-/**
- * Fetch items directly from the query ID (direct website link)
- */
 export const fetchItemsByDirectQuery = async (queryId: string, apiCredentials: ApiCredentials): Promise<Item[]> => {
   try {
     const url = `https://www.pathofexile.com/trade2/search/poe2/${queryId}`;
@@ -457,9 +462,6 @@ export const fetchItemsByDirectQuery = async (queryId: string, apiCredentials: A
   }
 };
 
-/**
- * Convert API response to Item objects
- */
 const convertApiResponseToItems = (response: PoeItemResponse, queryId: string): Item[] => {
   if (!response.result || !Array.isArray(response.result)) {
     return [];
@@ -479,7 +481,6 @@ const convertApiResponseToItems = (response: PoeItemResponse, queryId: string): 
     const expectedPrice = price;
     const avgPrice = price;
     
-    // Extract DPS from the extended property if available
     let dpsStats = [];
     if (result.item.extended) {
       if (result.item.extended.dps) {
@@ -493,7 +494,6 @@ const convertApiResponseToItems = (response: PoeItemResponse, queryId: string): 
       }
     }
     
-    // Generate trade URL for the item
     const tradeUrl = `https://www.pathofexile.com/trade2/search/poe2/${queryId}/${result.id}`;
     
     return {
@@ -513,15 +513,11 @@ const convertApiResponseToItems = (response: PoeItemResponse, queryId: string): 
   });
 };
 
-/**
- * Test API connection - Now with proper debugging and Cloudflare detection
- */
 export const testApiConnection = async (apiCredentials: ApiCredentials): Promise<boolean> => {
   try {
     const headers = buildHeaders(apiCredentials);
     console.log("Headers para teste de API:", headers);
 
-    // Try with simpler endpoint
     const testUrl = "https://www.pathofexile.com/api/trade2/leagues";
     console.log("Tentando conexão com:", testUrl);
     
@@ -548,7 +544,6 @@ export const testApiConnection = async (apiCredentials: ApiCredentials): Promise
       if (responseText.includes('<!DOCTYPE html>') || responseText.includes('<html')) {
         console.error("Resposta Cloudflare detectada. Necessário atualizar cookies.");
         
-        // Try to extract the Cloudflare Ray ID for better debugging
         const rayIdMatch = responseText.match(/Ray ID:\s*<strong[^>]*>([^<]+)<\/strong>/);
         if (rayIdMatch && rayIdMatch[1]) {
           console.error(`Cloudflare Ray ID: ${rayIdMatch[1]}`);
@@ -574,9 +569,6 @@ export const testApiConnection = async (apiCredentials: ApiCredentials): Promise
   }
 };
 
-/**
- * Main function to fetch items
- */
 export const fetchItems = async (config: TrackingConfiguration, apiCredentials: ApiCredentials): Promise<Item[]> => {
   try {
     console.log(`Buscando itens para configuração: ${config.name}`);
@@ -598,7 +590,6 @@ export const fetchItems = async (config: TrackingConfiguration, apiCredentials: 
       return [];
     }
     
-    // Testa a conexão com a API para verificar se as credenciais estão funcionando
     const connectionOk = await testApiConnection(apiCredentials);
     if (!connectionOk) {
       toast.error("Falha na conexão com a API do Path of Exile", {
@@ -619,7 +610,6 @@ export const fetchItems = async (config: TrackingConfiguration, apiCredentials: 
       });
     }
     
-    // Step 1: Search for items
     const searchResponse = await searchItems(config, apiCredentials);
     console.log(`IDs encontrados: ${searchResponse.result?.length || 0}`);
     
@@ -628,7 +618,6 @@ export const fetchItems = async (config: TrackingConfiguration, apiCredentials: 
       return [];
     }
     
-    // Generate direct trade URL for the user
     const directTradeUrl = `https://www.pathofexile.com/trade2/search/poe2/${searchResponse.id}`;
     toast.info(`Consulta gerada: ${searchResponse.id}`, {
       description: "Você pode acessar esses resultados diretamente no site oficial",
@@ -638,7 +627,6 @@ export const fetchItems = async (config: TrackingConfiguration, apiCredentials: 
       }
     });
     
-    // Step 2: Try direct query approach if enabled
     if (apiCredentials.directQuery && searchResponse.id) {
       toast.info("Tentando obter dados via consulta direta...");
       const directItems = await fetchItemsByDirectQuery(searchResponse.id, apiCredentials);
@@ -649,14 +637,12 @@ export const fetchItems = async (config: TrackingConfiguration, apiCredentials: 
       toast.info("Consulta direta não retornou itens, voltando para API padrão");
     }
     
-    // Apply rate limiting delay if enabled
     if (apiCredentials.respectRateLimit) {
-      const delay = apiCredentials.rateLimitDelay || 2000; // Default 2 seconds
+      const delay = apiCredentials.rateLimitDelay || 2000;
       toast.info(`Respeitando limite de requisições: aguardando ${delay/1000}s...`);
       await new Promise(resolve => setTimeout(resolve, delay));
     }
     
-    // Step 3: Fetch item details (batch of 10 item IDs at once)
     const itemsResponse = await fetchItemDetails(
       searchResponse.result.slice(0, 10), 
       searchResponse.id,

@@ -18,6 +18,7 @@ export interface ApiCredentials {
   originHeader?: string;       // Custom Origin header
   referrerHeader?: string;     // Custom Referrer header
   enableAdvancedOptions?: boolean; // Show advanced options in UI
+  supportCurl?: boolean;       // New option to enable cURL command support
 }
 
 export interface ApiDebugInfo {
@@ -34,4 +35,13 @@ export interface ApiDebugInfo {
   statusCode?: number;
   rateLimited?: boolean;
   cloudflareBlocked?: boolean;
+}
+
+// New type for parsed cURL command
+export interface ParsedCurlCommand {
+  url?: string;
+  method?: string;
+  headers?: Record<string, string>;
+  body?: string;
+  cookies?: Record<string, string>;
 }
