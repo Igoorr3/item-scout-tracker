@@ -37,11 +37,12 @@ export interface ApiDebugInfo {
   cloudflareBlocked?: boolean;
 }
 
-// New type for parsed cURL command
+// Tipo para comando cURL parseado
 export interface ParsedCurlCommand {
   url?: string;
   method?: string;
   headers?: Record<string, string>;
   body?: string;
+  jsonBody?: any; // Corpo parseado como JSON, se possível
   cookies?: Record<string, string>;
 }

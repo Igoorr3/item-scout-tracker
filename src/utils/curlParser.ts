@@ -2,10 +2,10 @@
 import { ParsedCurlCommand } from '@/types/api';
 
 /**
- * Parses a cURL command into its components
+ * Parseia um comando cURL em seus componentes
  * 
- * @param curlCommand The cURL command string copied from browser
- * @returns Parsed components including URL, headers, method, body, etc.
+ * @param curlCommand A string do comando cURL copiada do navegador
+ * @returns Componentes parseados incluindo URL, headers, método, body, etc.
  */
 export const parseCurlCommand = (curlCommand: string): ParsedCurlCommand => {
   const result: ParsedCurlCommand = {
@@ -14,28 +14,32 @@ export const parseCurlCommand = (curlCommand: string): ParsedCurlCommand => {
     method: 'GET'
   };
 
-  // Remove 'curl' if present at the beginning
+  // Remove 'curl' se presente no início
   let cmd = curlCommand.trim();
-  if (cmd.startsWith('curl ')) {
+  if (cmd.toLowerCase().startsWith('curl ')) {
     cmd = cmd.substring(5).trim();
   }
 
-  // Extract URL - it's either the first non-flag argument or after -X flag
+  // Extrai URL - é o primeiro argumento não-flag ou após a flag -X
   const urlMatch = cmd.match(/(?:^|\s+)(['"])(https?:\/\/[^'"]+)(\1)/i) ||
                   cmd.match(/(?:^|\s+)(https?:\/\/\S+)/i);
   
   if (urlMatch) {
     result.url = urlMatch[2] || urlMatch[1];
+    // Limpar possíveis aspas ou caracteres extras
+    if (result.url.endsWith('"') || result.url.endsWith("'")) {
+      result.url = result.url.slice(0, -1);
+    }
   }
 
-  // Extract request method
+  // Extrai método da requisição
   const methodMatch = cmd.match(/-X\s+(['"]?)(\w+)(\1)/i);
   if (methodMatch) {
     result.method = methodMatch[2].toUpperCase();
   }
 
-  // Extract headers
-  const headerMatches = cmd.matchAll(/-H\s+(['"])(.*?)(\1)/gi);
+  // Extrai headers
+  const headerMatches = Array.from(cmd.matchAll(/-H\s+(['"])(.*?)(\1)/gi));
   for (const match of headerMatches) {
     const headerLine = match[2];
     const separatorIndex = headerLine.indexOf(':');
@@ -61,20 +65,27 @@ export const parseCurlCommand = (curlCommand: string): ParsedCurlCommand => {
     }
   }
 
-  // Extract request body
-  const dataMatch = cmd.match(/--data\s+(['"])(.*?)(\1)/i) || 
-                    cmd.match(/--data-raw\s+(['"])(.*?)(\1)/i) ||
-                    cmd.match(/-d\s+(['"])(.*?)(\1)/i);
+  // Extrai body da requisição
+  const dataMatch = cmd.match(/--data(?:-raw)?\s+(['"])(.*?)(\1)/i) || 
+                   cmd.match(/-d\s+(['"])(.*?)(\1)/i);
                     
   if (dataMatch) {
     result.body = dataMatch[2];
+    
+    // Tenta parsear o body como JSON
+    try {
+      const jsonBody = JSON.parse(result.body);
+      result.jsonBody = jsonBody;
+    } catch (e) {
+      console.log("Body não é um JSON válido:", e);
+    }
   }
 
   return result;
 };
 
 /**
- * Extract useful API credentials from a parsed cURL command
+ * Extrai credenciais úteis da API de um comando cURL parseado
  */
 export const extractCredentialsFromCurl = (parsedCurl: ParsedCurlCommand) => {
   const credentials: {
@@ -88,7 +99,7 @@ export const extractCredentialsFromCurl = (parsedCurl: ParsedCurlCommand) => {
     cfClearance: []
   };
 
-  // Extract POESESSID and cf_clearance from cookies
+  // Extrai POESESSID e cf_clearance dos cookies
   if (parsedCurl.cookies) {
     if (parsedCurl.cookies['POESESSID']) {
       credentials.poesessid = parsedCurl.cookies['POESESSID'];
@@ -99,7 +110,7 @@ export const extractCredentialsFromCurl = (parsedCurl: ParsedCurlCommand) => {
     }
   }
 
-  // Extract useful headers
+  // Extrai headers úteis
   if (parsedCurl.headers) {
     if (parsedCurl.headers['User-Agent']) {
       credentials.useragent = parsedCurl.headers['User-Agent'];
@@ -113,7 +124,7 @@ export const extractCredentialsFromCurl = (parsedCurl: ParsedCurlCommand) => {
       credentials.referrerHeader = parsedCurl.headers['Referer'];
     }
 
-    // Store other potentially useful headers
+    // Armazena outros headers potencialmente úteis
     credentials.otherHeaders = { ...parsedCurl.headers };
     delete credentials.otherHeaders['User-Agent'];
     delete credentials.otherHeaders['Origin'];
