@@ -17,14 +17,28 @@ interface PoeItemResponse {
 interface PoeItemResult {
   id: string;
   listing: {
+    method?: string;
     price: {
       amount: number;
       currency: string;
+      type?: string;
     };
     account: {
       name: string;
+      online?: {
+        league?: string;
+        status?: string;
+      };
+      lastCharacterName?: string;
+      language?: string;
     };
     indexed?: string;
+    stash?: {
+      name: string;
+      x: number;
+      y: number;
+    };
+    whisper?: string;
   };
   item: {
     name: string;
@@ -42,6 +56,14 @@ interface PoeItemResult {
       pdps?: number;
       edps?: number;
     };
+    baseType?: string;
+    identified?: boolean;
+    requirements?: {
+      name: string;
+      values: [string, number][];
+      displayMode: number;
+      type: number;
+    }[];
   };
 }
 
@@ -123,14 +145,21 @@ const buildCookieString = (apiCredentials: ApiCredentials): string => {
 };
 
 /**
- * Builds headers for API requests
+ * Builds headers for API requests - Improved with proper headers
  */
 const buildHeaders = (apiCredentials: ApiCredentials, isSearch: boolean = false): Record<string, string> => {
   const headers: Record<string, string> = {
-    "User-Agent": apiCredentials.useragent || 'Mozilla/5.0',
+    "User-Agent": apiCredentials.useragent || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     "Accept": "application/json",
     "Origin": "https://www.pathofexile.com",
-    "Referer": "https://www.pathofexile.com/trade2/search/poe2/Standard"
+    "Referer": "https://www.pathofexile.com/trade2/search/poe2/Standard",
+    "Connection": "keep-alive",
+    "sec-ch-ua": '"Chromium";v="120", "Not A(Brand";v="24"',
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": '"Windows"',
+    "Sec-Fetch-Dest": "empty",
+    "Sec-Fetch-Mode": "cors",
+    "Sec-Fetch-Site": "same-origin"
   };
 
   if (isSearch) {
@@ -226,6 +255,11 @@ export const searchItems = async (config: TrackingConfiguration, apiCredentials:
         throw new Error("API rate limit reached. Please wait before trying again.");
       }
       
+      // Check for authorization errors (status 401 or 403)
+      if (response.status === 401 || response.status === 403) {
+        throw new Error(`Erro de autorização: ${response.status}. Verifique seus cookies de sessão.`);
+      }
+      
       const errorText = await response.text();
       console.error(`Erro na API de busca: Status ${response.status}`, errorText);
       
@@ -247,10 +281,12 @@ export const searchItems = async (config: TrackingConfiguration, apiCredentials:
   } catch (error) {
     console.error("Erro ao buscar itens:", error);
     
+    // If not already trying with proxy, try with proxy
     if (apiCredentials.useProxy) {
       throw error;
     }
     
+    console.log("Tentando novamente com proxy...");
     const updatedCredentials = { ...apiCredentials, useProxy: true };
     return searchItems(config, updatedCredentials);
   }
@@ -295,6 +331,10 @@ export const fetchItemDetails = async (itemIds: string[], queryId: string, apiCr
         throw new Error("API rate limit reached. Please wait before trying again.");
       }
       
+      if (response.status === 401 || response.status === 403) {
+        throw new Error(`Erro de autorização: ${response.status}. Verifique seus cookies de sessão.`);
+      }
+      
       const errorText = await response.text();
       console.error(`Erro na API de detalhes: Status ${response.status}`, errorText);
       
@@ -315,6 +355,7 @@ export const fetchItemDetails = async (itemIds: string[], queryId: string, apiCr
       throw error;
     }
     
+    console.log("Tentando novamente com proxy...");
     const updatedCredentials = { ...apiCredentials, useProxy: true };
     return fetchItemDetails(itemIds, queryId, updatedCredentials);
   }
@@ -469,13 +510,17 @@ export const testApiConnection = async (apiCredentials: ApiCredentials): Promise
     const headers = buildHeaders(apiCredentials);
     console.log("Headers para teste de API:", headers);
 
+    // Tentativa com endpoint mais simples
+    const testUrl = "https://www.pathofexile.com/api/trade2/leagues";
+    console.log("Tentando conexão com:", testUrl);
+    
     let response;
     if (apiCredentials.useProxy) {
-      response = await tryWithDifferentProxies("https://www.pathofexile.com/api/trade2/leagues", {
+      response = await tryWithDifferentProxies(testUrl, {
         headers
       });
     } else {
-      response = await fetch("https://www.pathofexile.com/api/trade2/leagues", {
+      response = await fetch(testUrl, {
         headers,
         credentials: "include",
         mode: "cors"
@@ -486,6 +531,8 @@ export const testApiConnection = async (apiCredentials: ApiCredentials): Promise
       console.error(`Teste de API falhou com status: ${response.status}`);
       
       const responseText = await response.text();
+      console.log("Resposta de erro completa:", responseText);
+      
       if (responseText.includes('<!DOCTYPE html>') || responseText.includes('<html')) {
         console.error("Resposta Cloudflare detectada. Necessário atualizar cookies.");
       }
@@ -503,6 +550,7 @@ export const testApiConnection = async (apiCredentials: ApiCredentials): Promise
       return false;
     }
     
+    console.log("Tentando novamente com proxy...");
     const updatedCredentials = { ...apiCredentials, useProxy: true };
     return testApiConnection(updatedCredentials);
   }
@@ -531,6 +579,7 @@ export const fetchItems = async (config: TrackingConfiguration, apiCredentials: 
       return [];
     }
     
+    // Tenta conectar com a API para verificar se as credenciais estão funcionando
     const connectionOk = await testApiConnection(apiCredentials);
     if (!connectionOk) {
       toast.error("Falha na conexão com a API do Path of Exile", {
@@ -598,12 +647,18 @@ export const fetchItems = async (config: TrackingConfiguration, apiCredentials: 
     const items = convertApiResponseToItems(itemsResponse, searchResponse.id);
     console.log(`Itens obtidos: ${items.length}`);
     
+    if (items.length === 0) {
+      toast.warning("Os IDs de itens foram encontrados, mas não foi possível obter detalhes", {
+        description: "Isso pode indicar um problema com os cookies ou com a API do Path of Exile"
+      });
+    }
+    
     return items;
   } catch (error) {
     console.error('Erro ao buscar itens:', error);
     
     if (error instanceof Error) {
-      if (error.message.includes('401')) {
+      if (error.message.includes('401') || error.message.includes('403')) {
         toast.error("Erro de autenticação na API", {
           description: "Verifique se os cookies de sessão são válidos e estão atualizados"
         });

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -5,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { ApiCredentials } from '@/types/api';
-import { InfoIcon, Plus, Trash2 } from 'lucide-react';
+import { InfoIcon, Plus, Trash2, ExternalLink } from 'lucide-react';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -101,10 +102,19 @@ const ApiConfigDialog = ({ open, onOpenChange, apiConfig, onSaveConfig }: ApiCon
                   <li>Faça login no site oficial do <a href="https://www.pathofexile.com" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Path of Exile</a></li>
                   <li>Abra o <a href="https://www.pathofexile.com/trade2/search/poe2/Standard" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">site de trade do PoE2</a></li>
                   <li>Pressione F12 para abrir as ferramentas de desenvolvedor</li>
-                  <li>Vá para a aba "Network" (ou "Rede")</li>
-                  <li>Faça uma busca no site para gerar as requisições</li>
-                  <li>Clique na requisição "Standard" (POST) e copie os cookies da aba Headers</li>
-                  <li>Identifique e copie o valor de "POESESSID" e <strong>todos</strong> os valores "cf_clearance"</li>
+                  <li>Vá para a aba "Application" (ou "Aplicação")</li>
+                  <li>No menu lateral, expanda "Cookies" e clique em "https://www.pathofexile.com"</li>
+                  <li>Copie o valor do cookie "POESESSID" (clique duas vezes no valor para selecioná-lo)</li>
+                  <li>Copie também o valor de todos os cookies "cf_clearance" que encontrar</li>
+                  <li>
+                    <Button 
+                      variant="link" 
+                      className="p-0 h-auto text-blue-500 text-xs flex items-center gap-1"
+                      onClick={() => window.open('https://i.imgur.com/3XRUK4O.png', '_blank')}
+                    >
+                      Ver exemplo <ExternalLink className="h-3 w-3" />
+                    </Button>
+                  </li>
                 </ol>
               </AlertDescription>
             </Alert>
@@ -172,6 +182,19 @@ const ApiConfigDialog = ({ open, onOpenChange, apiConfig, onSaveConfig }: ApiCon
                   className="col-span-3"
                 />
               </div>
+
+              <Alert className="col-span-4 bg-amber-500/10 border-amber-500/50">
+                <InfoIcon className="h-4 w-4 text-amber-500" />
+                <AlertDescription className="text-sm">
+                  <p><strong>Dica importante:</strong> A API do PoE pode ser sensível a qualquer variação nos cookies. Se encontrar problemas:</p>
+                  <ul className="list-disc pl-5 mt-1 space-y-1">
+                    <li>Certifique-se de que você está logado no site oficial</li>
+                    <li>Copie exatamente todos os valores sem espaços extras</li>
+                    <li>Tente ativar a opção "Usar Proxy" nas opções avançadas</li>
+                    <li>Se ainda não funcionar, tente limpar os cookies do seu navegador e fazer login novamente</li>
+                  </ul>
+                </AlertDescription>
+              </Alert>
             </div>
           </TabsContent>
           
@@ -298,6 +321,18 @@ const ApiConfigDialog = ({ open, onOpenChange, apiConfig, onSaveConfig }: ApiCon
                   </p>
                 </div>
               </div>
+              
+              <Alert className="col-span-4 bg-amber-500/10 border-amber-500/50 mt-4">
+                <InfoIcon className="h-4 w-4 text-amber-500" />
+                <AlertDescription className="text-sm">
+                  <p>Configurações avançadas que podem ajudar caso você esteja enfrentando bloqueios do Cloudflare:</p>
+                  <ol className="list-decimal ml-5 mt-2 text-xs space-y-1">
+                    <li>Ative o "Controle de Taxa" e aumente o delay para 3000ms (3 segundos)</li>
+                    <li>Ative a opção "Usar Proxy" na aba "Opções da API"</li>
+                    <li>Se o problema persistir, abra o Debug API para mais informações detalhadas</li>
+                  </ol>
+                </AlertDescription>
+              </Alert>
             </div>
           </TabsContent>
         </Tabs>
