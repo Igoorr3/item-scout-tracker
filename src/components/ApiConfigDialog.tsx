@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -28,11 +27,11 @@ const ApiConfigDialog = ({ open, onOpenChange, apiConfig, onSaveConfig }: ApiCon
   const [useProxy, setUseProxy] = useState(apiConfig.useProxy || false);
   const [directQuery, setDirectQuery] = useState(apiConfig.directQuery || false);
   const [forceSimulation, setForceSimulation] = useState(false); // Always start with false
-  const [notifyGoodDeals, setNotifyGoodDeals] = useState(apiConfig.notifyGoodDeals || true);
+  const [notifyGoodDeals, setNotifyGoodDeals] = useState(apiConfig.notifyGoodDeals ?? true);
   const [respectRateLimit, setRespectRateLimit] = useState(apiConfig.respectRateLimit ?? true);
   const [rateLimitDelay, setRateLimitDelay] = useState(apiConfig.rateLimitDelay || 2000);
-  const [useBatchQuery, setUseBatchQuery] = useState(apiConfig.useBatchQuery || true);
-  const [preferDirectLink, setPreferDirectLink] = useState(apiConfig.preferDirectLink || true);
+  const [useBatchQuery, setUseBatchQuery] = useState(apiConfig.useBatchQuery ?? true);
+  const [preferDirectLink, setPreferDirectLink] = useState(apiConfig.preferDirectLink ?? true);
   const [activeTab, setActiveTab] = useState('auth');
 
   const handleSave = () => {
@@ -186,7 +185,7 @@ const ApiConfigDialog = ({ open, onOpenChange, apiConfig, onSaveConfig }: ApiCon
                   <Switch 
                     id="use-proxy" 
                     checked={useProxy}
-                    onCheckedChange={(checked: boolean) => setUseProxy(checked)}
+                    onCheckedChange={setUseProxy}
                   />
                   <Label htmlFor="use-proxy" className="text-sm text-muted-foreground">
                     Ative se estiver tendo problemas de CORS ou bloqueio de requisições
@@ -202,7 +201,7 @@ const ApiConfigDialog = ({ open, onOpenChange, apiConfig, onSaveConfig }: ApiCon
                   <Switch 
                     id="direct-query" 
                     checked={directQuery}
-                    onCheckedChange={(checked: boolean) => setDirectQuery(checked)}
+                    onCheckedChange={setDirectQuery}
                   />
                   <Label htmlFor="direct-query" className="text-sm text-muted-foreground">
                     Tenta extrair dados diretamente da página de busca (como no site)
@@ -218,7 +217,7 @@ const ApiConfigDialog = ({ open, onOpenChange, apiConfig, onSaveConfig }: ApiCon
                   <Switch 
                     id="notify-deals" 
                     checked={notifyGoodDeals}
-                    onCheckedChange={(checked: boolean) => setNotifyGoodDeals(checked)}
+                    onCheckedChange={setNotifyGoodDeals}
                   />
                   <Label htmlFor="notify-deals" className="text-sm text-muted-foreground">
                     Destaca e notifica sobre itens com preços abaixo da média
@@ -234,7 +233,7 @@ const ApiConfigDialog = ({ open, onOpenChange, apiConfig, onSaveConfig }: ApiCon
                   <Switch 
                     id="batch-query" 
                     checked={useBatchQuery}
-                    onCheckedChange={(checked: boolean) => setUseBatchQuery(checked)}
+                    onCheckedChange={setUseBatchQuery}
                   />
                   <Label htmlFor="batch-query" className="text-sm text-muted-foreground">
                     Buscar 10 itens de cada vez (formato da API oficial)
@@ -250,7 +249,7 @@ const ApiConfigDialog = ({ open, onOpenChange, apiConfig, onSaveConfig }: ApiCon
                   <Switch 
                     id="direct-link" 
                     checked={preferDirectLink}
-                    onCheckedChange={(checked: boolean) => setPreferDirectLink(checked)}
+                    onCheckedChange={setPreferDirectLink}
                   />
                   <Label htmlFor="direct-link" className="text-sm text-muted-foreground">
                     Usar links diretos para o site de trade quando disponíveis
@@ -270,7 +269,7 @@ const ApiConfigDialog = ({ open, onOpenChange, apiConfig, onSaveConfig }: ApiCon
                   <Switch 
                     id="respect-rate-limit" 
                     checked={respectRateLimit}
-                    onCheckedChange={(checked: boolean) => setRespectRateLimit(checked)}
+                    onCheckedChange={setRespectRateLimit}
                   />
                   <Label htmlFor="respect-rate-limit" className="text-sm text-muted-foreground">
                     Aguardar entre requisições para evitar bloqueios da API
