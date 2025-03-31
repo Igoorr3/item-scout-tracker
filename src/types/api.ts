@@ -14,6 +14,10 @@ export interface ApiCredentials {
   rateLimitDelay?: number;     // Delay in milliseconds between API calls (default 2000ms)
   useBatchQuery?: boolean;     // Option to use the batch query approach (10 items at a time)
   preferDirectLink?: boolean;  // Option to prefer direct trade site links when available
+  bypassCloudflare?: boolean;  // Option to enable special headers to bypass Cloudflare
+  originHeader?: string;       // Custom Origin header
+  referrerHeader?: string;     // Custom Referrer header
+  enableAdvancedOptions?: boolean; // Show advanced options in UI
 }
 
 export interface ApiDebugInfo {
@@ -29,4 +33,5 @@ export interface ApiDebugInfo {
   requestMethod?: string;
   statusCode?: number;
   rateLimited?: boolean;
+  cloudflareBlocked?: boolean;
 }

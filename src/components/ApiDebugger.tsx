@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ApiCredentials, ApiDebugInfo } from '@/types/api';
-import { InfoIcon, AlertCircle, Bug, Copy, Check, ExternalLink } from 'lucide-react';
+import { InfoIcon, AlertCircle, Bug, Copy, Check, ExternalLink, Download } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -46,6 +47,10 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
   const [debugInfo, setDebugInfo] = useState<ApiDebugInfo>({});
   const [respectRateLimit, setRespectRateLimit] = useState(true);
   const [rateLimitDelay, setRateLimitDelay] = useState(2000);
+  const [bypassCloudflare, setBypassCloudflare] = useState(false);
+  const [customOrigin, setCustomOrigin] = useState('https://www.pathofexile.com');
+  const [customReferrer, setCustomReferrer] = useState('https://www.pathofexile.com/trade2/search/poe2/Standard');
+  const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
 
   const buildCookieString = (): string => {
     let cookieString = '';
@@ -67,10 +72,19 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
 
   const buildHeaders = (isSearchRequest: boolean = false): Record<string, string> => {
     const headers: Record<string, string> = {
-      "User-Agent": apiCredentials.useragent || 'Mozilla/5.0',
+      "User-Agent": apiCredentials.useragent || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
       "Accept": "application/json",
-      "Origin": "https://www.pathofexile.com",
-      "Referer": "https://www.pathofexile.com/trade2/search/poe2/Standard"
+      "Origin": customOrigin,
+      "Referer": customReferrer,
+      "Connection": "keep-alive",
+      "sec-ch-ua": '"Chromium";v="120", "Not A(Brand";v="24"',
+      "sec-ch-ua-mobile": "?0",
+      "sec-ch-ua-platform": '"Windows"',
+      "Sec-Fetch-Dest": "empty",
+      "Sec-Fetch-Mode": "cors",
+      "Sec-Fetch-Site": "same-origin",
+      "Cache-Control": "no-cache",
+      "Pragma": "no-cache"
     };
 
     if (isSearchRequest) {
@@ -80,6 +94,13 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
     const cookieString = buildCookieString();
     if (cookieString) {
       headers["Cookie"] = cookieString;
+    }
+    
+    // Add special headers to help bypass Cloudflare if enabled
+    if (bypassCloudflare) {
+      headers["Accept-Language"] = "en-US,en;q=0.9";
+      headers["Accept-Encoding"] = "gzip, deflate, br";
+      headers["X-Requested-With"] = "XMLHttpRequest";
     }
 
     return headers;
@@ -123,7 +144,8 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
           headers,
           body: searchPayload,
           mode: "cors",
-          credentials: "include"
+          credentials: "include",
+          cache: "no-cache"
         });
       } catch (directError) {
         console.error("Direct request failed:", directError);
@@ -144,7 +166,8 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
                 ...headers,
                 'X-Requested-With': 'XMLHttpRequest'
               },
-              body: searchPayload
+              body: searchPayload,
+              cache: "no-cache"
             });
             break;
           } catch (error) {
@@ -172,6 +195,25 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
             rateLimited: true
           }));
           throw new Error(`API Rate limit reached. Please wait before trying again. Status: ${response.status}`);
+        }
+        
+        if (errorText.includes('<!DOCTYPE html>') || errorText.includes('<html')) {
+          setDebugInfo(prev => ({
+            ...prev,
+            cloudflareBlocked: true,
+            error: "Cloudflare proteção detectada"
+          }));
+          
+          // Extract Cloudflare Ray ID if possible
+          const rayIdMatch = errorText.match(/Ray ID:\s*<strong[^>]*>([^<]+)<\/strong>/);
+          if (rayIdMatch && rayIdMatch[1]) {
+            setDebugInfo(prev => ({
+              ...prev,
+              error: `Cloudflare proteção detectada (Ray ID: ${rayIdMatch[1]})`
+            }));
+          }
+          
+          throw new Error(`Proteção Cloudflare detectada. É necessário usar cookies cf_clearance válidos.`);
         }
         
         throw new Error(`API error: ${response.status} - ${errorText}`);
@@ -253,7 +295,8 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
           method: "GET",
           headers,
           mode: "cors",
-          credentials: "include"
+          credentials: "include",
+          cache: "no-cache"
         });
       } catch (directError) {
         console.error("Direct fetch request failed:", directError);
@@ -273,7 +316,8 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
               headers: {
                 ...headers,
                 'X-Requested-With': 'XMLHttpRequest'
-              }
+              },
+              cache: "no-cache"
             });
             break;
           } catch (error) {
@@ -302,6 +346,17 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
         }
         
         const errorText = await response.text();
+        
+        if (errorText.includes('<!DOCTYPE html>') || errorText.includes('<html')) {
+          setDebugInfo(prev => ({
+            ...prev,
+            cloudflareBlocked: true,
+            error: "Cloudflare proteção detectada"
+          }));
+          
+          throw new Error(`Proteção Cloudflare detectada. É necessário usar cookies cf_clearance válidos.`);
+        }
+        
         throw new Error(`API error: ${response.status} - ${errorText}`);
       }
       
@@ -330,6 +385,43 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
       setCopied(true);
       toast.success("URL copiada para a área de transferência");
       setTimeout(() => setCopied(false), 2000);
+    });
+  };
+  
+  const downloadDebugInfo = () => {
+    const data = {
+      timestamp: new Date().toISOString(),
+      apiCredentials: {
+        poesessid: apiCredentials.poesessid ? "configured" : "not configured",
+        cfClearance: apiCredentials.cfClearance?.map(c => c.substring(0, 5) + "...") || [],
+        useragent: apiCredentials.useragent ? apiCredentials.useragent.substring(0, 20) + "..." : "default"
+      },
+      search: {
+        url: searchUrl,
+        payload: JSON.parse(searchPayload),
+        response: searchResponse ? JSON.parse(searchResponse) : null
+      },
+      fetch: {
+        url: fetchUrl,
+        response: fetchResponse ? JSON.parse(fetchResponse) : null
+      },
+      debug: debugInfo,
+      error: errorMessage,
+      headers: buildHeaders(true)
+    };
+    
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `poe-api-debug-${new Date().toISOString().split('.')[0].replace(/:/g, '-')}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    toast.success("Arquivo de debug salvo", {
+      description: "O arquivo pode ser usado para depuração ou compartilhado para obter ajuda"
     });
   };
 
@@ -390,6 +482,59 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
               />
             </div>
           </div>
+        </div>
+        
+        <div className="mb-4">
+          <div className="flex items-center space-x-2 mb-2">
+            <Switch 
+              id="show-advanced" 
+              checked={showAdvancedOptions}
+              onCheckedChange={setShowAdvancedOptions}
+            />
+            <Label htmlFor="show-advanced">Mostrar opções avançadas</Label>
+          </div>
+          
+          {showAdvancedOptions && (
+            <div className="border border-gray-200 dark:border-gray-800 rounded-md p-3 space-y-4">
+              <div>
+                <div className="flex items-center space-x-2 mb-2">
+                  <Switch 
+                    id="bypass-cloudflare" 
+                    checked={bypassCloudflare}
+                    onCheckedChange={setBypassCloudflare}
+                  />
+                  <Label htmlFor="bypass-cloudflare">Tentar contornar Cloudflare</Label>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Adiciona cabeçalhos especiais que podem ajudar a contornar a proteção do Cloudflare
+                </p>
+              </div>
+              
+              <div className="grid grid-cols-1 gap-3">
+                <div>
+                  <Label htmlFor="custom-origin" className="text-xs">Origin header personalizado</Label>
+                  <Input 
+                    id="custom-origin" 
+                    value={customOrigin}
+                    onChange={(e) => setCustomOrigin(e.target.value)}
+                    className="text-xs"
+                    placeholder="https://www.pathofexile.com"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="custom-referrer" className="text-xs">Referrer header personalizado</Label>
+                  <Input 
+                    id="custom-referrer" 
+                    value={customReferrer}
+                    onChange={(e) => setCustomReferrer(e.target.value)}
+                    className="text-xs"
+                    placeholder="https://www.pathofexile.com/trade2/search/poe2/Standard"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {queryId && (
@@ -644,6 +789,17 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
               <AccordionContent>
                 <div className="space-y-4">
                   <div>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="w-full"
+                      onClick={downloadDebugInfo}
+                    >
+                      <Download className="mr-2 h-4 w-4" /> Salvar informações de debug
+                    </Button>
+                  </div>
+                
+                  <div>
                     <h4 className="font-medium mb-1">Para verificar se o POESESSID é válido:</h4>
                     <p className="text-xs">Tente acessar <a href="https://www.pathofexile.com/my-account" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">sua conta</a> em uma nova janela. Se conseguir acessar, o POESESSID está válido.</p>
                   </div>
@@ -651,6 +807,16 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
                   <div>
                     <h4 className="font-medium mb-1">Para obter novos cookies cf_clearance:</h4>
                     <p className="text-xs">Abra as ferramentas de desenvolvedor (F12), vá para a aba Application {'>'} Storage {'>'} Cookies {'>'} www.pathofexile.com e copie os valores de cf_clearance.</p>
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-medium mb-1">Instruções baseadas no Reddit:</h4>
+                    <p className="text-xs">De acordo com as dicas do Reddit, muitos usuários conseguem acessar a API usando o Python. Vale a pena comparar os headers enviados pelo Python com os daqui para ver as diferenças.</p>
+                    <Alert className="mt-2 bg-muted/50 border">
+                      <p className="text-xs">
+                        Certifique-se de que está logado no site do Path of Exile e que resolveu qualquer desafio do Cloudflare antes de copiar os cookies. Você também pode tentar acessar o site em um navegador normal (fora do iframe) e depois copiar os cookies frescos.
+                      </p>
+                    </Alert>
                   </div>
                   
                   <div>

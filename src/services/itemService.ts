@@ -151,15 +151,17 @@ const buildHeaders = (apiCredentials: ApiCredentials, isSearch: boolean = false)
   const headers: Record<string, string> = {
     "User-Agent": apiCredentials.useragent || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     "Accept": "application/json",
-    "Origin": "https://www.pathofexile.com",
-    "Referer": "https://www.pathofexile.com/trade2/search/poe2/Standard",
+    "Origin": apiCredentials.originHeader || "https://www.pathofexile.com",
+    "Referer": apiCredentials.referrerHeader || "https://www.pathofexile.com/trade2/search/poe2/Standard",
     "Connection": "keep-alive",
     "sec-ch-ua": '"Chromium";v="120", "Not A(Brand";v="24"',
     "sec-ch-ua-mobile": "?0",
     "sec-ch-ua-platform": '"Windows"',
     "Sec-Fetch-Dest": "empty",
     "Sec-Fetch-Mode": "cors",
-    "Sec-Fetch-Site": "same-origin"
+    "Sec-Fetch-Site": "same-origin",
+    "Cache-Control": "no-cache",
+    "Pragma": "no-cache"
   };
 
   if (isSearch) {
@@ -169,6 +171,13 @@ const buildHeaders = (apiCredentials: ApiCredentials, isSearch: boolean = false)
   const cookieString = buildCookieString(apiCredentials);
   if (cookieString) {
     headers["Cookie"] = cookieString;
+  }
+  
+  // Add special headers to help bypass Cloudflare if enabled
+  if (apiCredentials.bypassCloudflare) {
+    headers["Accept-Language"] = "en-US,en;q=0.9";
+    headers["Accept-Encoding"] = "gzip, deflate, br";
+    headers["X-Requested-With"] = "XMLHttpRequest";
   }
 
   return headers;
@@ -322,7 +331,8 @@ export const fetchItemDetails = async (itemIds: string[], queryId: string, apiCr
       response = await fetch(url, {
         headers,
         credentials: "include",
-        mode: "cors"
+        mode: "cors",
+        cache: "no-cache"
       });
     }
 
@@ -377,7 +387,8 @@ export const fetchItemsByDirectQuery = async (queryId: string, apiCredentials: A
         method: "GET",
         headers,
         credentials: "include",
-        mode: "cors"
+        mode: "cors",
+        cache: "no-cache"
       });
     } catch (directError) {
       console.error("Erro ao acessar consulta direta:", directError);
@@ -503,14 +514,14 @@ const convertApiResponseToItems = (response: PoeItemResponse, queryId: string): 
 };
 
 /**
- * Test API connection
+ * Test API connection - Now with proper debugging and Cloudflare detection
  */
 export const testApiConnection = async (apiCredentials: ApiCredentials): Promise<boolean> => {
   try {
     const headers = buildHeaders(apiCredentials);
     console.log("Headers para teste de API:", headers);
 
-    // Tentativa com endpoint mais simples
+    // Try with simpler endpoint
     const testUrl = "https://www.pathofexile.com/api/trade2/leagues";
     console.log("Tentando conexão com:", testUrl);
     
@@ -523,7 +534,8 @@ export const testApiConnection = async (apiCredentials: ApiCredentials): Promise
       response = await fetch(testUrl, {
         headers,
         credentials: "include",
-        mode: "cors"
+        mode: "cors",
+        cache: "no-cache"
       });
     }
 
@@ -535,6 +547,12 @@ export const testApiConnection = async (apiCredentials: ApiCredentials): Promise
       
       if (responseText.includes('<!DOCTYPE html>') || responseText.includes('<html')) {
         console.error("Resposta Cloudflare detectada. Necessário atualizar cookies.");
+        
+        // Try to extract the Cloudflare Ray ID for better debugging
+        const rayIdMatch = responseText.match(/Ray ID:\s*<strong[^>]*>([^<]+)<\/strong>/);
+        if (rayIdMatch && rayIdMatch[1]) {
+          console.error(`Cloudflare Ray ID: ${rayIdMatch[1]}`);
+        }
       }
       
       return false;
@@ -569,7 +587,8 @@ export const fetchItems = async (config: TrackingConfiguration, apiCredentials: 
       useragent: apiCredentials.useragent ? "Configurado" : "Padrão",
       useProxy: apiCredentials.useProxy ? "Sim" : "Não",
       customHeaders: apiCredentials.customHeaders ? "Sim" : "Não",
-      respectRateLimit: apiCredentials.respectRateLimit ? "Sim" : "Não"
+      respectRateLimit: apiCredentials.respectRateLimit ? "Sim" : "Não",
+      bypassCloudflare: apiCredentials.bypassCloudflare ? "Sim" : "Não"
     });
     
     if (!apiCredentials.isConfigured) {
@@ -579,7 +598,7 @@ export const fetchItems = async (config: TrackingConfiguration, apiCredentials: 
       return [];
     }
     
-    // Tenta conectar com a API para verificar se as credenciais estão funcionando
+    // Testa a conexão com a API para verificar se as credenciais estão funcionando
     const connectionOk = await testApiConnection(apiCredentials);
     if (!connectionOk) {
       toast.error("Falha na conexão com a API do Path of Exile", {
