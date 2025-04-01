@@ -146,6 +146,10 @@ const buildHeaders = (apiCredentials: ApiCredentials, isSearch: boolean = false)
       headers['Content-Type'] = "application/json";
     }
     
+    if (!headers['Cookie'] && curlExtractedCredentials?.allCookies) {
+      headers['Cookie'] = curlExtractedCredentials.allCookies;
+    }
+    
     return headers;
   }
   
@@ -198,8 +202,8 @@ const buildHeaders = (apiCredentials: ApiCredentials, isSearch: boolean = false)
     headers["Referer"] = "https://www.pathofexile.com/trade2/search/poe2/Standard";
   }
 
-  if (curlExtractedCredentials?.otherHeaders) {
-    Object.entries(curlExtractedCredentials.otherHeaders).forEach(([key, value]) => {
+  if (curlExtractedCredentials?.exactHeaders) {
+    Object.entries(curlExtractedCredentials.exactHeaders).forEach(([key, value]) => {
       if (value && typeof value === 'string') {
         headers[key] = value;
       }
@@ -612,7 +616,8 @@ export const fetchItems = async (config: TrackingConfiguration, apiCredentials: 
       useragent: apiCredentials.useragent ? "Configurado" : "Padrão",
       useProxy: apiCredentials.useProxy ? "Sim" : "Não",
       fullCurlCommand: apiCredentials.fullCurlCommand ? "Configurado" : "Não configurado",
-      exactHeaders: apiCredentials.exactHeaders ? "Configurados" : "Não configurados"
+      exactHeaders: apiCredentials.exactHeaders ? "Configurados" : "Não configurados",
+      allCookies: apiCredentials.allCookies ? "Configurados" : "Não configurados"
     });
     
     const hasConfigured = apiCredentials.isConfigured || 

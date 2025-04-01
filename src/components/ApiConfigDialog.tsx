@@ -2,15 +2,12 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle, Check, X, Code } from 'lucide-react';
 import { ApiCredentials } from '@/types/api';
-import { X, Check, Cookie, RefreshCcw, Code } from 'lucide-react';
 import { parseCurlCommand, extractCredentialsFromCurl } from '@/utils/curlParser';
 import { toast } from "sonner";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface ApiConfigDialogProps {
   open: boolean;
@@ -20,39 +17,8 @@ interface ApiConfigDialogProps {
 }
 
 const ApiConfigDialog = ({ open, onOpenChange, apiConfig, onSaveConfig }: ApiConfigDialogProps) => {
-  const [poesessid, setPoesessid] = useState(apiConfig.poesessid || '');
-  const [cfClearance, setCfClearance] = useState<string>(apiConfig.cfClearance?.join('\n') || '');
-  const [useragent, setUseragent] = useState(apiConfig.useragent || '');
-  const [useProxy, setUseProxy] = useState(apiConfig.useProxy || false);
-  const [bypassCloudflare, setBypassCloudflare] = useState(apiConfig.bypassCloudflare || false);
-  const [respectRateLimit, setRespectRateLimit] = useState(apiConfig.respectRateLimit || false);
-  const [rateLimitDelay, setRateLimitDelay] = useState(apiConfig.rateLimitDelay || 2000);
-  const [directQuery, setDirectQuery] = useState(apiConfig.directQuery || false);
-  const [curlCommand, setCurlCommand] = useState('');
-  const [activeTab, setActiveTab] = useState<string>('curl');
-
-  const handleSave = () => {
-    const cfClearanceArray = cfClearance
-      .split('\n')
-      .map(line => line.trim())
-      .filter(Boolean);
-    
-    const config: ApiCredentials = {
-      poesessid,
-      cfClearance: cfClearanceArray,
-      useragent,
-      isConfigured: Boolean(poesessid || cfClearanceArray.length > 0),
-      useProxy,
-      bypassCloudflare,
-      respectRateLimit,
-      rateLimitDelay,
-      directQuery,
-      customHeaders: true
-    };
-    
-    onSaveConfig(config);
-    onOpenChange(false);
-  };
+  const [curlCommand, setCurlCommand] = useState(apiConfig.fullCurlCommand || '');
+  const [parsedCurlInfo, setParsedCurlInfo] = useState<any>(null);
   
   const handlePasteCurl = async () => {
     try {
@@ -84,28 +50,27 @@ const ApiConfigDialog = ({ open, onOpenChange, apiConfig, onSaveConfig }: ApiCon
       const credentials = extractCredentialsFromCurl(parsed);
       console.log("Credenciais extraídas:", credentials);
       
+      setParsedCurlInfo({
+        ...credentials,
+        fullCommand: text
+      });
+      
       if (credentials.poesessid) {
-        setPoesessid(credentials.poesessid);
         toast.success("POESESSID extraído com sucesso");
       }
       
       if (credentials.cfClearance && credentials.cfClearance.length > 0) {
-        setCfClearance(credentials.cfClearance.join('\n'));
         toast.success("cf_clearance extraído com sucesso");
       }
       
       if (credentials.useragent) {
-        setUseragent(credentials.useragent);
         toast.success("User-Agent extraído com sucesso");
       }
       
-      // Cria evento para notificar que as credenciais foram extraídas
-      const event = new CustomEvent("curl-credentials-extracted", {
-        detail: credentials
-      });
-      document.dispatchEvent(event);
+      if (credentials.exactHeaders && Object.keys(credentials.exactHeaders).length > 0) {
+        toast.success(`${Object.keys(credentials.exactHeaders).length} headers extraídos com sucesso`);
+      }
       
-      setActiveTab('manual');
     } catch (error) {
       console.error("Erro ao processar comando cURL:", error);
       toast.error("Não foi possível processar o comando cURL", {
@@ -114,160 +79,145 @@ const ApiConfigDialog = ({ open, onOpenChange, apiConfig, onSaveConfig }: ApiCon
     }
   };
 
+  const handleSave = () => {
+    if (!parsedCurlInfo && !curlCommand) {
+      toast.error("Nenhum comando cURL foi processado", {
+        description: "Por favor, cole um comando cURL válido e clique em 'Analisar cURL'"
+      });
+      return;
+    }
+    
+    // Se temos o curlCommand mas não o parsedCurlInfo, tente analisá-lo agora
+    if (curlCommand && !parsedCurlInfo) {
+      try {
+        const parsed = parseCurlCommand(curlCommand);
+        const credentials = extractCredentialsFromCurl(parsed);
+        setParsedCurlInfo({
+          ...credentials,
+          fullCommand: curlCommand
+        });
+      } catch (error) {
+        console.error("Erro ao processar comando cURL no salvamento:", error);
+      }
+    }
+    
+    // Atualiza as credenciais usando o parsedCurlInfo ou valores existentes
+    const newCredentials: ApiCredentials = {
+      poesessid: parsedCurlInfo?.poesessid || apiConfig.poesessid || '',
+      cfClearance: parsedCurlInfo?.cfClearance || apiConfig.cfClearance || [],
+      useragent: parsedCurlInfo?.useragent || apiConfig.useragent || '',
+      isConfigured: true,
+      fullCurlCommand: curlCommand,
+      allCookies: parsedCurlInfo?.allCookies || apiConfig.allCookies,
+      exactHeaders: parsedCurlInfo?.exactHeaders || apiConfig.exactHeaders,
+      respectRateLimit: true,
+      rateLimitDelay: 2000,
+    };
+    
+    console.log("Salvando credenciais:", newCredentials);
+    
+    // Cria evento para notificar que as credenciais foram extraídas (para outros componentes)
+    const event = new CustomEvent("curl-credentials-extracted", {
+      detail: parsedCurlInfo || {
+        fullCurlCommand: curlCommand,
+        allCookies: apiConfig.allCookies,
+        exactHeaders: apiConfig.exactHeaders,
+        poesessid: apiConfig.poesessid,
+        cfClearance: apiConfig.cfClearance,
+        useragent: apiConfig.useragent
+      }
+    });
+    document.dispatchEvent(event);
+    
+    onSaveConfig(newCredentials);
+    onOpenChange(false);
+    
+    toast.success("Configuração da API salva com sucesso", {
+      description: "Use o Debug API para testar a conexão com a API do Path of Exile"
+    });
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[550px]">
+      <DialogContent className="sm:max-w-[650px]">
         <DialogHeader>
           <DialogTitle>Configurar Conexão com a API</DialogTitle>
           <DialogDescription>
-            Configure suas credenciais para acessar a API do Path of Exile
+            Cole o comando cURL da API do Path of Exile para conectar-se automaticamente
           </DialogDescription>
         </DialogHeader>
         
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid grid-cols-2 mb-4">
-            <TabsTrigger value="curl">
-              <div className="flex items-center">
-                <Code className="mr-2 h-4 w-4" />
-                cURL (Recomendado)
-              </div>
-            </TabsTrigger>
-            <TabsTrigger value="manual">
-              <div className="flex items-center">
-                <Cookie className="mr-2 h-4 w-4" />
-                Manual
-              </div>
-            </TabsTrigger>
-          </TabsList>
+        <div className="space-y-4 mt-2">
+          <Alert className="bg-blue-500/10 border-blue-500/50">
+            <Code className="h-4 w-4 text-blue-500" />
+            <AlertDescription className="text-sm">
+              <strong>Comando cURL:</strong> O jeito mais fácil de conectar à API do Path of Exile é usando um comando cURL copiado diretamente do seu navegador. Isso captura automaticamente todos os cookies e headers necessários.
+            </AlertDescription>
+          </Alert>
           
-          <TabsContent value="curl" className="space-y-4">
-            <div>
-              <Label htmlFor="curl-command" className="mb-1 block">
-                Cole o comando cURL da API do Path of Exile
-              </Label>
-              <div className="space-y-2">
-                <Textarea 
-                  id="curl-command"
-                  placeholder="curl 'https://www.pathofexile.com/api/...' -H 'Cookie: POESESSID=xyz; cf_clearance=abc' -H 'User-Agent: ...'"
-                  value={curlCommand}
-                  onChange={(e) => setCurlCommand(e.target.value)}
-                  className="font-mono text-xs h-32"
-                />
-                <div className="text-sm text-muted-foreground">
-                  <p>Como obter o comando cURL:</p>
-                  <ol className="list-decimal ml-5 space-y-1">
-                    <li>Acesse o site do Path of Exile e faça login</li>
-                    <li>Abra as ferramentas de desenvolvedor (F12)</li>
-                    <li>Vá para a aba Network (Rede)</li>
-                    <li>Faça uma busca no site de trade do PoE</li>
-                    <li>Clique com botão direito na requisição para a API</li>
-                    <li>Selecione "Copy" &gt; "Copy as cURL" (bash)</li>
-                  </ol>
-                </div>
-                <Button onClick={handlePasteCurl} className="w-full">
-                  Extrair credenciais do cURL
-                </Button>
-              </div>
+          <div>
+            <div className="bg-muted/30 rounded-md p-3 text-sm mb-3">
+              <p className="font-medium mb-1">Como obter o comando cURL:</p>
+              <ol className="list-decimal pl-5 space-y-1">
+                <li>Acesse o site oficial do <a href="https://www.pathofexile.com" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Path of Exile</a> e faça login</li>
+                <li>Abra o <a href="https://www.pathofexile.com/trade2/search/poe2/Standard" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">site de trade do PoE2</a></li>
+                <li>Pressione F12 para abrir as ferramentas de desenvolvedor</li>
+                <li>Vá para a aba "Network" e faça uma busca de item</li>
+                <li>Clique com o botão direito na requisição "Standard" (POST)</li>
+                <li>Selecione "Copy" &gt; "Copy as cURL (bash)"</li>
+                <li>Cole o comando abaixo</li>
+              </ol>
             </div>
-          </TabsContent>
+            
+            <Textarea 
+              value={curlCommand}
+              onChange={(e) => setCurlCommand(e.target.value)}
+              className="font-mono text-xs min-h-[150px]"
+              placeholder='curl "https://www.pathofexile.com/api/trade2/search/poe2/Standard" -X POST -H "User-Agent: Mozilla/5.0..." -H "Cookie: POESESSID=abc123; cf_clearance=xyz789..." -H "Content-Type: application/json" --data-raw \'{"query":{"status":{"option":"online"}}}\''
+            />
+            
+            <div className="flex gap-2 mt-2">
+              <Button 
+                onClick={handlePasteCurl} 
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+                size="sm"
+              >
+                Analisar cURL
+              </Button>
+              
+              <Button 
+                onClick={async () => {
+                  try {
+                    const clipboardText = await navigator.clipboard.readText();
+                    setCurlCommand(clipboardText);
+                    toast.success("Comando colado da área de transferência");
+                  } catch (err) {
+                    toast.error("Não foi possível acessar a área de transferência");
+                  }
+                }}
+                variant="outline"
+                size="sm"
+              >
+                Colar da área de transferência
+              </Button>
+            </div>
+          </div>
           
-          <TabsContent value="manual" className="space-y-4">
-            <div>
-              <Label htmlFor="poesessid" className="mb-1 block">POESESSID</Label>
-              <Input 
-                id="poesessid" 
-                value={poesessid} 
-                onChange={(e) => setPoesessid(e.target.value)} 
-                placeholder="5e80b25f8354e83105ef75a95b35d687"
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                Encontrado nos cookies após fazer login no site do Path of Exile
-              </p>
+          {parsedCurlInfo && (
+            <div className="mt-2 p-3 border border-green-200 dark:border-green-800 rounded-md bg-green-500/10 text-sm">
+              <p className="font-medium mb-2">✅ Informações extraídas com sucesso:</p>
+              <ul className="list-disc pl-5 space-y-1">
+                {parsedCurlInfo.poesessid && <li>POESESSID: <span className="font-mono">{parsedCurlInfo.poesessid.substring(0, 8)}...</span></li>}
+                {parsedCurlInfo.cfClearance?.length > 0 && <li>cf_clearance: <span className="font-mono">{parsedCurlInfo.cfClearance[0].substring(0, 8)}...</span></li>}
+                {parsedCurlInfo.useragent && <li>User-Agent: <span className="font-mono">{parsedCurlInfo.useragent.substring(0, 20)}...</span></li>}
+                {parsedCurlInfo.allCookies && <li>Cookies completos capturados</li>}
+                {parsedCurlInfo.exactHeaders && Object.keys(parsedCurlInfo.exactHeaders).length > 0 && (
+                  <li>Headers ({Object.keys(parsedCurlInfo.exactHeaders).length}): {Object.keys(parsedCurlInfo.exactHeaders).slice(0, 3).join(", ")}{Object.keys(parsedCurlInfo.exactHeaders).length > 3 ? "..." : ""}</li>
+                )}
+              </ul>
             </div>
-            
-            <div>
-              <Label htmlFor="cf-clearance" className="mb-1 block">cf_clearance (um por linha)</Label>
-              <Textarea 
-                id="cf-clearance" 
-                value={cfClearance} 
-                onChange={(e) => setCfClearance(e.target.value)} 
-                placeholder="abc123def456ghi789..."
-                className="min-h-[80px]"
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                Cookie de proteção do Cloudflare, necessário para acessar a API
-              </p>
-            </div>
-            
-            <div>
-              <Label htmlFor="useragent" className="mb-1 block">User-Agent</Label>
-              <Input 
-                id="useragent" 
-                value={useragent} 
-                onChange={(e) => setUseragent(e.target.value)} 
-                placeholder="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36..."
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                Deve ser exatamente igual ao do seu navegador
-              </p>
-            </div>
-            
-            <div className="space-y-4 border border-gray-200 dark:border-gray-800 rounded-md p-3">
-              <div className="flex items-center space-x-2">
-                <Switch 
-                  id="use-proxy" 
-                  checked={useProxy}
-                  onCheckedChange={setUseProxy}
-                />
-                <Label htmlFor="use-proxy">Usar proxy CORS (para contornar bloqueios)</Label>
-              </div>
-              
-              <div className="flex items-center space-x-2">
-                <Switch 
-                  id="bypass-cloudflare" 
-                  checked={bypassCloudflare}
-                  onCheckedChange={setBypassCloudflare}
-                />
-                <Label htmlFor="bypass-cloudflare">Tentar contornar proteção Cloudflare</Label>
-              </div>
-              
-              <div className="flex items-center space-x-2">
-                <Switch 
-                  id="respect-rate-limit" 
-                  checked={respectRateLimit}
-                  onCheckedChange={setRespectRateLimit}
-                />
-                <Label htmlFor="respect-rate-limit">Respeitar limite de requisições</Label>
-              </div>
-              
-              {respectRateLimit && (
-                <div className="flex items-center gap-2">
-                  <Label htmlFor="rate-limit-delay" className="whitespace-nowrap">
-                    Delay (ms):
-                  </Label>
-                  <Input 
-                    id="rate-limit-delay" 
-                    type="number" 
-                    value={rateLimitDelay} 
-                    onChange={(e) => setRateLimitDelay(Number(e.target.value))}
-                    min={500}
-                    max={10000}
-                    step={500}
-                  />
-                </div>
-              )}
-              
-              <div className="flex items-center space-x-2">
-                <Switch 
-                  id="direct-query" 
-                  checked={directQuery}
-                  onCheckedChange={setDirectQuery}
-                />
-                <Label htmlFor="direct-query">Usar consulta direta quando possível</Label>
-              </div>
-            </div>
-          </TabsContent>
-        </Tabs>
+          )}
+        </div>
         
         <div className="flex justify-end gap-4 mt-4">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
@@ -277,6 +227,15 @@ const ApiConfigDialog = ({ open, onOpenChange, apiConfig, onSaveConfig }: ApiCon
             <Check className="mr-2 h-4 w-4" /> Salvar Configurações
           </Button>
         </div>
+        
+        {!parsedCurlInfo && apiConfig.isConfigured && (
+          <Alert variant="destructive" className="mt-2">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Aviso: Você não analisou um novo comando cURL. Salvar manterá as configurações anteriores.
+            </AlertDescription>
+          </Alert>
+        )}
       </DialogContent>
     </Dialog>
   );
