@@ -12,7 +12,8 @@ export const parseCurlCommand = (curlCommand: string): ParsedCurlCommand => {
     headers: {},
     cookies: {},
     method: 'GET',
-    allCookies: ''
+    allCookies: '',
+    rawInput: curlCommand
   };
 
   // Remove 'curl' se presente no início
@@ -67,9 +68,9 @@ export const parseCurlCommand = (curlCommand: string): ParsedCurlCommand => {
             result.cookies![cookieName] = cookieValue;
           }
         }
-      } else {
-        result.headers![name] = value;
       }
+      // Armazenar todos os headers exatamente como estão no comando cURL
+      result.headers![name] = value;
     }
   }
   
@@ -109,9 +110,15 @@ export const extractCredentialsFromCurl = (parsedCurl: ParsedCurlCommand) => {
     referrerHeader?: string;
     allCookies?: string;
     otherHeaders?: Record<string, string>;
+    exactHeaders?: Record<string, string>;
   } = {
     cfClearance: []
   };
+
+  // Armazenar todos os headers exatamente como estão no comando
+  if (parsedCurl.headers) {
+    credentials.exactHeaders = {...parsedCurl.headers};
+  }
 
   // Extrai todos os cookies como uma única string
   if (parsedCurl.allCookies) {

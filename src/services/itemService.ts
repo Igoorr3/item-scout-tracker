@@ -1,4 +1,3 @@
-
 import { Item } from '@/types/items';
 import { TrackingConfiguration } from '@/types/tracking';
 import { ApiCredentials, ApiDebugInfo } from '@/types/api';
@@ -139,6 +138,17 @@ const buildSearchPayload = (config: TrackingConfiguration) => {
 };
 
 const buildHeaders = (apiCredentials: ApiCredentials, isSearch: boolean = false): Record<string, string> => {
+  if (curlExtractedCredentials?.exactHeaders) {
+    console.log("Usando headers exatos do cURL");
+    const headers = {...curlExtractedCredentials.exactHeaders};
+    
+    if (isSearch && !headers['Content-Type']) {
+      headers['Content-Type'] = "application/json";
+    }
+    
+    return headers;
+  }
+  
   let headers: Record<string, string> = {
     "accept": "*/*",
     "accept-language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
@@ -164,7 +174,6 @@ const buildHeaders = (apiCredentials: ApiCredentials, isSearch: boolean = false)
     headers["Content-Type"] = "application/json";
   }
 
-  // Usar o User-Agent do cURL se disponível
   if (curlExtractedCredentials?.useragent) {
     headers["User-Agent"] = curlExtractedCredentials.useragent;
   } else if (apiCredentials.useragent) {
@@ -173,7 +182,6 @@ const buildHeaders = (apiCredentials: ApiCredentials, isSearch: boolean = false)
     headers["User-Agent"] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36';
   }
 
-  // Usar Origin e Referer do cURL se disponíveis
   if (curlExtractedCredentials?.originHeader) {
     headers["Origin"] = curlExtractedCredentials.originHeader;
   } else if (apiCredentials.originHeader) {
@@ -190,7 +198,6 @@ const buildHeaders = (apiCredentials: ApiCredentials, isSearch: boolean = false)
     headers["Referer"] = "https://www.pathofexile.com/trade2/search/poe2/Standard";
   }
 
-  // Adicionar outros headers do cURL
   if (curlExtractedCredentials?.otherHeaders) {
     Object.entries(curlExtractedCredentials.otherHeaders).forEach(([key, value]) => {
       if (value && typeof value === 'string') {
@@ -199,11 +206,9 @@ const buildHeaders = (apiCredentials: ApiCredentials, isSearch: boolean = false)
     });
   }
 
-  // Se temos cookies completos do cURL, usar de preferência
   if (curlExtractedCredentials?.allCookies) {
     headers["Cookie"] = curlExtractedCredentials.allCookies;
   } else {
-    // Caso contrário, montar a string de cookies
     let cookieString = '';
     
     if (curlExtractedCredentials?.poesessid) {
@@ -606,7 +611,8 @@ export const fetchItems = async (config: TrackingConfiguration, apiCredentials: 
         `Configurado (${apiCredentials.cfClearance.length} valores)` : "Não configurado",
       useragent: apiCredentials.useragent ? "Configurado" : "Padrão",
       useProxy: apiCredentials.useProxy ? "Sim" : "Não",
-      fullCurlCommand: apiCredentials.fullCurlCommand ? "Configurado" : "Não configurado"
+      fullCurlCommand: apiCredentials.fullCurlCommand ? "Configurado" : "Não configurado",
+      exactHeaders: apiCredentials.exactHeaders ? "Configurados" : "Não configurados"
     });
     
     const hasConfigured = apiCredentials.isConfigured || 

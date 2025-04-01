@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -168,11 +167,18 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
         extractedInfo.push("User-Agent");
       }
       
+      if (credentials.exactHeaders && Object.keys(credentials.exactHeaders).length > 0) {
+        extractedInfo.push(`${Object.keys(credentials.exactHeaders).length} headers exatos`);
+      }
+      
       if (extractedInfo.length > 0) {
         toast.success(`Extraído do cURL: ${extractedInfo.join(", ")}`);
       } else {
         toast.warning("Não foi possível extrair credenciais do comando cURL");
       }
+      
+      // Aplicar as credenciais automaticamente
+      applyCurlCredentials();
     } catch (error) {
       console.error("Erro ao analisar comando cURL:", error);
       toast.error("Erro ao analisar comando cURL. Verifique se o formato está correto.");
@@ -184,6 +190,14 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
     
     const credentials = extractCredentialsFromCurl(parsedCurlInfo);
     
+    // Adicionar exactHeaders às credenciais
+    if (credentials.exactHeaders) {
+      credentials.exactHeaders = {...credentials.exactHeaders};
+    }
+    
+    // Adicionar o comando cURL original
+    credentials.fullCurlCommand = curlCommand;
+    
     // Create event to simulate changes
     const event = new CustomEvent("curl-credentials-extracted", {
       detail: credentials
@@ -191,7 +205,7 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
     
     document.dispatchEvent(event);
     
-    toast.success("Credenciais do cURL aplicadas. Atualize a página de configurações para ver as mudanças.");
+    toast.success("Credenciais do cURL aplicadas. Tente fazer uma busca para testar.");
   };
 
   const handleSearchRequest = async () => {
@@ -565,68 +579,70 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
           </div>
         </div>
         
-        {/* New cURL Command Input Section */}
         <div className="mb-4 border border-blue-500/20 rounded-md p-3 bg-blue-500/5">
-          <div className="flex items-center space-x-2 mb-2">
-            <Switch 
-              id="show-curl-input" 
-              checked={showCurlInput}
-              onCheckedChange={setShowCurlInput}
-            />
-            <Label htmlFor="show-curl-input" className="font-medium">Usar comando cURL</Label>
-            <Code size={16} className="text-blue-500" />
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <Code size={18} className="text-blue-500" />
+              <h3 className="font-medium">Comando cURL do Path of Exile</h3>
+            </div>
+            {parsedCurlInfo && (
+              <div className="flex items-center gap-1 text-xs text-green-500">
+                <Check size={16} />
+                <span>Comando válido</span>
+              </div>
+            )}
           </div>
           
-          {showCurlInput && (
-            <div className="space-y-3">
-              <p className="text-xs text-muted-foreground">
-                Cole um comando cURL copiado das ferramentas de desenvolvedor do navegador (Network tab) para extrair automaticamente as credenciais e parâmetros.
-              </p>
-              
-              <Textarea 
-                value={curlCommand}
-                onChange={(e) => setCurlCommand(e.target.value)}
-                className="font-mono text-xs h-24"
-                placeholder='curl "https://www.pathofexile.com/api/trade2/search/poe2/Standard" -X POST -H "User-Agent: Mozilla/5.0..." -H "Cookie: POESESSID=abc123; cf_clearance=xyz789..."'
-              />
-              
-              <div className="flex gap-2">
-                <Button 
-                  onClick={handleCurlParse} 
-                  variant="outline"
-                  size="sm"
-                  className="text-xs"
-                >
-                  Analisar cURL
-                </Button>
-                
-                {parsedCurlInfo && (
-                  <Button 
-                    onClick={applyCurlCredentials} 
-                    variant="outline"
-                    size="sm"
-                    className="text-xs"
-                  >
-                    Aplicar Credenciais
-                  </Button>
-                )}
-              </div>
-              
-              {parsedCurlInfo && (
-                <div className="mt-2 p-2 border border-gray-200 dark:border-gray-800 rounded-md bg-muted/30 text-xs">
-                  <p className="font-medium mb-1">Informações extraídas:</p>
-                  <ul className="list-disc pl-5 space-y-1">
-                    {parsedCurlInfo.url && <li>URL: <span className="font-mono">{parsedCurlInfo.url}</span></li>}
-                    {parsedCurlInfo.method && <li>Método: {parsedCurlInfo.method}</li>}
-                    {parsedCurlInfo.cookies?.POESESSID && <li>POESESSID: <span className="font-mono">{parsedCurlInfo.cookies.POESESSID.substring(0, 8)}...</span></li>}
-                    {parsedCurlInfo.cookies?.cf_clearance && <li>cf_clearance: <span className="font-mono">{parsedCurlInfo.cookies.cf_clearance.substring(0, 8)}...</span></li>}
-                    {parsedCurlInfo.headers?.['User-Agent'] && <li>User-Agent: <span className="font-mono">{parsedCurlInfo.headers['User-Agent'].substring(0, 20)}...</span></li>}
-                    {parsedCurlInfo.body && <li>Body: <span className="font-mono">{parsedCurlInfo.body.length} caracteres</span></li>}
-                  </ul>
-                </div>
-              )}
+          <div className="space-y-3">
+            <p className="text-xs text-muted-foreground">
+              Cole o comando cURL completo copiado das ferramentas de desenvolvedor do navegador (Network tab).
+              Este é o método mais confiável para conectar à API do Path of Exile.
+            </p>
+            
+            <div className="bg-muted/30 rounded-md p-2 text-xs">
+              <p className="font-medium">Como obter o comando cURL:</p>
+              <ol className="list-decimal pl-4 space-y-1 mt-1">
+                <li>Acesse o site oficial do <a href="https://www.pathofexile.com/trade2/search/poe2/Standard" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Path of Exile 2 Trade</a></li>
+                <li>Pressione F12 para abrir as ferramentas de desenvolvedor</li>
+                <li>Vá para a aba "Network" e faça uma busca de item</li>
+                <li>Clique com o botão direito na requisição "Standard" (POST)</li>
+                <li>Selecione "Copy" &gt; "Copy as cURL (bash)"</li>
+                <li>Cole o comando abaixo</li>
+              </ol>
             </div>
-          )}
+            
+            <Textarea 
+              value={curlCommand}
+              onChange={(e) => setCurlCommand(e.target.value)}
+              className="font-mono text-xs h-24"
+              placeholder='curl "https://www.pathofexile.com/api/trade2/search/poe2/Standard" -X POST -H "User-Agent: Mozilla/5.0..." -H "Cookie: POESESSID=abc123; cf_clearance=xyz789..."'
+            />
+            
+            <div className="flex gap-2">
+              <Button 
+                onClick={handleCurlParse} 
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+                size="sm"
+              >
+                Analisar e Aplicar cURL
+              </Button>
+            </div>
+            
+            {parsedCurlInfo && (
+              <div className="mt-2 p-2 border border-gray-200 dark:border-gray-800 rounded-md bg-muted/30 text-xs">
+                <p className="font-medium mb-1">Informações extraídas:</p>
+                <ul className="list-disc pl-5 space-y-1">
+                  {parsedCurlInfo.url && <li>URL: <span className="font-mono">{parsedCurlInfo.url}</span></li>}
+                  {parsedCurlInfo.method && <li>Método: {parsedCurlInfo.method}</li>}
+                  {parsedCurlInfo.cookies?.POESESSID && <li>POESESSID: <span className="font-mono">{parsedCurlInfo.cookies.POESESSID.substring(0, 8)}...</span></li>}
+                  {parsedCurlInfo.cookies?.cf_clearance && <li>cf_clearance: <span className="font-mono">{parsedCurlInfo.cookies.cf_clearance.substring(0, 8)}...</span></li>}
+                  {parsedCurlInfo.headers?.['User-Agent'] && <li>User-Agent: <span className="font-mono">{parsedCurlInfo.headers['User-Agent'].substring(0, 20)}...</span></li>}
+                  {parsedCurlInfo.body && <li>Body: <span className="font-mono">{parsedCurlInfo.body.length} caracteres</span></li>}
+                  {parsedCurlInfo.headers && <li>Headers: {Object.keys(parsedCurlInfo.headers).length} headers encontrados</li>}
+                </ul>
+              </div>
+            )}
+          </div>
         </div>
         
         <div className="mb-4">

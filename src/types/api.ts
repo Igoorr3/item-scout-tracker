@@ -21,6 +21,7 @@ export interface ApiCredentials {
   supportCurl?: boolean;       // New option to enable cURL command support
   fullCurlCommand?: string;    // Store the full cURL command
   allCookies?: string;         // All cookies from the cURL command
+  exactHeaders?: Record<string, string>; // Store headers exactly as they are in the curl command
 }
 
 export interface ApiDebugInfo {
@@ -48,4 +49,5 @@ export interface ParsedCurlCommand {
   jsonBody?: any;
   cookies?: Record<string, string>;
   allCookies?: string;
+  rawInput?: string; // Armazena o comando cURL original
 }

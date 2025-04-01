@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Sparkles, AlertCircle, InfoIcon, Settings, Bug, FileSearch } from 'lucide-react';
+import { PlusCircle, Sparkles, AlertCircle, InfoIcon, Settings, Bug, FileSearch, Code } from 'lucide-react';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { ApiCredentials } from '@/types/api';
@@ -40,8 +40,8 @@ const TrackerHeader = ({
             variant={apiConfigured ? "outline" : "secondary"}
             className="flex-shrink-0"
           >
-            <Settings className="mr-2 h-4 w-4" />
-            {apiConfigured ? "Editar Cookies" : "Configurar API"}
+            <Code className="mr-2 h-4 w-4" />
+            {apiConfigured ? "Editar cURL" : "Configurar cURL"}
           </Button>
           
           <Button
@@ -76,8 +76,8 @@ const TrackerHeader = ({
           <>
             <AlertCircle className="h-4 w-4 text-amber-500" />
             <AlertDescription className="text-sm">
-              <strong>Acesso à API do PoE2:</strong> Para usar dados reais, clique no botão "Configurar API" 
-              acima e insira seu POESESSID e outros dados necessários.
+              <strong>Configure o comando cURL:</strong> Para usar dados reais, clique no botão "Configurar cURL" 
+              acima e cole o comando cURL completo do site do Path of Exile 2.
               
               <Accordion type="single" collapsible className="mt-2">
                 <AccordionItem value="instructions">
@@ -88,12 +88,10 @@ const TrackerHeader = ({
                       <li>Abra o <a href="https://www.pathofexile.com/trade2/search/poe2/Standard" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">site de trade do PoE2</a></li>
                       <li>Pressione F12 para abrir as ferramentas de desenvolvedor</li>
                       <li>Vá para a aba "Network" e faça uma busca no site</li>
-                      <li>Clique na requisição "Standard" (POST) e copie os cookies da aba Headers</li>
-                      <li>Identifique e copie o valor de "POESESSID" e <strong>todos</strong> os valores "cf_clearance" (pode haver múltiplos)</li>
-                      <li>Copie também o User-Agent do seu navegador (necessário para autenticação)</li>
-                      <li>Use o modo de Debug API para testar suas credenciais e verificar exatamente como as requisições estão sendo enviadas</li>
-                      <li>Compare os payloads do site oficial com os payloads do debugger para garantir que estão idênticos</li>
-                      <li>Aguarde 2-3 segundos entre requisições para evitar o bloqueio de rate limiting</li>
+                      <li>Clique com o botão direito na requisição "Standard" (POST) e escolha "Copy as cURL (bash)"</li>
+                      <li>Cole o comando cURL completo na interface de configuração</li>
+                      <li>O comando cURL já contém todos os cookies necessários, incluindo o cf_clearance e POESESSID</li>
+                      <li>Use o modo de Debug API para testar suas credenciais</li>
                     </ol>
                   </AccordionContent>
                 </AccordionItem>
