@@ -74,16 +74,53 @@ export const parseCurlCommand = (curlCommand: string): ParsedCurlCommand => {
     }
   }
   
+  // Extrair cookies da opção -b ou --cookie
+  const cookieMatches = Array.from(cmd.matchAll(/-b\s+(['"])(.*?)(\1)/gi));
+  
+  for (const match of cookieMatches) {
+    const cookieValue = match[2];
+    allCookiesStr += cookieValue + '; ';
+    
+    // Parse cookies individualmente
+    const cookies = cookieValue.split(';');
+    for (const cookie of cookies) {
+      const cookieParts = cookie.split('=');
+      if (cookieParts.length >= 2) {
+        const cookieName = cookieParts[0].trim();
+        const cookieValue = cookieParts.slice(1).join('=').trim();
+        result.cookies![cookieName] = cookieValue;
+      }
+    }
+    
+    // Também adicionar como header Cookie, substituindo qualquer valor anterior
+    if (!result.headers!['Cookie']) {
+      result.headers!['Cookie'] = cookieValue;
+    }
+  }
+  
   // Armazena a string de cookies completa
   if (allCookiesStr) {
     result.allCookies = allCookiesStr.trim();
+  } else if (result.headers!['Cookie']) {
+    result.allCookies = result.headers!['Cookie'];
   }
 
   // Extrai body da requisição
-  const dataMatch = cmd.match(/--data(?:-raw)?\s+(['"])(.*?)(\1)/i) || 
+  const dataRawMatch = cmd.match(/--data-raw\s+(['"])(.*?)(\1)/i);
+  const dataMatch = cmd.match(/--data(?:-binary)?\s+(['"])(.*?)(\1)/i) || 
                    cmd.match(/-d\s+(['"])(.*?)(\1)/i);
                     
-  if (dataMatch) {
+  if (dataRawMatch) {
+    result.body = dataRawMatch[2];
+    
+    // Tenta parsear o body como JSON
+    try {
+      const jsonBody = JSON.parse(result.body);
+      result.jsonBody = jsonBody;
+    } catch (e) {
+      console.log("Body não é um JSON válido:", e);
+    }
+  } else if (dataMatch) {
     result.body = dataMatch[2];
     
     // Tenta parsear o body como JSON
@@ -111,6 +148,7 @@ export const extractCredentialsFromCurl = (parsedCurl: ParsedCurlCommand) => {
     allCookies?: string;
     otherHeaders?: Record<string, string>;
     exactHeaders?: Record<string, string>;
+    cookies?: Record<string, string>;
   } = {
     cfClearance: []
   };
@@ -127,6 +165,8 @@ export const extractCredentialsFromCurl = (parsedCurl: ParsedCurlCommand) => {
 
   // Extrai POESESSID e cf_clearance dos cookies
   if (parsedCurl.cookies) {
+    credentials.cookies = {...parsedCurl.cookies};
+    
     if (parsedCurl.cookies['POESESSID']) {
       credentials.poesessid = parsedCurl.cookies['POESESSID'];
     }
@@ -140,21 +180,30 @@ export const extractCredentialsFromCurl = (parsedCurl: ParsedCurlCommand) => {
   if (parsedCurl.headers) {
     if (parsedCurl.headers['User-Agent']) {
       credentials.useragent = parsedCurl.headers['User-Agent'];
+    } else if (parsedCurl.headers['user-agent']) {
+      credentials.useragent = parsedCurl.headers['user-agent'];
     }
     
     if (parsedCurl.headers['Origin']) {
       credentials.originHeader = parsedCurl.headers['Origin'];
+    } else if (parsedCurl.headers['origin']) {
+      credentials.originHeader = parsedCurl.headers['origin'];
     }
     
     if (parsedCurl.headers['Referer']) {
       credentials.referrerHeader = parsedCurl.headers['Referer'];
+    } else if (parsedCurl.headers['referer']) {
+      credentials.referrerHeader = parsedCurl.headers['referer'];
     }
 
     // Armazena outros headers potencialmente úteis
     credentials.otherHeaders = { ...parsedCurl.headers };
     delete credentials.otherHeaders['User-Agent'];
+    delete credentials.otherHeaders['user-agent'];
     delete credentials.otherHeaders['Origin'];
+    delete credentials.otherHeaders['origin'];
     delete credentials.otherHeaders['Referer'];
+    delete credentials.otherHeaders['referer'];
   }
 
   return credentials;

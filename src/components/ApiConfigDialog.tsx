@@ -174,7 +174,7 @@ const ApiConfigDialog = ({ open, onOpenChange, apiConfig, onSaveConfig }: ApiCon
               value={curlCommand}
               onChange={(e) => setCurlCommand(e.target.value)}
               className="font-mono text-xs min-h-[150px]"
-              placeholder="curl &quot;https://www.pathofexile.com/api/trade2/search/poe2/Standard&quot; -X POST -H &quot;User-Agent: Mozilla/5.0...&quot; -H &quot;Cookie: POESESSID=abc123; cf_clearance=xyz789...&quot;"
+              placeholder='curl "https://www.pathofexile.com/api/trade2/search/poe2/Standard" -X POST'
             />
             
             <div className="flex gap-2 mt-2">

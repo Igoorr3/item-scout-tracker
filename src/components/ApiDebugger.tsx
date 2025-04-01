@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -75,47 +74,84 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
   };
 
   const buildHeaders = (isSearchRequest: boolean = false): Record<string, string> => {
+    if (apiCredentials.exactHeaders && Object.keys(apiCredentials.exactHeaders).length > 0) {
+      console.log("Usando headers exatos das credenciais");
+      const headers = { ...apiCredentials.exactHeaders };
+
+      if (isSearchRequest && !headers['Content-Type']) {
+        headers['Content-Type'] = 'application/json';
+      }
+
+      if (!headers['Cookie'] && apiCredentials.allCookies) {
+        headers['Cookie'] = apiCredentials.allCookies;
+      }
+
+      return headers;
+    }
+    
     const headers: Record<string, string> = {
-      "User-Agent": apiCredentials.useragent || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      "Accept": "application/json",
-      "Origin": customOrigin,
-      "Referer": customReferrer,
-      "Connection": "keep-alive",
-      "sec-ch-ua": '"Chromium";v="120", "Not A(Brand";v="24"',
-      "sec-ch-ua-mobile": "?0",
+      "accept": "*/*",
+      "accept-language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
+      "priority": "u=1, i",
+      "sec-ch-ua": '"Chromium";v="134", "Not:A-Brand";v="24", "Google Chrome";v="134"',
+      "sec-ch-ua-arch": '"x86"',
+      "sec-ch-ua-bitness": '"64"',
+      "sec-ch-ua-full-version-list": '"Chromium";v="134.0.0.0", "Not:A-Brand";v="24.0.0.0", "Google Chrome";v="134.0.0.0"',
+      "sec-ch-ua-mobile": '?0',
+      "sec-ch-ua-model": '""',
       "sec-ch-ua-platform": '"Windows"',
-      "Sec-Fetch-Dest": "empty",
-      "Sec-Fetch-Mode": "cors",
-      "Sec-Fetch-Site": "same-origin",
+      "sec-ch-ua-platform-version": '"10.0.0"',
+      "sec-fetch-dest": "empty",
+      "sec-fetch-mode": "cors",
+      "sec-fetch-site": "same-origin",
+      "Connection": "keep-alive",
       "Cache-Control": "no-cache",
-      "Pragma": "no-cache"
+      "Pragma": "no-cache",
+      "x-requested-with": "XMLHttpRequest"
     };
 
     if (isSearchRequest) {
       headers["Content-Type"] = "application/json";
     }
 
-    const cookieString = buildCookieString();
-    if (cookieString) {
-      headers["Cookie"] = cookieString;
+    if (apiCredentials.useragent) {
+      headers["User-Agent"] = apiCredentials.useragent;
+    } else {
+      headers["User-Agent"] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36';
     }
-    
-    // Add special headers to help bypass Cloudflare if enabled
+
+    if (customOrigin) {
+      headers["Origin"] = customOrigin;
+    } else if (apiCredentials.originHeader) {
+      headers["Origin"] = apiCredentials.originHeader;
+    } else {
+      headers["Origin"] = "https://www.pathofexile.com";
+    }
+
+    if (customReferrer) {
+      headers["Referer"] = customReferrer;
+    } else if (apiCredentials.referrerHeader) {
+      headers["Referer"] = apiCredentials.referrerHeader;
+    } else {
+      headers["Referer"] = "https://www.pathofexile.com/trade2/search/poe2/Standard";
+    }
+
     if (bypassCloudflare) {
       headers["Accept-Language"] = "en-US,en;q=0.9";
       headers["Accept-Encoding"] = "gzip, deflate, br";
-      headers["X-Requested-With"] = "XMLHttpRequest";
+    }
+
+    if (apiCredentials.allCookies) {
+      headers["Cookie"] = apiCredentials.allCookies;
+    } else {
+      const cookieString = buildCookieString();
+      if (cookieString) {
+        headers["Cookie"] = cookieString;
+      }
     }
 
     return headers;
   };
-
-  useEffect(() => {
-    if (queryId) {
-      const directQueryUrl = `https://www.pathofexile.com/trade2/search/poe2/${queryId}`;
-      console.log("Direct query URL generated:", directQueryUrl);
-    }
-  }, [queryId]);
 
   const handleCurlParse = () => {
     try {
@@ -141,7 +177,6 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
       
       if (parsed.body) {
         try {
-          // Try to format it as JSON
           const formattedJson = JSON.stringify(JSON.parse(parsed.body), null, 2);
           setSearchPayload(formattedJson);
           toast.success("Payload de busca atualizado do comando cURL");
@@ -150,10 +185,8 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
         }
       }
       
-      // Extract credentials
       const credentials = extractCredentialsFromCurl(parsed);
       
-      // Show information about what was extracted
       let extractedInfo = [];
       
       if (credentials.poesessid) {
@@ -178,7 +211,6 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
         toast.warning("Não foi possível extrair credenciais do comando cURL");
       }
       
-      // Aplicar as credenciais automaticamente
       applyCurlCredentials();
     } catch (error) {
       console.error("Erro ao analisar comando cURL:", error);
@@ -191,15 +223,11 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
     
     const credentials = extractCredentialsFromCurl(parsedCurlInfo);
     
-    // Adicionar exactHeaders às credenciais
     if (credentials.exactHeaders) {
       credentials.exactHeaders = {...credentials.exactHeaders};
     }
     
-    // Adicionar o comando cURL original
-    const fullCommand = curlCommand; // Store the command directly
-    
-    // Create event to simulate changes with fullCurlCommand property
+    const fullCommand = curlCommand;
     const event = new CustomEvent("curl-credentials-extracted", {
       detail: {
         ...credentials,
@@ -211,6 +239,13 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
     
     toast.success("Credenciais do cURL aplicadas. Tente fazer uma busca para testar.");
   };
+
+  useEffect(() => {
+    if (queryId) {
+      const directQueryUrl = `https://www.pathofexile.com/trade2/search/poe2/${queryId}`;
+      console.log("Direct query URL generated:", directQueryUrl);
+    }
+  }, [queryId]);
 
   const handleSearchRequest = async () => {
     setIsLoading(true);
@@ -302,15 +337,6 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
             cloudflareBlocked: true,
             error: "Cloudflare proteção detectada"
           }));
-          
-          // Extract Cloudflare Ray ID if possible
-          const rayIdMatch = errorText.match(/Ray ID:\s*<strong[^>]*>([^<]+)<\/strong>/);
-          if (rayIdMatch && rayIdMatch[1]) {
-            setDebugInfo(prev => ({
-              ...prev,
-              error: `Cloudflare proteção detectada (Ray ID: ${rayIdMatch[1]})`
-            }));
-          }
           
           throw new Error(`Proteção Cloudflare detectada. É necessário usar cookies cf_clearance válidos.`);
         }
@@ -603,7 +629,7 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
               Este é o método mais confiável para conectar à API do Path of Exile.
             </p>
             
-            <div className="bg-muted/30 rounded-md p-2 text-xs">
+            <div className="bg-amber-500/10 border border-amber-500/30 rounded-md p-2 text-xs">
               <p className="font-medium">Como obter o comando cURL:</p>
               <ol className="list-decimal pl-4 space-y-1 mt-1">
                 <li>Acesse o site oficial do <a href="https://www.pathofexile.com/trade2/search/poe2/Standard" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Path of Exile 2 Trade</a></li>
@@ -619,7 +645,7 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
               value={curlCommand}
               onChange={(e) => setCurlCommand(e.target.value)}
               className="font-mono text-xs h-24"
-              placeholder='curl "https://www.pathofexile.com/api/trade2/search/poe2/Standard" -X POST -H "User-Agent: Mozilla/5.0..." -H "Cookie: POESESSID=abc123; cf_clearance=xyz789..."'
+              placeholder='curl "https://www.pathofexile.com/api/trade2/search/poe2/Standard" -X POST'
             />
             
             <div className="flex gap-2">
