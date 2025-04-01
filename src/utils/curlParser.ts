@@ -11,7 +11,8 @@ export const parseCurlCommand = (curlCommand: string): ParsedCurlCommand => {
   const result: ParsedCurlCommand = {
     headers: {},
     cookies: {},
-    method: 'GET'
+    method: 'GET',
+    allCookies: ''
   };
 
   // Remove 'curl' se presente no início
@@ -40,6 +41,10 @@ export const parseCurlCommand = (curlCommand: string): ParsedCurlCommand => {
 
   // Extrai headers
   const headerMatches = Array.from(cmd.matchAll(/-H\s+(['"])(.*?)(\1)/gi));
+  
+  // String para armazenar todos os cookies
+  let allCookiesStr = '';
+  
   for (const match of headerMatches) {
     const headerLine = match[2];
     const separatorIndex = headerLine.indexOf(':');
@@ -49,7 +54,10 @@ export const parseCurlCommand = (curlCommand: string): ParsedCurlCommand => {
       const value = headerLine.substring(separatorIndex + 1).trim();
       
       if (name.toLowerCase() === 'cookie') {
-        // Parse cookies
+        // Armazenar o header Cookie completo
+        allCookiesStr += value + '; ';
+        
+        // Parse cookies individualmente
         const cookies = value.split(';');
         for (const cookie of cookies) {
           const cookieParts = cookie.split('=');
@@ -63,6 +71,11 @@ export const parseCurlCommand = (curlCommand: string): ParsedCurlCommand => {
         result.headers![name] = value;
       }
     }
+  }
+  
+  // Armazena a string de cookies completa
+  if (allCookiesStr) {
+    result.allCookies = allCookiesStr.trim();
   }
 
   // Extrai body da requisição
@@ -94,10 +107,16 @@ export const extractCredentialsFromCurl = (parsedCurl: ParsedCurlCommand) => {
     useragent?: string;
     originHeader?: string;
     referrerHeader?: string;
+    allCookies?: string;
     otherHeaders?: Record<string, string>;
   } = {
     cfClearance: []
   };
+
+  // Extrai todos os cookies como uma única string
+  if (parsedCurl.allCookies) {
+    credentials.allCookies = parsedCurl.allCookies;
+  }
 
   // Extrai POESESSID e cf_clearance dos cookies
   if (parsedCurl.cookies) {

@@ -1,3 +1,4 @@
+
 import { Item } from '@/types/items';
 import { TrackingConfiguration } from '@/types/tracking';
 import { ApiCredentials, ApiDebugInfo } from '@/types/api';
@@ -137,72 +138,99 @@ const buildSearchPayload = (config: TrackingConfiguration) => {
   return payload;
 };
 
-const buildCookieString = (apiCredentials: ApiCredentials): string => {
-  let cookieString = '';
-  
-  if (curlExtractedCredentials?.poesessid) {
-    cookieString += `POESESSID=${curlExtractedCredentials.poesessid}; `;
-  } else if (apiCredentials.poesessid) {
-    cookieString += `POESESSID=${apiCredentials.poesessid}; `;
-  }
-  
-  if (curlExtractedCredentials?.cfClearance?.length > 0) {
-    curlExtractedCredentials.cfClearance.forEach((clearance: string) => {
-      if (clearance && clearance.trim()) {
-        cookieString += `cf_clearance=${clearance}; `;
-      }
-    });
-  } else if (apiCredentials.cfClearance && apiCredentials.cfClearance.length > 0) {
-    apiCredentials.cfClearance.forEach(clearance => {
-      if (clearance && clearance.trim()) {
-        cookieString += `cf_clearance=${clearance}; `;
-      }
-    });
-  }
-  
-  return cookieString.trim();
-};
-
 const buildHeaders = (apiCredentials: ApiCredentials, isSearch: boolean = false): Record<string, string> => {
-  const headers: Record<string, string> = {
-    "User-Agent": curlExtractedCredentials?.useragent || apiCredentials.useragent || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-    "Accept": "application/json",
-    "Origin": curlExtractedCredentials?.originHeader || apiCredentials.originHeader || "https://www.pathofexile.com",
-    "Referer": curlExtractedCredentials?.referrerHeader || apiCredentials.referrerHeader || "https://www.pathofexile.com/trade2/search/poe2/Standard",
-    "Connection": "keep-alive",
-    "sec-ch-ua": '"Chromium";v="120", "Not A(Brand";v="24"',
-    "sec-ch-ua-mobile": "?0",
+  let headers: Record<string, string> = {
+    "accept": "*/*",
+    "accept-language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
+    "priority": "u=1, i",
+    "sec-ch-ua": '"Chromium";v="134", "Not:A-Brand";v="24", "Google Chrome";v="134"',
+    "sec-ch-ua-arch": '"x86"',
+    "sec-ch-ua-bitness": '"64"',
+    "sec-ch-ua-full-version-list": '"Chromium";v="134.0.0.0", "Not:A-Brand";v="24.0.0.0", "Google Chrome";v="134.0.0.0"',
+    "sec-ch-ua-mobile": '?0',
+    "sec-ch-ua-model": '""',
     "sec-ch-ua-platform": '"Windows"',
-    "Sec-Fetch-Dest": "empty",
-    "Sec-Fetch-Mode": "cors",
-    "Sec-Fetch-Site": "same-origin",
+    "sec-ch-ua-platform-version": '"10.0.0"',
+    "sec-fetch-dest": "empty",
+    "sec-fetch-mode": "cors",
+    "sec-fetch-site": "same-origin",
+    "Connection": "keep-alive",
     "Cache-Control": "no-cache",
-    "Pragma": "no-cache"
+    "Pragma": "no-cache",
+    "x-requested-with": "XMLHttpRequest"
   };
 
   if (isSearch) {
     headers["Content-Type"] = "application/json";
   }
 
-  const cookieString = buildCookieString(apiCredentials);
-  if (cookieString) {
-    headers["Cookie"] = cookieString;
+  // Usar o User-Agent do cURL se disponível
+  if (curlExtractedCredentials?.useragent) {
+    headers["User-Agent"] = curlExtractedCredentials.useragent;
+  } else if (apiCredentials.useragent) {
+    headers["User-Agent"] = apiCredentials.useragent;
+  } else {
+    headers["User-Agent"] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36';
   }
-  
-  if (apiCredentials.bypassCloudflare) {
-    headers["Accept-Language"] = "en-US,en;q=0.9";
-    headers["Accept-Encoding"] = "gzip, deflate, br";
-    headers["X-Requested-With"] = "XMLHttpRequest";
+
+  // Usar Origin e Referer do cURL se disponíveis
+  if (curlExtractedCredentials?.originHeader) {
+    headers["Origin"] = curlExtractedCredentials.originHeader;
+  } else if (apiCredentials.originHeader) {
+    headers["Origin"] = apiCredentials.originHeader;
+  } else {
+    headers["Origin"] = "https://www.pathofexile.com";
   }
-  
+
+  if (curlExtractedCredentials?.referrerHeader) {
+    headers["Referer"] = curlExtractedCredentials.referrerHeader;
+  } else if (apiCredentials.referrerHeader) {
+    headers["Referer"] = apiCredentials.referrerHeader;
+  } else {
+    headers["Referer"] = "https://www.pathofexile.com/trade2/search/poe2/Standard";
+  }
+
+  // Adicionar outros headers do cURL
   if (curlExtractedCredentials?.otherHeaders) {
     Object.entries(curlExtractedCredentials.otherHeaders).forEach(([key, value]) => {
-      if (!headers[key]) {
-        headers[key] = value as string;
+      if (value && typeof value === 'string') {
+        headers[key] = value;
       }
     });
   }
 
+  // Se temos cookies completos do cURL, usar de preferência
+  if (curlExtractedCredentials?.allCookies) {
+    headers["Cookie"] = curlExtractedCredentials.allCookies;
+  } else {
+    // Caso contrário, montar a string de cookies
+    let cookieString = '';
+    
+    if (curlExtractedCredentials?.poesessid) {
+      cookieString += `POESESSID=${curlExtractedCredentials.poesessid}; `;
+    } else if (apiCredentials.poesessid) {
+      cookieString += `POESESSID=${apiCredentials.poesessid}; `;
+    }
+    
+    if (curlExtractedCredentials?.cfClearance?.length > 0) {
+      curlExtractedCredentials.cfClearance.forEach((clearance: string) => {
+        if (clearance && clearance.trim()) {
+          cookieString += `cf_clearance=${clearance}; `;
+        }
+      });
+    } else if (apiCredentials.cfClearance && apiCredentials.cfClearance.length > 0) {
+      apiCredentials.cfClearance.forEach(clearance => {
+        if (clearance && clearance.trim()) {
+          cookieString += `cf_clearance=${clearance}; `;
+        }
+      });
+    }
+    
+    if (cookieString) {
+      headers["Cookie"] = cookieString.trim();
+    }
+  }
+  
   return headers;
 };
 
@@ -578,14 +606,15 @@ export const fetchItems = async (config: TrackingConfiguration, apiCredentials: 
         `Configurado (${apiCredentials.cfClearance.length} valores)` : "Não configurado",
       useragent: apiCredentials.useragent ? "Configurado" : "Padrão",
       useProxy: apiCredentials.useProxy ? "Sim" : "Não",
-      customHeaders: apiCredentials.customHeaders ? "Sim" : "Não",
-      respectRateLimit: apiCredentials.respectRateLimit ? "Sim" : "Não",
-      bypassCloudflare: apiCredentials.bypassCloudflare ? "Sim" : "Não"
+      fullCurlCommand: apiCredentials.fullCurlCommand ? "Configurado" : "Não configurado"
     });
     
-    if (!apiCredentials.isConfigured) {
+    const hasConfigured = apiCredentials.isConfigured || 
+                         (apiCredentials.fullCurlCommand && apiCredentials.fullCurlCommand.length > 0);
+    
+    if (!hasConfigured) {
       toast.error("Configuração da API incompleta", {
-        description: "Acesse as configurações para adicionar seus cookies de sessão do Path of Exile"
+        description: "Acesse as configurações para adicionar o comando cURL copiado do seu navegador"
       });
       return [];
     }
@@ -599,7 +628,7 @@ export const fetchItems = async (config: TrackingConfiguration, apiCredentials: 
       const testWithProxy = await testApiConnection({...apiCredentials, useProxy: true});
       if (!testWithProxy) {
         toast.error("Falha na conexão com a API mesmo usando proxy", {
-          description: "Verifique seus cookies e tente novamente."
+          description: "Verifique seu comando cURL e tente novamente."
         });
         return [];
       }
@@ -665,7 +694,7 @@ export const fetchItems = async (config: TrackingConfiguration, apiCredentials: 
     if (error instanceof Error) {
       if (error.message.includes('401') || error.message.includes('403')) {
         toast.error("Erro de autenticação na API", {
-          description: "Verifique se os cookies de sessão são válidos e estão atualizados"
+          description: "Verifique se o comando cURL é válido e está atualizado"
         });
       } else if (error.message.includes('429')) {
         toast.error("Limite de requisições excedido", {
@@ -683,7 +712,7 @@ export const fetchItems = async (config: TrackingConfiguration, apiCredentials: 
         }
       } else if (error.message.includes('Cloudflare')) {
         toast.error("Proteção Cloudflare detectada", {
-          description: "É necessário atualizar o cookie cf_clearance. Use o Debug API para mais detalhes."
+          description: "É necessário atualizar o comando cURL. Use o Debug API para mais detalhes."
         });
       } else {
         toast.error(`Erro ao acessar a API: ${error.message}`);

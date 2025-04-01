@@ -19,6 +19,8 @@ export interface ApiCredentials {
   referrerHeader?: string;     // Custom Referrer header
   enableAdvancedOptions?: boolean; // Show advanced options in UI
   supportCurl?: boolean;       // New option to enable cURL command support
+  fullCurlCommand?: string;    // Store the full cURL command
+  allCookies?: string;         // All cookies from the cURL command
 }
 
 export interface ApiDebugInfo {
@@ -43,6 +45,7 @@ export interface ParsedCurlCommand {
   method?: string;
   headers?: Record<string, string>;
   body?: string;
-  jsonBody?: any; // Corpo parseado como JSON, se possível
+  jsonBody?: any;
   cookies?: Record<string, string>;
+  allCookies?: string;
 }
