@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -196,11 +197,14 @@ const ApiDebugger = ({ apiCredentials }: ApiDebuggerProps) => {
     }
     
     // Adicionar o comando cURL original
-    credentials.fullCurlCommand = curlCommand;
+    const fullCommand = curlCommand; // Store the command directly
     
-    // Create event to simulate changes
+    // Create event to simulate changes with fullCurlCommand property
     const event = new CustomEvent("curl-credentials-extracted", {
-      detail: credentials
+      detail: {
+        ...credentials,
+        fullCurlCommand: fullCommand
+      }
     });
     
     document.dispatchEvent(event);

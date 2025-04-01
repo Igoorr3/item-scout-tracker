@@ -156,24 +156,25 @@ const ApiConfigDialog = ({ open, onOpenChange, apiConfig, onSaveConfig }: ApiCon
           </Alert>
           
           <div>
-            <div className="bg-muted/30 rounded-md p-3 text-sm mb-3">
-              <p className="font-medium mb-1">Como obter o comando cURL:</p>
+            <div className="bg-amber-500/10 border border-amber-500/30 rounded-md p-3 text-sm mb-3">
+              <p className="font-medium mb-1">🔴 Como obter o comando cURL (IMPORTANTE):</p>
               <ol className="list-decimal pl-5 space-y-1">
                 <li>Acesse o site oficial do <a href="https://www.pathofexile.com" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Path of Exile</a> e faça login</li>
                 <li>Abra o <a href="https://www.pathofexile.com/trade2/search/poe2/Standard" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">site de trade do PoE2</a></li>
                 <li>Pressione F12 para abrir as ferramentas de desenvolvedor</li>
-                <li>Vá para a aba "Network" e faça uma busca de item</li>
-                <li>Clique com o botão direito na requisição "Standard" (POST)</li>
+                <li>Vá para a aba "Network" e faça uma busca de item qualquer (filtre por weapon por exemplo)</li>
+                <li><strong>✅ Clique com o botão direito na requisição "Standard" (POST) que é mostrada na imagem</strong></li>
                 <li>Selecione "Copy" &gt; "Copy as cURL (bash)"</li>
                 <li>Cole o comando abaixo</li>
               </ol>
+              <p className="mt-2 text-xs font-medium">É essa requisição POST que contém todos os cookies necessários para autenticação!</p>
             </div>
             
             <Textarea 
               value={curlCommand}
               onChange={(e) => setCurlCommand(e.target.value)}
               className="font-mono text-xs min-h-[150px]"
-              placeholder="curl &quot;https://www.pathofexile.com/api/trade2/search/poe2/Standard&quot; -X POST -H &quot;User-Agent: Mozilla/5.0...&quot; -H &quot;Cookie: POESESSID=abc123; cf_clearance=xyz789...&quot; -H &quot;Content-Type: application/json&quot; --data-raw &quot;{&quot;query&quot;:{&quot;status&quot;:{&quot;option&quot;:&quot;online&quot;}}}&quot;"
+              placeholder="curl &quot;https://www.pathofexile.com/api/trade2/search/poe2/Standard&quot; -X POST -H &quot;User-Agent: Mozilla/5.0...&quot; -H &quot;Cookie: POESESSID=abc123; cf_clearance=xyz789...&quot;"
             />
             
             <div className="flex gap-2 mt-2">
