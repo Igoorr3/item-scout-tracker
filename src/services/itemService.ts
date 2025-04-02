@@ -4,6 +4,13 @@ import { ApiCredentials, ApiDebugInfo } from '@/types/api';
 import { toast } from "sonner";
 import { buildProxyUrl } from '@/utils/curlParser';
 
+// Lista de proxies CORS para tentar
+const CORS_PROXIES = [
+  'https://corsproxy.io/?',
+  'https://cors-anywhere.herokuapp.com/',
+  'https://api.allorigins.win/raw?url='
+];
+
 interface PoeApiSearchResponse {
   id: string;
   result: string[];
