@@ -38,6 +38,9 @@ export const parseCurlCommand = (curlCommand: string): ParsedCurlCommand => {
   const methodMatch = cmd.match(/-X\s+(['"]?)(\w+)(\1)/i);
   if (methodMatch) {
     result.method = methodMatch[2].toUpperCase();
+  } else if (cmd.includes('--data') || cmd.includes('-d ')) {
+    // Se tem data mas não tem método explícito, assume POST
+    result.method = 'POST';
   }
 
   // Extrai headers
@@ -69,15 +72,16 @@ export const parseCurlCommand = (curlCommand: string): ParsedCurlCommand => {
           }
         }
       }
+      
       // Armazenar todos os headers exatamente como estão no comando cURL
       result.headers![name] = value;
     }
   }
   
-  // Extrair cookies da opção -b ou --cookie
-  const cookieMatches = Array.from(cmd.matchAll(/-b\s+(['"])(.*?)(\1)/gi));
+  // Extrair cookies da opção -b ou --cookie (melhoria baseada no código Python)
+  const cookieOptionMatches = Array.from(cmd.matchAll(/(?:-b|--cookie)\s+(['"])(.*?)(\1)/gi));
   
-  for (const match of cookieMatches) {
+  for (const match of cookieOptionMatches) {
     const cookieValue = match[2];
     allCookiesStr += cookieValue + '; ';
     
@@ -93,20 +97,23 @@ export const parseCurlCommand = (curlCommand: string): ParsedCurlCommand => {
     }
     
     // Também adicionar como header Cookie, substituindo qualquer valor anterior
-    if (!result.headers!['Cookie']) {
-      result.headers!['Cookie'] = cookieValue;
-    }
+    result.headers!['Cookie'] = cookieValue;
   }
   
   // Armazena a string de cookies completa
   if (allCookiesStr) {
     result.allCookies = allCookiesStr.trim();
+    if (result.allCookies.endsWith(';')) {
+      result.allCookies = result.allCookies.slice(0, -1);
+    }
   } else if (result.headers!['Cookie']) {
     result.allCookies = result.headers!['Cookie'];
   }
 
-  // Extrai body da requisição
+  // Extrai body da requisição com melhor suporte para diferentes formatos
+  // --data-raw
   const dataRawMatch = cmd.match(/--data-raw\s+(['"])(.*?)(\1)/i);
+  // --data ou --data-binary
   const dataMatch = cmd.match(/--data(?:-binary)?\s+(['"])(.*?)(\1)/i) || 
                    cmd.match(/-d\s+(['"])(.*?)(\1)/i);
                     
@@ -176,34 +183,39 @@ export const extractCredentialsFromCurl = (parsedCurl: ParsedCurlCommand) => {
     }
   }
 
-  // Extrai headers úteis
+  // Extrai headers úteis com melhor handling de case
   if (parsedCurl.headers) {
-    if (parsedCurl.headers['User-Agent']) {
-      credentials.useragent = parsedCurl.headers['User-Agent'];
-    } else if (parsedCurl.headers['user-agent']) {
-      credentials.useragent = parsedCurl.headers['user-agent'];
+    // User-Agent (case insensitive)
+    const userAgentKey = Object.keys(parsedCurl.headers).find(
+      key => key.toLowerCase() === 'user-agent'
+    );
+    if (userAgentKey) {
+      credentials.useragent = parsedCurl.headers[userAgentKey];
     }
     
-    if (parsedCurl.headers['Origin']) {
-      credentials.originHeader = parsedCurl.headers['Origin'];
-    } else if (parsedCurl.headers['origin']) {
-      credentials.originHeader = parsedCurl.headers['origin'];
+    // Origin (case insensitive)
+    const originKey = Object.keys(parsedCurl.headers).find(
+      key => key.toLowerCase() === 'origin'
+    );
+    if (originKey) {
+      credentials.originHeader = parsedCurl.headers[originKey];
     }
     
-    if (parsedCurl.headers['Referer']) {
-      credentials.referrerHeader = parsedCurl.headers['Referer'];
-    } else if (parsedCurl.headers['referer']) {
-      credentials.referrerHeader = parsedCurl.headers['referer'];
+    // Referer (case insensitive)
+    const refererKey = Object.keys(parsedCurl.headers).find(
+      key => key.toLowerCase() === 'referer'
+    );
+    if (refererKey) {
+      credentials.referrerHeader = parsedCurl.headers[refererKey];
     }
 
     // Armazena outros headers potencialmente úteis
     credentials.otherHeaders = { ...parsedCurl.headers };
-    delete credentials.otherHeaders['User-Agent'];
-    delete credentials.otherHeaders['user-agent'];
-    delete credentials.otherHeaders['Origin'];
-    delete credentials.otherHeaders['origin'];
-    delete credentials.otherHeaders['Referer'];
-    delete credentials.otherHeaders['referer'];
+    
+    // Remove headers já extraídos dos otherHeaders
+    if (userAgentKey) delete credentials.otherHeaders[userAgentKey];
+    if (originKey) delete credentials.otherHeaders[originKey];
+    if (refererKey) delete credentials.otherHeaders[refererKey];
   }
 
   return credentials;
