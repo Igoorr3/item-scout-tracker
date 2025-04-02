@@ -67,17 +67,10 @@ interface PoeItemResult {
   };
 }
 
-// Lista de proxies públicos para contornar restrições de CORS
-const CORS_PROXIES = [
-  'https://corsproxy.io/?',
-  'https://api.codetabs.com/v1/proxy?quest=',
-  'https://api.allorigins.win/raw?url=',
-  'https://thingproxy.freeboard.io/fetch/',
-  'https://cors-anywhere.herokuapp.com/',
-  'https://crossorigin.me/',
-  'https://cors-proxy.htmldriven.com/?url='
-];
+// URL base do nosso servidor Python
+const PYTHON_SERVER_URL = 'http://localhost:5000';
 
+// Variável global para guardar credenciais extraídas do cURL
 let curlExtractedCredentials: any = null;
 
 document.addEventListener("curl-credentials-extracted", ((event: any) => {
@@ -141,19 +134,15 @@ const buildSearchPayload = (config: TrackingConfiguration) => {
   return payload;
 };
 
-// Melhorado para usar os headers exatos como no Python
 const buildHeaders = (apiCredentials: ApiCredentials, isSearch: boolean = false): Record<string, string> => {
-  // Se temos headers exatos do cURL, usamos eles como base
   if (curlExtractedCredentials?.exactHeaders) {
     console.log("Usando headers exatos do cURL");
     const headers = {...curlExtractedCredentials.exactHeaders};
     
-    // Garantir que temos o Content-Type para requisições POST
     if (isSearch && !headers['Content-Type']) {
       headers['Content-Type'] = "application/json";
     }
     
-    // Garantir que temos os cookies
     if (!headers['Cookie'] && curlExtractedCredentials?.allCookies) {
       headers['Cookie'] = curlExtractedCredentials.allCookies;
     }
@@ -161,7 +150,6 @@ const buildHeaders = (apiCredentials: ApiCredentials, isSearch: boolean = false)
     return headers;
   }
   
-  // Caso contrário, construímos headers baseados no modelo do Python
   let headers: Record<string, string> = {
     "accept": "*/*",
     "accept-language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
@@ -206,7 +194,6 @@ const buildHeaders = (apiCredentials: ApiCredentials, isSearch: boolean = false)
     headers["Referer"] = "https://www.pathofexile.com/trade2/search/poe2/Standard";
   }
 
-  // Cookies: Preferência para allCookies sobre cookies individuais
   if (curlExtractedCredentials?.allCookies) {
     headers["Cookie"] = curlExtractedCredentials.allCookies;
   } else {
@@ -240,141 +227,35 @@ const buildHeaders = (apiCredentials: ApiCredentials, isSearch: boolean = false)
   return headers;
 };
 
-// Função melhorada para tentar com diferentes proxies
-const tryWithDifferentProxies = async (url: string, options: RequestInit, forceProxy: boolean = false): Promise<Response> => {
-  let lastError;
-  
-  if (!options.headers) {
-    options.headers = {};
-  }
-  
-  // Tenta sem proxy primeiro (a menos que forceProxy seja true)
-  if (!forceProxy) {
-    try {
-      console.log("Tentando acessar diretamente:", url);
-      const fetchOptions = {
-        ...options,
-        mode: 'cors' as RequestMode,
-        credentials: 'include' as RequestCredentials
-      };
-      
-      // Remova o Content-Type application/json para requests OPTIONS (preflight CORS)
-      if (options.method === 'OPTIONS' && (options.headers as Record<string, string>)['Content-Type'] === 'application/json') {
-        const newHeaders = {...(options.headers as Record<string, string>)};
-        delete newHeaders['Content-Type'];
-        fetchOptions.headers = newHeaders;
-      }
-      
-      return await fetch(url, fetchOptions);
-    } catch (error) {
-      console.log("Falha ao acessar diretamente:", error);
-      lastError = error;
-    }
-  }
-  
-  // Tenta com cada proxy na lista
-  for (let i = 0; i < CORS_PROXIES.length; i++) {
-    const proxy = CORS_PROXIES[i];
-    try {
-      console.log(`Tentando acessar via proxy ${proxy}:`, url);
-      const proxyUrl = proxy + encodeURIComponent(url);
-      const proxyOptions = {
-        ...options,
-        headers: {
-          ...options.headers as Record<string, string>,
-          'X-Requested-With': 'XMLHttpRequest'
-        },
-        mode: 'cors' as RequestMode,
-        credentials: 'omit' as RequestCredentials  // Importante: muda para 'omit' com proxies
-      };
-      return await fetch(proxyUrl, proxyOptions);
-    } catch (error) {
-      console.log(`Falha ao acessar via proxy ${proxy}:`, error);
-      lastError = error;
-    }
-  }
-  
-  // Se todas as tentativas falharem
-  throw lastError || new Error("Todas as tentativas de conexão falharam");
-};
-
 export const searchItems = async (config: TrackingConfiguration, apiCredentials: ApiCredentials): Promise<PoeApiSearchResponse> => {
   try {
     const payload = buildSearchPayload(config);
     console.log("Enviando payload de busca:", JSON.stringify(payload, null, 2));
 
-    const headers = buildHeaders(apiCredentials, true);
-    console.log("Headers de busca:", headers);
-
-    const url = "https://www.pathofexile.com/api/trade2/search/poe2/Standard";
+    console.log("Enviando requisição para o servidor Python local");
     
-    let response;
-    try {
-      response = await tryWithDifferentProxies(url, {
-        method: "POST",
-        headers,
-        body: JSON.stringify(payload)
-      }, apiCredentials.useProxy);
-    } catch (error) {
-      // Se falhar com todos os proxies, tenta o método Python modificado como último recurso
-      console.log("Todas as tentativas normais falharam, tentando abordagem alternativa...");
-      const pythonStyleHeaders = {
-        'accept': '*/*',
-        'accept-language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
-        'content-type': 'application/json',
-        'priority': 'u=1, i',
-        'referer': 'https://www.pathofexile.com/trade2/search/poe2/Standard',
-        'sec-ch-ua': '"Chromium";v="134", "Not:A-Brand";v="24", "Brave";v="134"',
-        'sec-ch-ua-arch': '"x86"',
-        'sec-ch-ua-bitness': '"64"',
-        'sec-ch-ua-full-version-list': '"Chromium";v="134.0.0.0", "Not:A-Brand";v="24.0.0.0", "Brave";v="134.0.0.0"',
-        'sec-ch-ua-mobile': '?0',
-        'sec-ch-ua-model': '""',
-        'sec-ch-ua-platform': '"Windows"',
-        'sec-ch-ua-platform-version': '"10.0.0"',
-        'sec-fetch-dest': 'empty',
-        'sec-fetch-mode': 'cors',
-        'sec-fetch-site': 'same-origin',
-        'sec-gpc': '1',
-        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36',
-        'x-requested-with': 'XMLHttpRequest',
-      };
-      
-      // Adiciona os cookies se disponíveis
-      if (headers['Cookie']) {
-        pythonStyleHeaders['Cookie'] = headers['Cookie'];
-      }
-      
-      // Tenta uma última vez com o método Python
-      const proxyUrl = buildProxyUrl(url);
-      response = await fetch(proxyUrl, {
-        method: "POST",
-        headers: pythonStyleHeaders,
-        body: JSON.stringify(payload)
-      });
-    }
+    const response = await fetch(`${PYTHON_SERVER_URL}/api/search`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
 
     if (!response.ok) {
-      if (response.status === 429) {
-        throw new Error("API rate limit reached. Please wait before trying again.");
-      }
-      
-      if (response.status === 401 || response.status === 403) {
-        throw new Error(`Erro de autorização: ${response.status}. Verifique seus cookies de sessão.`);
-      }
-      
       const errorText = await response.text();
-      console.error(`Erro na API de busca: Status ${response.status}`, errorText);
+      console.error(`Erro no servidor Python: Status ${response.status}`, errorText);
       
-      if (errorText.includes('<!DOCTYPE html>') || errorText.includes('<html')) {
-        throw new Error(`Proteção Cloudflare ativada. Você precisa atualizar seus cookies cf_clearance.`);
+      try {
+        const errorJson = JSON.parse(errorText);
+        throw new Error(`Erro do servidor Python: ${errorJson.message || errorText}`);
+      } catch (e) {
+        throw new Error(`Erro do servidor Python: ${response.status} - ${errorText}`);
       }
-      
-      throw new Error(`Erro na API de busca: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
-    console.log("Resposta da API de busca:", data);
+    console.log("Resposta da busca:", data);
     
     if (!data.id || !data.result) {
       throw new Error("Resposta da API inválida - formato inesperado");
@@ -383,14 +264,6 @@ export const searchItems = async (config: TrackingConfiguration, apiCredentials:
     return data;
   } catch (error) {
     console.error("Erro ao buscar itens:", error);
-    
-    // Se explicito useProxy for false, tenta novamente com proxies
-    if (!apiCredentials.useProxy) {
-      console.log("Tentando novamente com proxy...");
-      const updatedCredentials = { ...apiCredentials, useProxy: true };
-      return searchItems(config, updatedCredentials);
-    }
-    
     throw error;
   }
 };
@@ -398,64 +271,34 @@ export const searchItems = async (config: TrackingConfiguration, apiCredentials:
 export const fetchItemDetails = async (itemIds: string[], queryId: string, apiCredentials: ApiCredentials): Promise<PoeItemResponse> => {
   try {
     const idsToFetch = itemIds.slice(0, 10).join(",");
-    const url = `https://www.pathofexile.com/api/trade2/fetch/${idsToFetch}?query=${queryId}&realm=poe2`;
     
-    console.log("Buscando detalhes de itens:", url);
+    console.log(`Buscando detalhes via servidor Python: ${idsToFetch}`);
     
-    const headers = buildHeaders(apiCredentials);
-    console.log("Headers de detalhes:", headers);
-    
-    if (apiCredentials.respectRateLimit && apiCredentials.rateLimitDelay) {
-      console.log(`Respeitando limite de requisições: aguardando ${apiCredentials.rateLimitDelay}ms`);
-      await new Promise(resolve => setTimeout(resolve, apiCredentials.rateLimitDelay));
-    }
-    
-    let response;
-    if (apiCredentials.useProxy) {
-      response = await tryWithDifferentProxies(url, {
-        headers,
-      });
-    } else {
-      response = await fetch(url, {
-        headers,
-        credentials: "include",
-        mode: "cors",
-        cache: "no-cache"
-      });
-    }
+    const response = await fetch(`${PYTHON_SERVER_URL}/api/fetch?ids=${idsToFetch}&query=${queryId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
 
     if (!response.ok) {
-      if (response.status === 429) {
-        throw new Error("API rate limit reached. Please wait before trying again.");
-      }
-      
-      if (response.status === 401 || response.status === 403) {
-        throw new Error(`Erro de autorização: ${response.status}. Verifique seus cookies de sessão.`);
-      }
-      
       const errorText = await response.text();
-      console.error(`Erro na API de detalhes: Status ${response.status}`, errorText);
+      console.error(`Erro ao buscar detalhes via servidor Python: Status ${response.status}`, errorText);
       
-      if (errorText.includes('<!DOCTYPE html>') || errorText.includes('<html')) {
-        throw new Error(`Proteção Cloudflare ativada. Você precisa atualizar seus cookies cf_clearance.`);
+      try {
+        const errorJson = JSON.parse(errorText);
+        throw new Error(`Erro do servidor Python: ${errorJson.message || errorText}`);
+      } catch (e) {
+        throw new Error(`Erro ao buscar detalhes: ${response.status} - ${errorText}`);
       }
-      
-      throw new Error(`Erro na API de detalhes: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
-    console.log("Resposta da API de detalhes:", data);
+    console.log("Resposta de detalhes:", data);
     return data;
   } catch (error) {
     console.error("Erro ao buscar detalhes dos itens:", error);
-    
-    if (apiCredentials.useProxy) {
-      throw error;
-    }
-    
-    console.log("Tentando novamente com proxy...");
-    const updatedCredentials = { ...apiCredentials, useProxy: true };
-    return fetchItemDetails(itemIds, queryId, updatedCredentials);
+    throw error;
   }
 };
 
@@ -595,73 +438,33 @@ const convertApiResponseToItems = (response: PoeItemResponse, queryId: string): 
 
 export const testApiConnection = async (apiCredentials: ApiCredentials): Promise<boolean> => {
   try {
-    const headers = buildHeaders(apiCredentials);
-    console.log("Headers para teste de API:", headers);
-
-    const testUrl = "https://www.pathofexile.com/api/trade2/leagues";
-    console.log("Tentando conexão com:", testUrl);
+    console.log("Testando conexão com servidor Python");
     
-    let response;
-    if (apiCredentials.useProxy) {
-      response = await tryWithDifferentProxies(testUrl, {
-        headers
-      });
-    } else {
-      response = await fetch(testUrl, {
-        headers,
-        credentials: "include",
-        mode: "cors",
-        cache: "no-cache"
-      });
-    }
-
-    if (!response.ok) {
-      console.error(`Teste de API falhou com status: ${response.status}`);
-      
-      const responseText = await response.text();
-      console.log("Resposta de erro completa:", responseText);
-      
-      if (responseText.includes('<!DOCTYPE html>') || responseText.includes('<html')) {
-        console.error("Resposta Cloudflare detectada. Necessário atualizar cookies.");
-        
-        const rayIdMatch = responseText.match(/Ray ID:\s*<strong[^>]*>([^<]+)<\/strong>/);
-        if (rayIdMatch && rayIdMatch[1]) {
-          console.error(`Cloudflare Ray ID: ${rayIdMatch[1]}`);
-        }
+    const response = await fetch(`${PYTHON_SERVER_URL}/api/test`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
       }
-      
-      return false;
-    }
+    });
     
     const data = await response.json();
-    console.log("Teste de API bem sucedido:", data);
-    return true;
-  } catch (error) {
-    console.error("Erro ao testar conexão com a API:", error);
     
-    if (apiCredentials.useProxy) {
+    if (data.success) {
+      console.log("Teste de conexão bem sucedido:", data);
+      return true;
+    } else {
+      console.error("Teste de conexão falhou:", data.message);
       return false;
     }
-    
-    console.log("Tentando novamente com proxy...");
-    const updatedCredentials = { ...apiCredentials, useProxy: true };
-    return testApiConnection(updatedCredentials);
+  } catch (error) {
+    console.error("Erro ao testar conexão:", error);
+    return false;
   }
 };
 
 export const fetchItems = async (config: TrackingConfiguration, apiCredentials: ApiCredentials): Promise<Item[]> => {
   try {
     console.log(`Buscando itens para configuração: ${config.name}`);
-    console.log("Credenciais da API:", { 
-      poesessid: apiCredentials.poesessid ? "Configurado" : "Não configurado", 
-      cfClearance: apiCredentials.cfClearance && apiCredentials.cfClearance.length > 0 ? 
-        `Configurado (${apiCredentials.cfClearance.length} valores)` : "Não configurado",
-      useragent: apiCredentials.useragent ? "Configurado" : "Padrão",
-      useProxy: apiCredentials.useProxy ? "Sim" : "Não",
-      fullCurlCommand: apiCredentials.fullCurlCommand ? "Configurado" : "Não configurado",
-      exactHeaders: apiCredentials.exactHeaders ? "Configurados" : "Não configurados",
-      allCookies: apiCredentials.allCookies ? "Configurados" : "Não configurados"
-    });
     
     const hasConfigured = apiCredentials.isConfigured || 
                          (apiCredentials.fullCurlCommand && apiCredentials.fullCurlCommand.length > 0);
@@ -675,22 +478,10 @@ export const fetchItems = async (config: TrackingConfiguration, apiCredentials: 
     
     const connectionOk = await testApiConnection(apiCredentials);
     if (!connectionOk) {
-      toast.error("Falha na conexão com a API do Path of Exile", {
-        description: "Verificando com proxy alternativo..."
+      toast.error("Falha na conexão com o servidor Python", {
+        description: "Verifique se o servidor Python está rodando na porta 5000"
       });
-      
-      const testWithProxy = await testApiConnection({...apiCredentials, useProxy: true});
-      if (!testWithProxy) {
-        toast.error("Falha na conexão com a API mesmo usando proxy", {
-          description: "Verifique seu comando cURL e tente novamente."
-        });
-        return [];
-      }
-      
-      apiCredentials = {...apiCredentials, useProxy: true};
-      toast.success("Conexão estabelecida usando proxy", {
-        description: "Os dados reais serão obtidos normalmente"
-      });
+      return [];
     }
     
     const searchResponse = await searchItems(config, apiCredentials);
@@ -710,16 +501,6 @@ export const fetchItems = async (config: TrackingConfiguration, apiCredentials: 
       }
     });
     
-    if (apiCredentials.directQuery && searchResponse.id) {
-      toast.info("Tentando obter dados via consulta direta...");
-      const directItems = await fetchItemsByDirectQuery(searchResponse.id, apiCredentials);
-      if (directItems.length > 0) {
-        toast.success(`Encontrados ${directItems.length} itens via consulta direta`);
-        return directItems;
-      }
-      toast.info("Consulta direta não retornou itens, voltando para API padrão");
-    }
-    
     if (apiCredentials.respectRateLimit) {
       const delay = apiCredentials.rateLimitDelay || 2000;
       toast.info(`Respeitando limite de requisições: aguardando ${delay/1000}s...`);
@@ -737,7 +518,7 @@ export const fetchItems = async (config: TrackingConfiguration, apiCredentials: 
     
     if (items.length === 0) {
       toast.warning("Os IDs de itens foram encontrados, mas não foi possível obter detalhes", {
-        description: "Isso pode indicar um problema com os cookies ou com a API do Path of Exile"
+        description: "Isso pode indicar um problema com o servidor Python"
       });
     }
     
@@ -746,31 +527,7 @@ export const fetchItems = async (config: TrackingConfiguration, apiCredentials: 
     console.error('Erro ao buscar itens:', error);
     
     if (error instanceof Error) {
-      if (error.message.includes('401') || error.message.includes('403')) {
-        toast.error("Erro de autenticação na API", {
-          description: "Verifique se o comando cURL é válido e está atualizado"
-        });
-      } else if (error.message.includes('429')) {
-        toast.error("Limite de requisições excedido", {
-          description: "Aguarde alguns minutos antes de tentar novamente"
-        });
-      } else if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
-        toast.error("Erro de conexão com a API", {
-          description: "Tentando com proxies alternativos... Se persistir, verifique sua conexão de internet."
-        });
-        
-        const updatedCredentials = {...apiCredentials, useProxy: true};
-        const items = await fetchItems(config, updatedCredentials);
-        if (items.length > 0) {
-          return items;
-        }
-      } else if (error.message.includes('Cloudflare')) {
-        toast.error("Proteção Cloudflare detectada", {
-          description: "É necessário atualizar o comando cURL. Use o Debug API para mais detalhes."
-        });
-      } else {
-        toast.error(`Erro ao acessar a API: ${error.message}`);
-      }
+      toast.error(`Erro: ${error.message}`);
     } else {
       toast.error("Erro desconhecido ao acessar a API");
     }

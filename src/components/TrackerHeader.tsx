@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Sparkles, AlertCircle, InfoIcon, Settings, Bug, FileSearch, Code } from 'lucide-react';
+import { PlusCircle, Sparkles, AlertCircle, InfoIcon, Settings, Bug, FileSearch, Code, Server } from 'lucide-react';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { ApiCredentials } from '@/types/api';
@@ -92,12 +92,18 @@ const TrackerHeader = ({
                       <li>Cole o comando cURL completo na interface de configuração</li>
                       <li>O comando cURL deve conter todos os cookies necessários (como cf_clearance e POESESSID)</li>
                       <li>Use o modo de Debug API para testar suas credenciais</li>
-                      <li>Lembre-se: a API tem limitações no navegador. Considere usar um script Python para consultas frequentes</li>
                     </ol>
-                    <div className="mt-4 p-2 bg-amber-500/20 rounded text-xs">
-                      <p><strong>Nota sobre CORS:</strong> A API do PoE bloqueia requisições diretas de domínios diferentes (como este app). 
-                      Nossa aplicação tenta usar proxies CORS públicos, mas eles podem nem sempre funcionar.
-                      Se continuar com problemas, considere usar um script Python em seu computador local.</p>
+                    
+                    <div className="mt-4 p-2 bg-blue-500/20 rounded text-xs">
+                      <p className="font-medium flex items-center">
+                        <Server className="h-3 w-3 mr-1" />
+                        Servidor Python Local:
+                      </p>
+                      <p className="mt-1">
+                        Para contornar problemas de CORS, esta aplicação está configurada para se 
+                        comunicar com um servidor Python local na porta 5000. Certifique-se de que o
+                        servidor Python esteja rodando antes de usar o rastreador.
+                      </p>
                     </div>
                   </AccordionContent>
                 </AccordionItem>
@@ -105,6 +111,15 @@ const TrackerHeader = ({
             </AlertDescription>
           </>
         )}
+      </Alert>
+      
+      <Alert className="border-amber-500/50 bg-amber-500/10">
+        <Server className="h-4 w-4 text-amber-500" />
+        <AlertDescription className="text-sm">
+          <strong>Servidor Python Necessário:</strong> Esta aplicação requer um servidor Python rodando 
+          localmente na porta 5000 para se comunicar com a API do Path of Exile 2. Certifique-se de 
+          iniciar o servidor Python antes de usar o rastreador.
+        </AlertDescription>
       </Alert>
     </div>
   );
