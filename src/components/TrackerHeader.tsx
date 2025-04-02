@@ -88,11 +88,17 @@ const TrackerHeader = ({
                       <li>Abra o <a href="https://www.pathofexile.com/trade2/search/poe2/Standard" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">site de trade do PoE2</a></li>
                       <li>Pressione F12 para abrir as ferramentas de desenvolvedor</li>
                       <li>Vá para a aba "Network" e faça uma busca no site</li>
-                      <li>Clique com o botão direito na requisição "Standard" (POST) e escolha "Copy as cURL (bash)"</li>
+                      <li><strong>IMPORTANTE:</strong> Clique com o botão direito na requisição <strong>POST</strong> chamada "Standard" e escolha "Copy as cURL (bash)"</li>
                       <li>Cole o comando cURL completo na interface de configuração</li>
-                      <li>O comando cURL já contém todos os cookies necessários, incluindo o cf_clearance e POESESSID</li>
+                      <li>O comando cURL deve conter todos os cookies necessários (como cf_clearance e POESESSID)</li>
                       <li>Use o modo de Debug API para testar suas credenciais</li>
+                      <li>Lembre-se: a API tem limitações no navegador. Considere usar um script Python para consultas frequentes</li>
                     </ol>
+                    <div className="mt-4 p-2 bg-amber-500/20 rounded text-xs">
+                      <p><strong>Nota sobre CORS:</strong> A API do PoE bloqueia requisições diretas de domínios diferentes (como este app). 
+                      Nossa aplicação tenta usar proxies CORS públicos, mas eles podem nem sempre funcionar.
+                      Se continuar com problemas, considere usar um script Python em seu computador local.</p>
+                    </div>
                   </AccordionContent>
                 </AccordionItem>
               </Accordion>

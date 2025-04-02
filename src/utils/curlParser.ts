@@ -220,3 +220,27 @@ export const extractCredentialsFromCurl = (parsedCurl: ParsedCurlCommand) => {
 
   return credentials;
 };
+
+/**
+ * Constrói um URL de proxy público com base na URL original
+ * 
+ * @param originalUrl URL original para acessar através do proxy
+ * @param proxyIndex Índice do proxy a ser usado (opcional)
+ * @returns URL formatada com o proxy
+ */
+export const buildProxyUrl = (originalUrl: string, proxyIndex?: number): string => {
+  const PUBLIC_PROXIES = [
+    'https://corsproxy.io/?',
+    'https://api.codetabs.com/v1/proxy?quest=',
+    'https://api.allorigins.win/raw?url=',
+    'https://thingproxy.freeboard.io/fetch/',
+    'https://cors-anywhere.herokuapp.com/'
+  ];
+  
+  // Use um proxy específico ou escolha aleatoriamente
+  const proxyUrl = proxyIndex !== undefined
+    ? PUBLIC_PROXIES[proxyIndex % PUBLIC_PROXIES.length]
+    : PUBLIC_PROXIES[Math.floor(Math.random() * PUBLIC_PROXIES.length)];
+    
+  return proxyUrl + encodeURIComponent(originalUrl);
+};

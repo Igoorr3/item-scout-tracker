@@ -2,6 +2,7 @@ import { Item } from '@/types/items';
 import { TrackingConfiguration } from '@/types/tracking';
 import { ApiCredentials, ApiDebugInfo } from '@/types/api';
 import { toast } from "sonner";
+import { buildProxyUrl } from '@/utils/curlParser';
 
 interface PoeApiSearchResponse {
   id: string;
@@ -66,9 +67,12 @@ interface PoeItemResult {
   };
 }
 
+// Lista de proxies públicos para contornar restrições de CORS
 const CORS_PROXIES = [
   'https://corsproxy.io/?',
+  'https://api.codetabs.com/v1/proxy?quest=',
   'https://api.allorigins.win/raw?url=',
+  'https://thingproxy.freeboard.io/fetch/',
   'https://cors-anywhere.herokuapp.com/',
   'https://crossorigin.me/',
   'https://cors-proxy.htmldriven.com/?url='
@@ -137,15 +141,19 @@ const buildSearchPayload = (config: TrackingConfiguration) => {
   return payload;
 };
 
+// Melhorado para usar os headers exatos como no Python
 const buildHeaders = (apiCredentials: ApiCredentials, isSearch: boolean = false): Record<string, string> => {
+  // Se temos headers exatos do cURL, usamos eles como base
   if (curlExtractedCredentials?.exactHeaders) {
     console.log("Usando headers exatos do cURL");
     const headers = {...curlExtractedCredentials.exactHeaders};
     
+    // Garantir que temos o Content-Type para requisições POST
     if (isSearch && !headers['Content-Type']) {
       headers['Content-Type'] = "application/json";
     }
     
+    // Garantir que temos os cookies
     if (!headers['Cookie'] && curlExtractedCredentials?.allCookies) {
       headers['Cookie'] = curlExtractedCredentials.allCookies;
     }
@@ -153,18 +161,14 @@ const buildHeaders = (apiCredentials: ApiCredentials, isSearch: boolean = false)
     return headers;
   }
   
+  // Caso contrário, construímos headers baseados no modelo do Python
   let headers: Record<string, string> = {
     "accept": "*/*",
     "accept-language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
     "priority": "u=1, i",
     "sec-ch-ua": '"Chromium";v="134", "Not:A-Brand";v="24", "Google Chrome";v="134"',
-    "sec-ch-ua-arch": '"x86"',
-    "sec-ch-ua-bitness": '"64"',
-    "sec-ch-ua-full-version-list": '"Chromium";v="134.0.0.0", "Not:A-Brand";v="24.0.0.0", "Google Chrome";v="134.0.0.0"',
     "sec-ch-ua-mobile": '?0',
-    "sec-ch-ua-model": '""',
     "sec-ch-ua-platform": '"Windows"',
-    "sec-ch-ua-platform-version": '"10.0.0"',
     "sec-fetch-dest": "empty",
     "sec-fetch-mode": "cors",
     "sec-fetch-site": "same-origin",
@@ -202,14 +206,7 @@ const buildHeaders = (apiCredentials: ApiCredentials, isSearch: boolean = false)
     headers["Referer"] = "https://www.pathofexile.com/trade2/search/poe2/Standard";
   }
 
-  if (curlExtractedCredentials?.exactHeaders) {
-    Object.entries(curlExtractedCredentials.exactHeaders).forEach(([key, value]) => {
-      if (value && typeof value === 'string') {
-        headers[key] = value;
-      }
-    });
-  }
-
+  // Cookies: Preferência para allCookies sobre cookies individuais
   if (curlExtractedCredentials?.allCookies) {
     headers["Cookie"] = curlExtractedCredentials.allCookies;
   } else {
@@ -243,26 +240,41 @@ const buildHeaders = (apiCredentials: ApiCredentials, isSearch: boolean = false)
   return headers;
 };
 
-const tryWithDifferentProxies = async (url: string, options: RequestInit): Promise<Response> => {
+// Função melhorada para tentar com diferentes proxies
+const tryWithDifferentProxies = async (url: string, options: RequestInit, forceProxy: boolean = false): Promise<Response> => {
   let lastError;
   
   if (!options.headers) {
     options.headers = {};
   }
   
-  try {
-    console.log("Tentando acessar diretamente:", url);
-    return await fetch(url, {
-      ...options,
-      mode: 'cors',
-      credentials: 'include'
-    });
-  } catch (error) {
-    console.log("Falha ao acessar diretamente:", error);
-    lastError = error;
+  // Tenta sem proxy primeiro (a menos que forceProxy seja true)
+  if (!forceProxy) {
+    try {
+      console.log("Tentando acessar diretamente:", url);
+      const fetchOptions = {
+        ...options,
+        mode: 'cors' as RequestMode,
+        credentials: 'include' as RequestCredentials
+      };
+      
+      // Remova o Content-Type application/json para requests OPTIONS (preflight CORS)
+      if (options.method === 'OPTIONS' && (options.headers as Record<string, string>)['Content-Type'] === 'application/json') {
+        const newHeaders = {...(options.headers as Record<string, string>)};
+        delete newHeaders['Content-Type'];
+        fetchOptions.headers = newHeaders;
+      }
+      
+      return await fetch(url, fetchOptions);
+    } catch (error) {
+      console.log("Falha ao acessar diretamente:", error);
+      lastError = error;
+    }
   }
   
-  for (const proxy of CORS_PROXIES) {
+  // Tenta com cada proxy na lista
+  for (let i = 0; i < CORS_PROXIES.length; i++) {
+    const proxy = CORS_PROXIES[i];
     try {
       console.log(`Tentando acessar via proxy ${proxy}:`, url);
       const proxyUrl = proxy + encodeURIComponent(url);
@@ -273,7 +285,7 @@ const tryWithDifferentProxies = async (url: string, options: RequestInit): Promi
           'X-Requested-With': 'XMLHttpRequest'
         },
         mode: 'cors' as RequestMode,
-        credentials: 'include' as RequestCredentials
+        credentials: 'omit' as RequestCredentials  // Importante: muda para 'omit' com proxies
       };
       return await fetch(proxyUrl, proxyOptions);
     } catch (error) {
@@ -282,7 +294,8 @@ const tryWithDifferentProxies = async (url: string, options: RequestInit): Promi
     }
   }
   
-  throw lastError;
+  // Se todas as tentativas falharem
+  throw lastError || new Error("Todas as tentativas de conexão falharam");
 };
 
 export const searchItems = async (config: TrackingConfiguration, apiCredentials: ApiCredentials): Promise<PoeApiSearchResponse> => {
@@ -296,19 +309,48 @@ export const searchItems = async (config: TrackingConfiguration, apiCredentials:
     const url = "https://www.pathofexile.com/api/trade2/search/poe2/Standard";
     
     let response;
-    if (apiCredentials.useProxy) {
+    try {
       response = await tryWithDifferentProxies(url, {
         method: "POST",
         headers,
         body: JSON.stringify(payload)
-      });
-    } else {
-      response = await fetch(url, {
+      }, apiCredentials.useProxy);
+    } catch (error) {
+      // Se falhar com todos os proxies, tenta o método Python modificado como último recurso
+      console.log("Todas as tentativas normais falharam, tentando abordagem alternativa...");
+      const pythonStyleHeaders = {
+        'accept': '*/*',
+        'accept-language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
+        'content-type': 'application/json',
+        'priority': 'u=1, i',
+        'referer': 'https://www.pathofexile.com/trade2/search/poe2/Standard',
+        'sec-ch-ua': '"Chromium";v="134", "Not:A-Brand";v="24", "Brave";v="134"',
+        'sec-ch-ua-arch': '"x86"',
+        'sec-ch-ua-bitness': '"64"',
+        'sec-ch-ua-full-version-list': '"Chromium";v="134.0.0.0", "Not:A-Brand";v="24.0.0.0", "Brave";v="134.0.0.0"',
+        'sec-ch-ua-mobile': '?0',
+        'sec-ch-ua-model': '""',
+        'sec-ch-ua-platform': '"Windows"',
+        'sec-ch-ua-platform-version': '"10.0.0"',
+        'sec-fetch-dest': 'empty',
+        'sec-fetch-mode': 'cors',
+        'sec-fetch-site': 'same-origin',
+        'sec-gpc': '1',
+        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36',
+        'x-requested-with': 'XMLHttpRequest',
+      };
+      
+      // Adiciona os cookies se disponíveis
+      if (headers['Cookie']) {
+        pythonStyleHeaders['Cookie'] = headers['Cookie'];
+      }
+      
+      // Tenta uma última vez com o método Python
+      const proxyUrl = buildProxyUrl(url);
+      response = await fetch(proxyUrl, {
         method: "POST",
-        headers,
-        body: JSON.stringify(payload),
-        credentials: "include",
-        mode: "cors"
+        headers: pythonStyleHeaders,
+        body: JSON.stringify(payload)
       });
     }
 
@@ -342,13 +384,14 @@ export const searchItems = async (config: TrackingConfiguration, apiCredentials:
   } catch (error) {
     console.error("Erro ao buscar itens:", error);
     
-    if (apiCredentials.useProxy) {
-      throw error;
+    // Se explicito useProxy for false, tenta novamente com proxies
+    if (!apiCredentials.useProxy) {
+      console.log("Tentando novamente com proxy...");
+      const updatedCredentials = { ...apiCredentials, useProxy: true };
+      return searchItems(config, updatedCredentials);
     }
     
-    console.log("Tentando novamente com proxy...");
-    const updatedCredentials = { ...apiCredentials, useProxy: true };
-    return searchItems(config, updatedCredentials);
+    throw error;
   }
 };
 
