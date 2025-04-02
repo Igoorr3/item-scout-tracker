@@ -15,19 +15,24 @@ type StatType = {
   id: string;
 };
 
+// Stats aceitas pela API do Path of Exile 2
 const COMMON_STATS: StatType[] = [
-  { name: "DPS (Damage Per Second)", id: "dps" },
-  { name: "pDPS (Physical DPS)", id: "pdps" },
-  { name: "eDPS (Elemental DPS)", id: "edps" },
-  { name: "Attack Speed", id: "attack_speed" },
-  { name: "Critical Strike Chance", id: "crit_chance" },
-  { name: "Armour", id: "armour" },
-  { name: "Evasion", id: "evasion" },
-  { name: "Energy Shield", id: "energy_shield" },
-  { name: "Life", id: "life" },
-  { name: "Mana", id: "mana" },
-  { name: "Movement Speed", id: "movement_speed" },
-  { name: "Resistances", id: "resistances" },
+  { name: "Physical DPS", id: "weapon.physical_dps" },
+  { name: "Elemental DPS", id: "weapon.elemental_dps" },
+  { name: "Total DPS", id: "weapon.total_dps" },
+  { name: "Velocidade de Ataque", id: "weapon.aps" },
+  { name: "Chance de Acerto Crítico", id: "weapon.crit" },
+  { name: "Armadura", id: "armour.armour" },
+  { name: "Evasão", id: "armour.evasion" },
+  { name: "Escudo de Energia", id: "armour.energy_shield" },
+  { name: "% Vida", id: "explicit.stat_3299347043" },
+  { name: "Vida Máxima", id: "explicit.stat_3932700432" },
+  { name: "% Mana", id: "explicit.stat_1671376347" },
+  { name: "Mana Máxima", id: "explicit.stat_4220027924" },
+  { name: "% Vel. Movimento", id: "explicit.stat_2250533757" },
+  { name: "% Res. Fogo", id: "explicit.stat_3372524247" },
+  { name: "% Res. Gelo", id: "explicit.stat_1671376347" },
+  { name: "% Res. Raio", id: "explicit.stat_4220027924" },
 ];
 
 interface StatFilterProps {

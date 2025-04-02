@@ -128,10 +128,8 @@ const buildSearchPayload = (config: TrackingConfiguration) => {
     }
 
     for (const [statId, minValue] of Object.entries(config.stats)) {
-      const statName = statId.replace('_', ' ');
-      
       payload.query.stats[0].filters.push({
-        id: statName,
+        id: statId,
         value: { min: minValue },
         disabled: false
       });
@@ -255,7 +253,7 @@ export const searchItems = async (config: TrackingConfiguration, apiCredentials:
       
       try {
         const errorJson = JSON.parse(errorText);
-        throw new Error(`Erro do servidor Python: ${errorJson.message || errorText}`);
+        throw new Error(`Erro do servidor Python: ${errorJson.message || errorJson.error || errorText}`);
       } catch (e) {
         throw new Error(`Erro do servidor Python: ${response.status} - ${errorText}`);
       }
@@ -491,45 +489,61 @@ export const fetchItems = async (config: TrackingConfiguration, apiCredentials: 
       return [];
     }
     
-    const searchResponse = await searchItems(config, apiCredentials);
-    console.log(`IDs encontrados: ${searchResponse.result?.length || 0}`);
-    
-    if (!searchResponse.result || searchResponse.result.length === 0) {
-      toast.info("Nenhum item encontrado com esses filtros");
+    try {
+      const searchResponse = await searchItems(config, apiCredentials);
+      console.log(`IDs encontrados: ${searchResponse.result?.length || 0}`);
+      
+      if (!searchResponse.result || searchResponse.result.length === 0) {
+        toast.info("Nenhum item encontrado com esses filtros");
+        return [];
+      }
+      
+      const directTradeUrl = `https://www.pathofexile.com/trade2/search/poe2/${searchResponse.id}`;
+      toast.info(`Consulta gerada: ${searchResponse.id}`, {
+        description: "Você pode acessar esses resultados diretamente no site oficial",
+        action: {
+          label: "Abrir",
+          onClick: () => window.open(directTradeUrl, '_blank')
+        }
+      });
+      
+      if (apiCredentials.respectRateLimit) {
+        const delay = apiCredentials.rateLimitDelay || 2000;
+        toast.info(`Respeitando limite de requisições: aguardando ${delay/1000}s...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+      
+      const itemsResponse = await fetchItemDetails(
+        searchResponse.result.slice(0, 10), 
+        searchResponse.id,
+        apiCredentials
+      );
+      
+      const items = convertApiResponseToItems(itemsResponse, searchResponse.id);
+      console.log(`Itens obtidos: ${items.length}`);
+      
+      if (items.length === 0) {
+        toast.warning("Os IDs de itens foram encontrados, mas não foi possível obter detalhes", {
+          description: "Isso pode indicar um problema com o servidor Python"
+        });
+      }
+      
+      return items;
+    } catch (error: any) {
+      if (error.message && error.message.includes("Unknown category")) {
+        toast.error("Erro: Categoria de item desconhecida", {
+          description: "Verifique se a categoria de item selecionada é válida para PoE 2"
+        });
+      } else if (error.message && error.message.includes("Invalid stat provided")) {
+        toast.error("Erro: Estatística inválida", {
+          description: "Uma ou mais estatísticas não são reconhecidas pela API do Path of Exile 2"
+        });
+      } else {
+        toast.error(`Erro: ${error.message || "Erro desconhecido"}`);
+      }
+      console.error('Erro detalhado:', error);
       return [];
     }
-    
-    const directTradeUrl = `https://www.pathofexile.com/trade2/search/poe2/${searchResponse.id}`;
-    toast.info(`Consulta gerada: ${searchResponse.id}`, {
-      description: "Você pode acessar esses resultados diretamente no site oficial",
-      action: {
-        label: "Abrir",
-        onClick: () => window.open(directTradeUrl, '_blank')
-      }
-    });
-    
-    if (apiCredentials.respectRateLimit) {
-      const delay = apiCredentials.rateLimitDelay || 2000;
-      toast.info(`Respeitando limite de requisições: aguardando ${delay/1000}s...`);
-      await new Promise(resolve => setTimeout(resolve, delay));
-    }
-    
-    const itemsResponse = await fetchItemDetails(
-      searchResponse.result.slice(0, 10), 
-      searchResponse.id,
-      apiCredentials
-    );
-    
-    const items = convertApiResponseToItems(itemsResponse, searchResponse.id);
-    console.log(`Itens obtidos: ${items.length}`);
-    
-    if (items.length === 0) {
-      toast.warning("Os IDs de itens foram encontrados, mas não foi possível obter detalhes", {
-        description: "Isso pode indicar um problema com o servidor Python"
-      });
-    }
-    
-    return items;
   } catch (error) {
     console.error('Erro ao buscar itens:', error);
     

@@ -28,93 +28,7 @@ O servidor Python é necessário para contornar as restrições de CORS do naveg
 pip install flask flask-cors requests
 ```
 
-2. Crie um arquivo `api_server.py` com o seguinte código:
-
-```python
-from flask import Flask, request, jsonify
-from flask_cors import CORS
-import requests
-import json
-
-app = Flask(__name__)
-CORS(app)
-
-@app.route('/api/test', methods=['GET'])
-def test_api():
-    return jsonify({'success': True, 'message': 'API server is running correctly'})
-
-@app.route('/api/search', methods=['POST'])
-def search_items():
-    try:
-        search_payload = request.json
-        print(f"Payload recebido: {json.dumps(search_payload, indent=2)}")
-
-        # URL da API de busca
-        url = "https://www.pathofexile.com/api/trade2/search/poe2/Standard"
-        
-        # Fazemos a requisição sem usar os cabeçalhos do navegador
-        response = requests.post(
-            url,
-            json=search_payload,
-            headers={
-                'Content-Type': 'application/json',
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36',
-                'Origin': 'https://www.pathofexile.com',
-                'Referer': 'https://www.pathofexile.com/trade2/search/poe2/Standard'
-            }
-        )
-        
-        print(f"Status da resposta: {response.status_code}")
-        
-        if response.status_code != 200:
-            print(f"Erro na API: {response.text}")
-            return jsonify({'error': f"Erro ao buscar itens: {response.status_code}"}), response.status_code
-        
-        return response.json()
-    except Exception as e:
-        print(f"Erro no servidor: {str(e)}")
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/fetch', methods=['GET'])
-def fetch_items():
-    try:
-        ids = request.args.get('ids')
-        query_id = request.args.get('query')
-        
-        if not ids or not query_id:
-            return jsonify({'error': 'IDs de item e ID de consulta são obrigatórios'}), 400
-        
-        # URL da API para buscar detalhes dos itens
-        url = f"https://www.pathofexile.com/api/trade2/fetch/{ids}?query={query_id}"
-        
-        # Fazemos a requisição sem usar os cabeçalhos do navegador
-        response = requests.get(
-            url,
-            headers={
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36',
-                'Origin': 'https://www.pathofexile.com',
-                'Referer': f'https://www.pathofexile.com/trade2/search/poe2/{query_id}'
-            }
-        )
-        
-        print(f"Status da resposta: {response.status_code}")
-        
-        if response.status_code != 200:
-            print(f"Erro na API: {response.text}")
-            return jsonify({'error': f"Erro ao buscar detalhes dos itens: {response.status_code}"}), response.status_code
-        
-        return response.json()
-    except Exception as e:
-        print(f"Erro no servidor: {str(e)}")
-        return jsonify({'error': str(e)}), 500
-
-if __name__ == '__main__':
-    print("Iniciando servidor na porta 5000...")
-    print("Este servidor é necessário para contornar limitações de CORS do navegador")
-    app.run(debug=True, port=5000)
-```
-
-3. Execute o servidor Python:
+2. Execute o arquivo `api_server.py` incluído no projeto:
 
 ```bash
 python api_server.py
@@ -124,17 +38,15 @@ O servidor deve iniciar e mostrar: "Iniciando servidor na porta 5000..."
 
 ### 2. Configurar e Executar o Frontend React
 
-1. Extraia os arquivos do projeto para uma pasta local.
+1. Abra um novo terminal na pasta do projeto.
 
-2. Abra um terminal na pasta do projeto.
-
-3. Instale as dependências do projeto:
+2. Instale as dependências do projeto:
 
 ```bash
 npm install
 ```
 
-4. Inicie a aplicação React:
+3. Inicie a aplicação React:
 
 ```bash
 npm run dev
@@ -155,20 +67,58 @@ Para que a aplicação funcione corretamente, você precisa fornecer os cookies 
 7. Clique com o botão direito na requisição e escolha "Copy as cURL (bash)"
 8. Na aplicação React, clique no botão "Configurar cURL" e cole o comando copiado
 
-### 4. Usando a Aplicação
+### 4. Estrutura de Arquivos Importantes
 
-1. Após configurar o cURL, clique em "Novo Rastreador" para criar uma configuração de rastreamento.
-2. Defina um nome para o rastreador, o tipo de item e os filtros desejados.
-3. Salve a configuração e clique em "Atualizar" para buscar os itens.
-4. Use o botão "Debug API" para verificar logs e depurar problemas com as requisições.
+```
+├── api_server.py            # Servidor Python para intermediar requisições
+├── src/
+│   ├── components/          # Componentes React
+│   │   ├── ItemCard.tsx     # Card que exibe um item
+│   │   ├── ItemList.tsx     # Lista de itens
+│   │   ├── StatFilter.tsx   # Filtro de estatísticas de items
+│   │   ├── TrackerHeader.tsx # Cabeçalho da aplicação
+│   │   └── TrackingConfig.tsx # Configuração de rastreadores
+│   ├── services/
+│   │   └── itemService.ts   # Serviço de comunicação com a API
+│   ├── types/
+│   │   ├── api.ts           # Tipos relacionados à API
+│   │   ├── items.ts         # Tipos para itens
+│   │   └── tracking.ts      # Tipos para configuração de rastreamento
+│   └── utils/
+│       └── curlParser.ts    # Utilitário para extrair dados do comando cURL
+```
 
-### Solução de Problemas
+## Problemas Conhecidos e Soluções
 
-1. **Erro "Forbidden" ou 403**: Certifique-se de que você está logado no site do Path of Exile e que copiou o comando cURL corretamente.
+### 1. Erro "Unknown category"
 
-2. **Erro "CORS"**: Verifique se o servidor Python está rodando corretamente na porta 5000.
+**Causa**: A API do PoE2 espera identificadores específicos para categorias de item.
 
-3. **Cookies expirados**: Os cookies de sessão e clearance podem expirar. Se isso acontecer, você precisará gerar um novo comando cURL.
+**Solução**: Certifique-se de usar categorias válidas conforme listadas na interface. As categorias foram atualizadas para usar os valores aceitos pela API.
+
+### 2. Erro "Invalid stat provided: dps"
+
+**Causa**: A API do Path of Exile 2 utiliza identificadores específicos para stats.
+
+**Solução**: Os stats foram atualizados para usar os identificadores aceitos pela API. Se o erro persistir, tente usar stats diferentes.
+
+### 3. Erro CORS (Cross-Origin Resource Sharing)
+
+**Causa**: Os navegadores bloqueiam requisições diretas para domínios diferentes por segurança.
+
+**Solução**: Certifique-se de que o servidor Python está rodando. O servidor atua como um proxy para contornar esta limitação.
+
+### 4. Erro "Falha na conexão com o servidor Python"
+
+**Causa**: O servidor Python não está rodando ou está em uma porta diferente.
+
+**Solução**: Verifique se o servidor Python está rodando corretamente com o comando `python api_server.py`.
+
+### 5. Cookies Expirados
+
+**Causa**: Os cookies de sessão e clearance do Cloudflare têm validade limitada.
+
+**Solução**: Gere um novo comando cURL conforme as instruções na seção "Configurar o Comando cURL".
 
 ## Notas Técnicas
 
@@ -178,13 +128,6 @@ Para que a aplicação funcione corretamente, você precisa fornecer os cookies 
 
 - **Rate Limiting**: A API do Path of Exile tem limite de requisições. Use a opção "Respeitar limite de requisições" para evitar ser bloqueado.
 
-## Arquivos Principais
-
-- `src/services/itemService.ts`: Lida com todas as requisições à API
-- `src/components/TrackerHeader.tsx`: Cabeçalho da aplicação com instruções e botões principais
-- `api_server.py`: Servidor Python para intermediar requisições
-
 ## Informações Adicionais
 
 Este projeto é apenas para uso pessoal. Não abuse da API oficial do Path of Exile para não sobrecarregar seus servidores.
-
