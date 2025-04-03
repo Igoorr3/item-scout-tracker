@@ -8,7 +8,7 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 
-// Estas são as categorias exatas que aparecem no site do PoE2 e são aceitas pela API
+// Estas são as categorias corretas aceitas pela API do PoE2 (valores corrigidos)
 const ITEM_TYPES = [
   { name: "Qualquer", value: "" },
   // Armas

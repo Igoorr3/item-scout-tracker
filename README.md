@@ -1,165 +1,125 @@
 
-# Path of Exile 2 Item Scout Tracker
+# Item Scout Tracker - Path of Exile 2
 
-Este projeto permite rastrear itens do mercado do Path of Exile 2, usando a API interna do site oficial do PoE.
+Um rastreador de itens para Path of Exile 2 que permite monitorar itens no sistema de comércio com base em estatísticas, preços e outros filtros.
+
+## Visão Geral
+
+Este aplicativo permite que você:
+- Crie rastreadores personalizados para diferentes tipos de itens
+- Defina filtros baseados em estatísticas do jogo (vida, resistências, dano, etc.)
+- Monitore automaticamente itens em intervalos regulares
+- Receba notificações ao encontrar itens que correspondam aos seus critérios
 
 ## Requisitos
 
-- [Node.js](https://nodejs.org/) (v18 ou superior)
-- [Python](https://www.python.org/) (v3.8 ou superior)
-- Um navegador moderno (Chrome, Firefox, Edge)
-- Uma conta no Path of Exile
+1. Node.js 16+ e npm 7+
+2. Python 3.8+ com pip
+3. Uma conta Path of Exile com acesso ao Path of Exile 2
+4. Um navegador moderno como Chrome, Firefox ou Edge
 
-## Estrutura do Projeto
+## Configuração
 
-Este é um projeto híbrido com:
-- Frontend: React + TypeScript + Tailwind CSS + shadcn/ui
-- Backend: Servidor Python Flask para contornar limitações de CORS
+### 1. Servidor Python (API Proxy)
 
-## Passo a Passo para Executar
-
-### 1. Configurar o Servidor Python
-
-O servidor Python é necessário para contornar as restrições de CORS do navegador e permitir que a aplicação React se comunique com a API do Path of Exile.
-
-1. Instale as dependências Python:
+O aplicativo usa um servidor Python local para contornar as limitações de CORS do navegador e se comunicar com a API do Path of Exile 2.
 
 ```bash
+# Instale as dependências
 pip install flask flask-cors requests
-```
 
-2. Execute o arquivo `api_server.py` incluído no projeto:
-
-```bash
+# Execute o servidor
 python api_server.py
 ```
 
-O servidor deve iniciar e mostrar: "Iniciando servidor na porta 5000..."
+O servidor deve iniciar na porta 5000. Você verá uma mensagem de confirmação no console.
 
-### 2. Configurar e Executar o Frontend React
-
-1. Abra um novo terminal na pasta do projeto.
-
-2. Instale as dependências do projeto:
+### 2. Aplicação React
 
 ```bash
+# Instale as dependências
 npm install
-```
 
-3. Inicie a aplicação React:
-
-```bash
+# Execute a aplicação em modo de desenvolvimento
 npm run dev
 ```
 
-A aplicação deve iniciar e abrir no navegador em `http://localhost:5173/` ou similar.
+A aplicação estará disponível em http://localhost:5173/
 
-### 3. Configurar o Comando cURL
+## Configuração da API (Importante)
 
-Para que a aplicação funcione corretamente, você precisa fornecer os cookies e cabeçalhos corretos do seu navegador:
+Para funcionar corretamente, o tracker precisa se autenticar na API do Path of Exile 2. Siga estes passos:
 
-1. Faça login no site oficial do [Path of Exile](https://www.pathofexile.com)
-2. Acesse o [site de trade do PoE2](https://www.pathofexile.com/trade2/search/poe2/Standard)
-3. Pressione F12 para abrir as ferramentas de desenvolvedor
-4. Vá para a aba "Network"
-5. Faça uma busca qualquer no site
-6. Na lista de requisições, encontre a requisição POST chamada "Standard"
-7. Clique com o botão direito na requisição e escolha "Copy as cURL (bash)"
-8. Na aplicação React, clique no botão "Configurar cURL" e cole o comando copiado
+1. Faça login no site oficial do Path of Exile (https://www.pathofexile.com/)
+2. Acesse a página de comércio do Path of Exile 2 (https://www.pathofexile.com/trade2/search/poe2/Standard)
+3. No aplicativo Item Scout Tracker, clique em "Configurar API"
+4. Cole o comando cURL copiado do navegador (F12 > Network > escolha uma requisição para a API POE > Copy as cURL)
 
-### 4. Formatos Corretos de IDs
+## Uso
 
-#### Categorias de Itens
+### Criando um rastreador
 
-A API do PoE2 utiliza os seguintes formatos para categorias de itens:
+1. Clique no botão "Novo Rastreador"
+2. Defina um nome para o rastreador
+3. Selecione o tipo de item que deseja rastrear
+4. Adicione filtros de estatísticas (por exemplo, vida mínima, resistências, DPS)
+5. Configure o intervalo de atualização (em segundos)
+6. Ative ou desative o rastreador
+7. Clique em "Salvar Configuração"
 
-- Armas: `weapon.bow`, `weapon.onesword`, `weapon.staff`, etc.
-- Armaduras: `armour.helmet`, `armour.chest`, `armour.boots`, etc.
-- Acessórios: `accessory.ring`, `accessory.amulet`, etc.
+### Visualizando itens
 
-**Importante:** Não use nomes genéricos como "Bow" ou "Helmet". A API espera o formato completo com o prefixo da categoria.
+1. Alterne para a guia "Itens Encontrados" para ver os resultados
+2. Os itens são ordenados por preço, do mais barato ao mais caro
+3. Clique em um item para ver mais detalhes
 
-#### IDs de Estatísticas
+## Solução de problemas
 
-Os IDs de estatísticas seguem um formato específico:
+### API mostra "Unknown category"
 
-- Para DPS físico: `local_physical_damage_+%`
-- Para velocidade de ataque: `local_attack_speed_+%`
-- Para resistências: `fire_damage_resistance_%`
+Verifique se está usando os valores corretos para o tipo de item. As categorias aceitas são:
+- Para arcos: `weapon.bow`
+- Para bestas: `weapon.crossbow`
+- Para bastões: `weapon.quarterstaff`
+- etc.
 
-**Importante:** Não use formatos como "dps" ou "weapon.total_dps". Esses IDs não são reconhecidos pela API.
+### API mostra "Invalid stat provided"
 
-### 5. Estrutura de Arquivos Importantes
+Os IDs de estatísticas para o Path of Exile 2 seguem um formato específico:
+- Formato correto: `explicit.stat_NUMEROID` (por exemplo: `explicit.stat_3299347043`)
+- Não use IDs genéricos como "dps" ou "weapon.physical_dps"
 
-```
-├── api_server.py            # Servidor Python para intermediar requisições
-├── src/
-│   ├── components/          # Componentes React
-│   │   ├── ItemCard.tsx     # Card que exibe um item
-│   │   ├── ItemList.tsx     # Lista de itens
-│   │   ├── StatFilter.tsx   # Filtro de estatísticas de items
-│   │   ├── TrackerHeader.tsx # Cabeçalho da aplicação
-│   │   └── TrackingConfig.tsx # Configuração de rastreadores
-│   ├── services/
-│   │   └── itemService.ts   # Serviço de comunicação com a API
-│   ├── types/
-│   │   ├── api.ts           # Tipos relacionados à API
-│   │   ├── items.ts         # Tipos para itens
-│   │   └── tracking.ts      # Tipos para configuração de rastreamento
-│   └── utils/
-│       └── curlParser.ts    # Utilitário para extrair dados do comando cURL
-```
+### Erro de CORS ou de Autenticação
 
-## Problemas Conhecidos e Soluções
+1. Verifique se o servidor Python está rodando
+2. Atualize seu comando cURL para obter cookies mais recentes
+3. Verifique se está usando o navegador que está logado no site do Path of Exile
 
-### 1. Erro "Unknown category"
+### Comando cURL não funciona
 
-**Causa**: A API do PoE2 espera identificadores específicos para categorias de item.
-
-**Solução**: Use categorias válidas como `weapon.bow` em vez de `Bow`. Os valores corretos estão na lista suspensa de tipos de item no aplicativo.
-
-### 2. Erro "Invalid stat provided" ou "Unsupported stat domain provided"
-
-**Causa**: A API do Path of Exile 2 utiliza identificadores específicos para stats.
-
-**Solução**: Use IDs de estatísticas corretos como `local_physical_damage_+%` em vez de `weapon.physical_dps`. Os valores corretos estão na lista de estatísticas disponíveis.
-
-### 3. Erro CORS (Cross-Origin Resource Sharing)
-
-**Causa**: Os navegadores bloqueiam requisições diretas para domínios diferentes por segurança.
-
-**Solução**: Certifique-se de que o servidor Python está rodando. O servidor atua como um proxy para contornar esta limitação.
-
-### 4. Erro "Falha na conexão com o servidor Python"
-
-**Causa**: O servidor Python não está rodando ou está em uma porta diferente.
-
-**Solução**: Verifique se o servidor Python está rodando corretamente com o comando `python api_server.py`.
-
-### 5. Cookies Expirados
-
-**Causa**: Os cookies de sessão e clearance do Cloudflare têm validade limitada.
-
-**Solução**: Gere um novo comando cURL conforme as instruções na seção "Configurar o Comando cURL".
+Se o comando cURL não estiver funcionando:
+1. Limpe os cookies do navegador
+2. Faça login novamente no site do PoE
+3. Faça uma nova busca manual na página de comércio
+4. Copie o cURL de uma nova requisição
 
 ## Notas Técnicas
 
-- **CORS**: O navegador impede requisições diretas para a API do Path of Exile devido a restrições de CORS. Por isso usamos um servidor Python como intermediário.
-  
-- **Cloudflare**: O site do Path of Exile usa proteção Cloudflare, por isso precisamos dos cookies corretos para acessar a API.
+- O aplicativo usa um servidor Python para contornar limitações de CORS
+- Suas credenciais são armazenadas localmente no seu navegador (localStorage)
+- A API do Path of Exile 2 tem limitações de taxa (rate limit), então os intervalos de atualização muito curtos podem causar falhas temporárias
 
-- **Rate Limiting**: A API do Path of Exile tem limite de requisições. Use a opção "Respeitar limite de requisições" para evitar ser bloqueado.
+## Limitações Conhecidas
 
-## Informações Adicionais
+- A API do PoE2 está em desenvolvimento, então alguns filtros podem mudar
+- Há um limite da API de 10 itens por busca
 
-Este projeto é apenas para uso pessoal. Não abuse da API oficial do Path of Exile para não sobrecarregar seus servidores.
+## Contribuindo
 
-## Depuração Avançada
+Se você encontrar bugs ou quiser sugerir melhorias, sinta-se à vontade para:
+1. Reportar problemas
+2. Enviar pull requests com correções ou novas funcionalidades
 
-Se você continuar enfrentando problemas com as requisições à API, considere:
+## Aviso Legal
 
-1. Verificar se os IDs das estatísticas e categorias correspondem exatamente ao que a API espera
-2. Usar o modo de depuração para verificar os payloads enviados e respostas recebidas
-3. Comparar seu payload com o enviado pelo site oficial, copiando-o das ferramentas de desenvolvedor
-
-Muitas vezes a API do Path of Exile 2 retorna códigos de erro 400 quando o formato do payload não está exatamente como esperado, mesmo com pequenas diferenças de nomenclatura.
+Este é um aplicativo de terceiros não oficial e não é afiliado ou endossado pela Grinding Gear Games. Use por sua própria conta e risco.

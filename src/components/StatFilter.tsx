@@ -15,34 +15,62 @@ type StatType = {
   id: string;
 };
 
-// Stats aceitas pela API do Path of Exile 2 - Atualizadas para usar os IDs corretos
+// Stats aceitas pela API do Path of Exile 2 - IDs corrigidos de acordo com os erros da API
 const COMMON_STATS: StatType[] = [
-  // Armas
-  { name: "Dano Físico Mínimo", id: "local_minimum_added_physical_damage" },
-  { name: "Dano Físico Máximo", id: "local_maximum_added_physical_damage" },
-  { name: "% Dano Físico Aumentado", id: "local_physical_damage_+%" },
-  { name: "Velocidade de Ataque", id: "local_attack_speed_+%" },
-  { name: "Chance de Acerto Crítico", id: "local_critical_strike_chance_+%" },
-  // Armaduras
-  { name: "Armadura", id: "local_base_armour" },
-  { name: "Evasão", id: "local_base_evasion_rating" },
-  { name: "Escudo de Energia", id: "local_energy_shield" },
-  // Modificadores Globais
-  { name: "% Vida Máxima", id: "maximum_life_+%" },
-  { name: "Vida Máxima", id: "maximum_life" },
-  { name: "% Mana Máxima", id: "maximum_mana_+%" },
-  { name: "Mana Máxima", id: "maximum_mana" },
-  { name: "% Velocidade de Movimento", id: "base_movement_velocity_+%" },
+  // Stats gerais para todos os itens
+  { name: "Vida Máxima", id: "explicit.stat_3299347043" },
+  { name: "% Vida Máxima", id: "explicit.stat_983749596" },
+  { name: "Mana Máxima", id: "explicit.stat_1050105434" },
+  { name: "% Mana Máxima", id: "explicit.stat_3771516363" },
+  { name: "% Velocidade de Movimento", id: "explicit.stat_2250533757" },
+  
   // Resistências
-  { name: "% Resistência ao Fogo", id: "fire_damage_resistance_%" },
-  { name: "% Resistência ao Frio", id: "cold_damage_resistance_%" },
-  { name: "% Resistência ao Raio", id: "lightning_damage_resistance_%" },
-  { name: "% Resistência ao Caos", id: "chaos_damage_resistance_%" },
+  { name: "% Resistência ao Fogo", id: "explicit.stat_4220027924" },
+  { name: "% Resistência ao Frio", id: "explicit.stat_1671376347" },
+  { name: "% Resistência ao Raio", id: "explicit.stat_4080551317" },
+  { name: "% Resistência ao Caos", id: "explicit.stat_2451402625" },
+  { name: "% Resistência a Todos os Elementos", id: "explicit.stat_2901986750" },
+  
   // Atributos
-  { name: "Força", id: "base_strength" },
-  { name: "Destreza", id: "base_dexterity" },
-  { name: "Inteligência", id: "base_intelligence" },
-  { name: "Todos os Atributos", id: "base_all_attributes" },
+  { name: "Força", id: "explicit.stat_3987107905" },
+  { name: "Destreza", id: "explicit.stat_2149273975" },
+  { name: "Inteligência", id: "explicit.stat_4158059829" },
+  { name: "Todos os Atributos", id: "explicit.stat_2026948966" },
+  
+  // Armas - Mods explícitos
+  { name: "% Dano Físico Aumentado", id: "explicit.stat_2974417149" },
+  { name: "% Dano com Ataques", id: "explicit.stat_1509134228" },
+  { name: "% Dano Elemental com Ataques", id: "explicit.stat_2231191851" },
+  { name: "% Dano de Feitiços", id: "explicit.stat_3291999324" },
+  { name: "% Velocidade de Ataque", id: "explicit.stat_210067635" },
+  { name: "% Velocidade de Conjuração", id: "explicit.stat_2891184298" },
+  { name: "% Chance de Acerto Crítico", id: "explicit.stat_587431675" },
+  { name: "% Multiplicador de Acerto Crítico", id: "explicit.stat_2891784511" },
+  
+  // Armaduras - Mods locais
+  { name: "Armadura", id: "explicit.stat_1062208444" },
+  { name: "Evasão", id: "explicit.stat_3872739249" },
+  { name: "Escudo de Energia", id: "explicit.stat_2482852589" },
+  
+  // Mods de dano com armas específicas
+  { name: "% Dano com Espadas", id: "explicit.stat_2044559612" },
+  { name: "% Dano com Machados", id: "explicit.stat_1359148592" },
+  { name: "% Dano com Maças", id: "explicit.stat_1219205955" },
+  { name: "% Dano com Arcos", id: "explicit.stat_731304034" },
+  { name: "% Dano com Armas de Duas Mãos", id: "explicit.stat_1754445155" },
+  { name: "% Dano com Armas de Uma Mão", id: "explicit.stat_380815083" },
+  
+  // Mods com penetração de resistência
+  { name: "% Penetração de Resistência Elemental", id: "explicit.stat_359688963" },
+  { name: "% Penetração de Resistência ao Fogo", id: "explicit.stat_1136915655" },
+  { name: "% Penetração de Resistência ao Frio", id: "explicit.stat_796459275" },
+  { name: "% Penetração de Resistência ao Raio", id: "explicit.stat_187808414" },
+  
+  // Outros mods úteis
+  { name: "% Chance de Acerto Múltiplo", id: "explicit.stat_916808129" },
+  { name: "% Chance de Bloquear", id: "explicit.stat_1935568886" },
+  { name: "% Chance de Evitar", id: "explicit.stat_4127673221" },
+  { name: "% Velocidade de Incineração", id: "explicit.stat_4193088687" },
 ];
 
 interface StatFilterProps {
