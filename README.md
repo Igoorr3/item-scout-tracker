@@ -67,7 +67,29 @@ Para que a aplicação funcione corretamente, você precisa fornecer os cookies 
 7. Clique com o botão direito na requisição e escolha "Copy as cURL (bash)"
 8. Na aplicação React, clique no botão "Configurar cURL" e cole o comando copiado
 
-### 4. Estrutura de Arquivos Importantes
+### 4. Formatos Corretos de IDs
+
+#### Categorias de Itens
+
+A API do PoE2 utiliza os seguintes formatos para categorias de itens:
+
+- Armas: `weapon.bow`, `weapon.onesword`, `weapon.staff`, etc.
+- Armaduras: `armour.helmet`, `armour.chest`, `armour.boots`, etc.
+- Acessórios: `accessory.ring`, `accessory.amulet`, etc.
+
+**Importante:** Não use nomes genéricos como "Bow" ou "Helmet". A API espera o formato completo com o prefixo da categoria.
+
+#### IDs de Estatísticas
+
+Os IDs de estatísticas seguem um formato específico:
+
+- Para DPS físico: `local_physical_damage_+%`
+- Para velocidade de ataque: `local_attack_speed_+%`
+- Para resistências: `fire_damage_resistance_%`
+
+**Importante:** Não use formatos como "dps" ou "weapon.total_dps". Esses IDs não são reconhecidos pela API.
+
+### 5. Estrutura de Arquivos Importantes
 
 ```
 ├── api_server.py            # Servidor Python para intermediar requisições
@@ -94,13 +116,13 @@ Para que a aplicação funcione corretamente, você precisa fornecer os cookies 
 
 **Causa**: A API do PoE2 espera identificadores específicos para categorias de item.
 
-**Solução**: Certifique-se de usar categorias válidas conforme listadas na interface. As categorias foram atualizadas para usar os valores aceitos pela API.
+**Solução**: Use categorias válidas como `weapon.bow` em vez de `Bow`. Os valores corretos estão na lista suspensa de tipos de item no aplicativo.
 
-### 2. Erro "Invalid stat provided: dps"
+### 2. Erro "Invalid stat provided" ou "Unsupported stat domain provided"
 
 **Causa**: A API do Path of Exile 2 utiliza identificadores específicos para stats.
 
-**Solução**: Os stats foram atualizados para usar os identificadores aceitos pela API. Se o erro persistir, tente usar stats diferentes.
+**Solução**: Use IDs de estatísticas corretos como `local_physical_damage_+%` em vez de `weapon.physical_dps`. Os valores corretos estão na lista de estatísticas disponíveis.
 
 ### 3. Erro CORS (Cross-Origin Resource Sharing)
 
@@ -131,3 +153,13 @@ Para que a aplicação funcione corretamente, você precisa fornecer os cookies 
 ## Informações Adicionais
 
 Este projeto é apenas para uso pessoal. Não abuse da API oficial do Path of Exile para não sobrecarregar seus servidores.
+
+## Depuração Avançada
+
+Se você continuar enfrentando problemas com as requisições à API, considere:
+
+1. Verificar se os IDs das estatísticas e categorias correspondem exatamente ao que a API espera
+2. Usar o modo de depuração para verificar os payloads enviados e respostas recebidas
+3. Comparar seu payload com o enviado pelo site oficial, copiando-o das ferramentas de desenvolvedor
+
+Muitas vezes a API do Path of Exile 2 retorna códigos de erro 400 quando o formato do payload não está exatamente como esperado, mesmo com pequenas diferenças de nomenclatura.

@@ -15,24 +15,34 @@ type StatType = {
   id: string;
 };
 
-// Stats aceitas pela API do Path of Exile 2
+// Stats aceitas pela API do Path of Exile 2 - Atualizadas para usar os IDs corretos
 const COMMON_STATS: StatType[] = [
-  { name: "Physical DPS", id: "weapon.physical_dps" },
-  { name: "Elemental DPS", id: "weapon.elemental_dps" },
-  { name: "Total DPS", id: "weapon.total_dps" },
-  { name: "Velocidade de Ataque", id: "weapon.aps" },
-  { name: "Chance de Acerto Crítico", id: "weapon.crit" },
-  { name: "Armadura", id: "armour.armour" },
-  { name: "Evasão", id: "armour.evasion" },
-  { name: "Escudo de Energia", id: "armour.energy_shield" },
-  { name: "% Vida", id: "explicit.stat_3299347043" },
-  { name: "Vida Máxima", id: "explicit.stat_3932700432" },
-  { name: "% Mana", id: "explicit.stat_1671376347" },
-  { name: "Mana Máxima", id: "explicit.stat_4220027924" },
-  { name: "% Vel. Movimento", id: "explicit.stat_2250533757" },
-  { name: "% Res. Fogo", id: "explicit.stat_3372524247" },
-  { name: "% Res. Gelo", id: "explicit.stat_1671376347" },
-  { name: "% Res. Raio", id: "explicit.stat_4220027924" },
+  // Armas
+  { name: "Dano Físico Mínimo", id: "local_minimum_added_physical_damage" },
+  { name: "Dano Físico Máximo", id: "local_maximum_added_physical_damage" },
+  { name: "% Dano Físico Aumentado", id: "local_physical_damage_+%" },
+  { name: "Velocidade de Ataque", id: "local_attack_speed_+%" },
+  { name: "Chance de Acerto Crítico", id: "local_critical_strike_chance_+%" },
+  // Armaduras
+  { name: "Armadura", id: "local_base_armour" },
+  { name: "Evasão", id: "local_base_evasion_rating" },
+  { name: "Escudo de Energia", id: "local_energy_shield" },
+  // Modificadores Globais
+  { name: "% Vida Máxima", id: "maximum_life_+%" },
+  { name: "Vida Máxima", id: "maximum_life" },
+  { name: "% Mana Máxima", id: "maximum_mana_+%" },
+  { name: "Mana Máxima", id: "maximum_mana" },
+  { name: "% Velocidade de Movimento", id: "base_movement_velocity_+%" },
+  // Resistências
+  { name: "% Resistência ao Fogo", id: "fire_damage_resistance_%" },
+  { name: "% Resistência ao Frio", id: "cold_damage_resistance_%" },
+  { name: "% Resistência ao Raio", id: "lightning_damage_resistance_%" },
+  { name: "% Resistência ao Caos", id: "chaos_damage_resistance_%" },
+  // Atributos
+  { name: "Força", id: "base_strength" },
+  { name: "Destreza", id: "base_dexterity" },
+  { name: "Inteligência", id: "base_intelligence" },
+  { name: "Todos os Atributos", id: "base_all_attributes" },
 ];
 
 interface StatFilterProps {
@@ -85,7 +95,7 @@ const StatFilter = ({ onStatChange, selectedStat, value }: StatFilterProps) => {
           value={minValue}
           onChange={handleValueChange}
           className="bg-muted border-border"
-          placeholder="ex: 500"
+          placeholder="ex: 50"
         />
       </div>
     </div>
