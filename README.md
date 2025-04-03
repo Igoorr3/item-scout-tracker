@@ -1,7 +1,7 @@
 
 # Path of Exile 2 - Item Tracker
 
-Este é um rastreador de itens para Path of Exile 2 desenvolvido em Python que permite monitorar itens do mercado com base em filtros personalizados.
+Este é um rastreador de itens para Path of Exile 2 que permite monitorar itens do mercado com base em filtros personalizados.
 
 ## Recursos
 
@@ -10,14 +10,19 @@ Este é um rastreador de itens para Path of Exile 2 desenvolvido em Python que p
 - Monitoramento automático em intervalos configuráveis
 - Contorna as proteções do Cloudflare usando cookies de autenticação
 - Exibição detalhada de propriedades e modificadores dos itens
+- Análise de uso de Divine Orb (mostra se vale a pena usar em cada item)
+- Exibição de DPS total e DPS físico para armas
 - Links diretos para o site de comércio oficial do PoE2
 
 ## Requisitos
 
 - Python 3.7 ou superior
-- Bibliotecas: requests, tkinter
+- Node.js 18 ou superior (para versão Web)
+- Bibliotecas: requests, tkinter (Python) ou React (Web)
 
 ## Instalação
+
+### Versão Python (Standalone)
 
 1. Certifique-se de ter o Python instalado no seu sistema
 2. Instale as dependências necessárias:
@@ -38,25 +43,66 @@ sudo dnf install python3-tkinter
 # No Windows e macOS geralmente já vem incluído com o Python
 ```
 
-## Como Usar
+### Versão Web (React)
 
-1. Execute o script:
+1. Instale o Node.js e npm/yarn
+2. Clone este repositório
+3. Instale as dependências:
 
 ```bash
-python poe2_item_tracker.py
+npm install
+# ou
+yarn install
 ```
 
-2. Na aba "Configuração", adicione seu POESESSID e cf_clearance:
-   - Você pode obter esses cookies acessando o site do Path of Exile
+4. Inicie o servidor Python para API:
+
+```bash
+python api_server.py
+```
+
+5. Inicie o servidor de desenvolvimento:
+
+```bash
+npm start
+# ou
+yarn start
+```
+
+## Como Usar
+
+1. Configure suas credenciais do Path of Exile:
+   - Você pode obter os cookies acessando o site do Path of Exile (pathofexile.com)
    - Abrindo as ferramentas de desenvolvedor (F12)
    - Indo para a aba Application > Storage > Cookies
+   - Procure por POESESSID e cf_clearance
 
-3. Configure seus filtros de busca na aba "Rastreador":
+2. Configure seus filtros de busca:
    - Selecione a categoria de item
    - Defina filtros de estatísticas (vida, resistências, etc.)
    - Configure faixas de preço
 
-4. Use "Buscar Itens" para uma pesquisa única ou "Iniciar Monitoramento" para pesquisas periódicas
+3. Use "Buscar Itens" para uma pesquisa única ou "Iniciar Monitoramento" para pesquisas periódicas
+
+## Entendendo os IDs de Estatísticas
+
+A API do PoE2 usa IDs específicos para cada estatística. Os IDs seguem o formato:
+- `explicit.stat_NUMEROID` (para afixos explícitos)
+- `implicit.stat_NUMEROID` (para afixos implícitos)
+
+Por exemplo:
+- Vida máxima: `explicit.stat_3299347043`
+- Resistência ao Fogo: `explicit.stat_3372524247`
+
+Os IDs internos foram mapeados para nomes legíveis na interface.
+
+## Análise de Divine Orb
+
+O aplicativo analisa cada afixo dos itens para determinar se vale a pena usar um Divine Orb:
+
+- Verifica o percentil atual do valor do afixo
+- Calcula o ganho potencial com um reroll
+- Fornece recomendações baseadas na qualidade atual do item
 
 ## Por que este método funciona?
 

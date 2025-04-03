@@ -2,6 +2,16 @@
 export interface ItemStat {
   name: string;
   value: string | number;
+  min?: number;
+  max?: number;
+  isAffix?: boolean;
+}
+
+export interface DivineAnalysis {
+  worthDivine: boolean;
+  currentPercentile: number;
+  potentialGain: number;
+  recommendation: string;
 }
 
 export interface Item {
@@ -10,9 +20,14 @@ export interface Item {
   category: string;
   rarity: string; // normal, magic, rare, unique
   price: number;
-  expectedPrice: number;
-  averagePrice: number;
+  currency: string;
+  expectedPrice?: number;
+  averagePrice?: number;
   stats: ItemStat[];
+  divineAnalysis?: DivineAnalysis[];
+  totalDps?: number;
+  physicalDps?: number;
+  elementalDps?: number;
   seller?: string;
   listedTime?: string;
   iconUrl?: string;

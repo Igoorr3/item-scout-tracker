@@ -1,137 +1,203 @@
 
-import React from 'react';
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import React, { useState } from 'react';
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Item } from '@/types/items';
-import { ArrowUpDown, DollarSign, Target, ExternalLink } from 'lucide-react';
 import { Button } from "@/components/ui/button";
+import { 
+  ArrowUpDown, 
+  Axe, 
+  BadgeDollarSign, 
+  Clock, 
+  ExternalLink, 
+  ThumbsUp, 
+  ThumbsDown,
+  ShieldAlert
+} from "lucide-react";
+import { Item, DivineAnalysis } from "@/types/items";
+import { getStatLabel } from '@/data/statIds';
 
 interface ItemCardProps {
   item: Item;
 }
 
-const ItemCard = ({ item }: ItemCardProps) => {
-  // Determina a cor do fundo baseado na raridade do item
-  const getBadgeVariant = (rarity: string) => {
-    switch (rarity.toLowerCase()) {
-      case 'unique': return 'destructive';
-      case 'rare': return 'default';
-      case 'magic': return 'secondary';
-      default: return 'outline';
-    }
+const ItemCard: React.FC<ItemCardProps> = ({ item }) => {
+  const [expanded, setExpanded] = useState(false);
+
+  const formatCurrency = (price: number, currency: string) => {
+    return `${price} ${currency}`;
   };
 
-  // Verifica se o preço é uma boa oferta (menos que o preço previsto)
-  const isGoodDeal = item.price < item.expectedPrice;
+  // Organiza as estatísticas em categorias
+  const baseStats = item.stats.filter(stat => !stat.isAffix);
+  const affixes = item.stats.filter(stat => stat.isAffix);
   
-  // Calcula a porcentagem de diferença para o preço esperado
-  const priceDiffPercentage = isGoodDeal 
-    ? ((1 - item.price / item.expectedPrice) * 100).toFixed(0)
-    : ((item.price / item.expectedPrice - 1) * 100).toFixed(0);
-  
-  // Determina classes CSS baseadas na diferença de preço
-  const getPriceDiffClasses = () => {
-    if (isGoodDeal) {
-      const diff = parseFloat(priceDiffPercentage);
-      if (diff >= 30) return "text-green-500 font-bold";
-      if (diff >= 15) return "text-green-400";
-      return "text-green-300";
-    } else {
-      return "text-red-400";
-    }
-  };
-
-  // Abre o link de trade direto no site
-  const openTradeLink = () => {
-    if (item.tradeUrl) {
-      window.open(item.tradeUrl, '_blank');
-    }
-  };
+  // Verifica se há recomendação para usar Divine
+  const hasDivineRecommendation = item.divineAnalysis && 
+    item.divineAnalysis.some(analysis => analysis.worthDivine);
 
   return (
-    <Card className={`poe-item transition-all duration-200 ${isGoodDeal ? 'border-green-500/40' : 'border-border'} hover:shadow-lg`}>
-      <CardContent className="p-3 pb-0">
-        <div className="flex flex-col">
-          <div className="flex justify-between items-start mb-2">
-            <div className="flex items-center">
-              <Badge variant={getBadgeVariant(item.rarity)} className="mr-2">
-                {item.category}
-              </Badge>
-              <h3 className={`font-bold text-lg ${item.rarity === 'unique' ? 'poe-item-unique' : item.rarity === 'rare' ? 'poe-item-rare' : ''}`}>
-                {item.name}
-              </h3>
-            </div>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="poe-price flex items-center">
-                    <DollarSign size={16} className="mr-1" />
-                    {item.price} <span className="ml-1 poe-divine">divines</span>
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <div className="text-sm">
-                    <div className="mb-1">Preço listado: {item.price} divines</div>
-                    <div className="mb-1">Preço previsto: {item.expectedPrice.toFixed(2)} divines</div>
-                    <div>Preço médio: {item.averagePrice.toFixed(2)} divines</div>
-                  </div>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+    <Card className="w-full bg-card border border-primary/20 shadow-md hover:shadow-lg transition-shadow">
+      <CardHeader className="px-4 py-3 bg-muted/30 border-b border-border">
+        <div className="flex justify-between items-start">
+          <div>
+            <h3 className="text-lg font-semibold text-primary">{item.name}</h3>
+            <p className="text-sm text-muted-foreground">{item.category}</p>
           </div>
-          
-          <div className="space-y-1 mb-3">
-            {item.stats.map((stat, index) => (
-              <div key={index} className="flex justify-between items-center">
-                <span className="poe-stat">{stat.name}:</span>
-                <span className="poe-value">{stat.value}</span>
-              </div>
-            ))}
-          </div>
+          <Badge 
+            variant={item.rarity === 'unique' ? 'destructive' : item.rarity === 'rare' ? 'default' : 'outline'}
+            className="uppercase"
+          >
+            {item.rarity}
+          </Badge>
         </div>
-      </CardContent>
-      
-      <CardFooter className="px-3 py-2 border-t border-border">
-        <div className="w-full flex justify-between items-center">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="flex items-center">
-                  <ArrowUpDown size={16} className="mr-1" />
-                  <span className={getPriceDiffClasses()}>
-                    {isGoodDeal 
-                      ? `${priceDiffPercentage}% abaixo` 
-                      : `${priceDiffPercentage}% acima`}
-                  </span>
-                </div>
-              </TooltipTrigger>
-              <TooltipContent>
-                {isGoodDeal 
-                  ? `Este item está ${priceDiffPercentage}% abaixo do preço esperado` 
-                  : `Este item está ${priceDiffPercentage}% acima do preço esperado`}
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+      </CardHeader>
+      <CardContent className="px-4 py-3 space-y-3">
+        <div className="flex flex-wrap gap-2 items-center mb-2">
+          <Badge variant="secondary" className="flex gap-1 items-center">
+            <BadgeDollarSign size={14} /> 
+            {formatCurrency(item.price, item.currency)}
+          </Badge>
           
-          <div className="flex items-center gap-2">
-            {item.tradeUrl && (
+          {item.seller && (
+            <Badge variant="outline" className="flex gap-1 items-center text-muted-foreground">
+              @{item.seller}
+            </Badge>
+          )}
+          
+          {item.listedTime && (
+            <Badge variant="outline" className="flex gap-1 items-center text-muted-foreground">
+              <Clock size={14} /> 
+              {item.listedTime}
+            </Badge>
+          )}
+        </div>
+
+        {/* DPS Indicators */}
+        <div className="flex flex-wrap gap-2">
+          {item.totalDps && (
+            <Badge className="bg-amber-600">
+              DPS: {item.totalDps}
+            </Badge>
+          )}
+          
+          {item.physicalDps && (
+            <Badge className="bg-slate-600">
+              pDPS: {item.physicalDps}
+            </Badge>
+          )}
+          
+          {item.elementalDps && (
+            <Badge className="bg-blue-600">
+              eDPS: {item.elementalDps}
+            </Badge>
+          )}
+        </div>
+        
+        {/* Divine Orb Recommendation */}
+        {hasDivineRecommendation && (
+          <div className="flex items-center mt-1 p-1 bg-amber-100 dark:bg-amber-950/30 rounded text-amber-800 dark:text-amber-300 text-xs">
+            <ThumbsUp size={14} className="mr-1" /> 
+            <span>Divine Orb recomendado!</span>
+          </div>
+        )}
+
+        {/* Base Stats */}
+        {baseStats.length > 0 && (
+          <div className="mt-2 text-sm">
+            <h4 className="font-medium mb-1 text-muted-foreground">Propriedades Base:</h4>
+            <div className="space-y-1">
+              {baseStats.map((stat, idx) => (
+                <div key={`base-${idx}`} className="flex justify-between">
+                  <span>{stat.name}:</span> 
+                  <span className="font-medium">{stat.value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Expand/Collapse for affixes */}
+        {affixes.length > 0 && (
+          <div className="mt-2">
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-medium text-muted-foreground">Modificadores:</h4>
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className="h-7 px-2 text-muted-foreground hover:text-primary"
-                onClick={openTradeLink}
+                onClick={() => setExpanded(!expanded)} 
+                className="h-6 px-2 text-xs"
               >
-                <ExternalLink size={14} className="mr-1" />
-                Ver
+                {expanded ? "Recolher" : "Expandir"}
               </Button>
+            </div>
+
+            {expanded && (
+              <div className="space-y-2 mt-2">
+                {affixes.map((stat, idx) => {
+                  const statId = Object.keys(item.stats)
+                    .find(key => getStatLabel(key) === stat.name);
+                  
+                  const analysis = item.divineAnalysis?.find(a => 
+                    a.statName === stat.name || a.statId === statId);
+                  
+                  return (
+                    <div key={`affix-${idx}`} className="text-sm">
+                      <div className="flex justify-between">
+                        <span>{stat.name}:</span> 
+                        <span className="font-medium">{stat.value}</span>
+                      </div>
+                      
+                      {analysis && (
+                        <div className={`text-xs mt-0.5 ${analysis.worthDivine ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}`}>
+                          <div className="flex items-center">
+                            {analysis.worthDivine ? (
+                              <ThumbsUp size={12} className="mr-1" />
+                            ) : (
+                              <ThumbsDown size={12} className="mr-1" />
+                            )}
+                            <span>
+                              Roll atual: {analysis.currentPercentile}% do máximo
+                            </span>
+                          </div>
+                          <div className="mt-0.5">
+                            {analysis.recommendation}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             )}
             
-            <div className={`${isGoodDeal ? 'poe-fire-icon' : ''} text-sm ${isGoodDeal && parseInt(priceDiffPercentage) >= 20 ? 'font-bold text-green-500' : ''}`}>
-              {isGoodDeal ? parseInt(priceDiffPercentage) >= 30 ? 'Excelente oferta!' : 'Boa oferta!' : 'Preço normal'}
-            </div>
+            {!expanded && affixes.length > 3 && (
+              <div className="text-sm space-y-1">
+                {affixes.slice(0, 3).map((stat, idx) => (
+                  <div key={`affix-preview-${idx}`} className="flex justify-between">
+                    <span>{stat.name}:</span>
+                    <span className="font-medium">{stat.value}</span>
+                  </div>
+                ))}
+                <div className="text-xs text-muted-foreground italic">
+                  +{affixes.length - 3} mais modificadores...
+                </div>
+              </div>
+            )}
           </div>
-        </div>
+        )}
+      </CardContent>
+      <CardFooter className="px-4 py-2 bg-muted/30 border-t border-border flex justify-end">
+        {item.tradeUrl && (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="text-xs"
+            onClick={() => window.open(item.tradeUrl, '_blank')}
+          >
+            <ExternalLink size={14} className="mr-1" />
+            Ver no Site
+          </Button>
+        )}
       </CardFooter>
     </Card>
   );

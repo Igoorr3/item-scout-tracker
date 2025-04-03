@@ -1,558 +1,301 @@
-import { Item } from '@/types/items';
+
 import { TrackingConfiguration } from '@/types/tracking';
-import { ApiCredentials, ApiDebugInfo } from '@/types/api';
-import { toast } from "sonner";
-import { buildProxyUrl } from '@/utils/curlParser';
+import { ApiCredentials } from '@/types/api';
+import { Item, ItemStat, DivineAnalysis } from '@/types/items';
+import { analyzeDivineValue, STAT_RANGES, getStatLabel } from '@/data/statIds';
 
-// Lista de proxies CORS para tentar
-const CORS_PROXIES = [
-  'https://corsproxy.io/?',
-  'https://cors-anywhere.herokuapp.com/',
-  'https://api.allorigins.win/raw?url='
-];
+const API_BASE_URL = '/api';
 
-interface PoeApiSearchResponse {
-  id: string;
-  result: string[];
-  total?: number;
-}
-
-interface PoeItemResponse {
-  result: PoeItemResult[];
-}
-
-interface PoeItemResult {
-  id: string;
-  listing: {
-    method?: string;
-    price: {
-      amount: number;
-      currency: string;
-      type?: string;
-    };
-    account: {
-      name: string;
-      online?: {
-        league?: string;
-        status?: string;
-      };
-      lastCharacterName?: string;
-      language?: string;
-    };
-    indexed?: string;
-    stash?: {
-      name: string;
-      x: number;
-      y: number;
-    };
-    whisper?: string;
-  };
-  item: {
-    name: string;
-    typeLine: string;
-    rarity: string;
-    properties?: {
-      name: string;
-      values: [string, number][];
-    }[];
-    ilvl?: number;
-    verified: boolean;
-    icon?: string;
-    extended?: {
-      dps?: number;
-      pdps?: number;
-      edps?: number;
-    };
-    baseType?: string;
-    identified?: boolean;
-    requirements?: {
-      name: string;
-      values: [string, number][];
-      displayMode: number;
-      type: number;
-    }[];
-  };
-}
-
-// URL base do nosso servidor Python
-const PYTHON_SERVER_URL = 'http://localhost:5000';
-
-// Variável global para guardar credenciais extraídas do cURL
-let curlExtractedCredentials: any = null;
-
-document.addEventListener("curl-credentials-extracted", ((event: any) => {
-  curlExtractedCredentials = event.detail;
-  console.log("cURL credentials extracted:", curlExtractedCredentials);
-  
-  localStorage.setItem('poe_curl_credentials', JSON.stringify(curlExtractedCredentials));
-}) as EventListener);
-
-try {
-  const saved = localStorage.getItem('poe_curl_credentials');
-  if (saved) {
-    curlExtractedCredentials = JSON.parse(saved);
-    console.log("Loaded saved cURL credentials:", curlExtractedCredentials);
-  }
-} catch (e) {
-  console.error("Error loading saved cURL credentials:", e);
-}
-
-const buildSearchPayload = (config: TrackingConfiguration) => {
-  const payload: any = {
-    query: {
-      status: { option: "online" },
-      stats: [{
-        type: "and",
-        filters: []
-      }]
-    },
-    sort: { price: "asc" }
-  };
-
-  if (config.itemType) {
-    if (!payload.query.filters) {
-      payload.query.filters = {};
-    }
-
-    payload.query.filters.type_filters = {
-      filters: { category: { option: config.itemType } }
-    };
-  }
-
-  if (Object.keys(config.stats).length > 0) {
-    if (!payload.query.stats) {
-      payload.query.stats = [{ 
-        type: "and",
-        filters: []
-      }];
-    }
-
-    for (const [statId, minValue] of Object.entries(config.stats)) {
-      payload.query.stats[0].filters.push({
-        id: statId,
-        value: { min: minValue },
-        disabled: false
-      });
-    }
-  }
-
-  return payload;
-};
-
-const buildHeaders = (apiCredentials: ApiCredentials, isSearch: boolean = false): Record<string, string> => {
-  if (curlExtractedCredentials?.exactHeaders) {
-    console.log("Usando headers exatos do cURL");
-    const headers = {...curlExtractedCredentials.exactHeaders};
-    
-    if (isSearch && !headers['Content-Type']) {
-      headers['Content-Type'] = "application/json";
-    }
-    
-    if (!headers['Cookie'] && curlExtractedCredentials?.allCookies) {
-      headers['Cookie'] = curlExtractedCredentials.allCookies;
-    }
-    
-    return headers;
-  }
-  
-  let headers: Record<string, string> = {
-    "accept": "*/*",
-    "accept-language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
-    "priority": "u=1, i",
-    "sec-ch-ua": '"Chromium";v="134", "Not:A-Brand";v="24", "Google Chrome";v="134"',
-    "sec-ch-ua-mobile": '?0',
-    "sec-ch-ua-platform": '"Windows"',
-    "sec-fetch-dest": "empty",
-    "sec-fetch-mode": "cors",
-    "sec-fetch-site": "same-origin",
-    "Connection": "keep-alive",
-    "Cache-Control": "no-cache",
-    "Pragma": "no-cache",
-    "x-requested-with": "XMLHttpRequest"
-  };
-
-  if (isSearch) {
-    headers["Content-Type"] = "application/json";
-  }
-
-  if (curlExtractedCredentials?.useragent) {
-    headers["User-Agent"] = curlExtractedCredentials.useragent;
-  } else if (apiCredentials.useragent) {
-    headers["User-Agent"] = apiCredentials.useragent;
-  } else {
-    headers["User-Agent"] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36';
-  }
-
-  if (curlExtractedCredentials?.originHeader) {
-    headers["Origin"] = curlExtractedCredentials.originHeader;
-  } else if (apiCredentials.originHeader) {
-    headers["Origin"] = apiCredentials.originHeader;
-  } else {
-    headers["Origin"] = "https://www.pathofexile.com";
-  }
-
-  if (curlExtractedCredentials?.referrerHeader) {
-    headers["Referer"] = curlExtractedCredentials.referrerHeader;
-  } else if (apiCredentials.referrerHeader) {
-    headers["Referer"] = apiCredentials.referrerHeader;
-  } else {
-    headers["Referer"] = "https://www.pathofexile.com/trade2/search/poe2/Standard";
-  }
-
-  if (curlExtractedCredentials?.allCookies) {
-    headers["Cookie"] = curlExtractedCredentials.allCookies;
-  } else {
-    let cookieString = '';
-    
-    if (curlExtractedCredentials?.poesessid) {
-      cookieString += `POESESSID=${curlExtractedCredentials.poesessid}; `;
-    } else if (apiCredentials.poesessid) {
-      cookieString += `POESESSID=${apiCredentials.poesessid}; `;
-    }
-    
-    if (curlExtractedCredentials?.cfClearance?.length > 0) {
-      curlExtractedCredentials.cfClearance.forEach((clearance: string) => {
-        if (clearance && clearance.trim()) {
-          cookieString += `cf_clearance=${clearance}; `;
-        }
-      });
-    } else if (apiCredentials.cfClearance && apiCredentials.cfClearance.length > 0) {
-      apiCredentials.cfClearance.forEach(clearance => {
-        if (clearance && clearance.trim()) {
-          cookieString += `cf_clearance=${clearance}; `;
-        }
-      });
-    }
-    
-    if (cookieString) {
-      headers["Cookie"] = cookieString.trim();
-    }
-  }
-  
-  return headers;
-};
-
-export const searchItems = async (config: TrackingConfiguration, apiCredentials: ApiCredentials): Promise<PoeApiSearchResponse> => {
+export const fetchItems = async (config: TrackingConfiguration, apiConfig: ApiCredentials): Promise<Item[]> => {
   try {
-    const payload = buildSearchPayload(config);
-    console.log("Enviando payload de busca:", JSON.stringify(payload, null, 2));
-
-    console.log("Enviando requisição para o servidor Python local");
+    // Primeiro, verifique se a API está funcionando
+    const isApiWorking = await testApiConnection(apiConfig);
     
-    const response = await fetch(`${PYTHON_SERVER_URL}/api/search`, {
+    if (!isApiWorking && !apiConfig.useProxy) {
+      console.log("API direta não está funcionando, tentando via proxy...");
+      const isProxyWorking = await testApiConnection({...apiConfig, useProxy: true});
+      
+      if (!isProxyWorking) {
+        throw new Error("Não foi possível conectar à API do Path of Exile, nem diretamente nem via proxy");
+      }
+      
+      // Se chegamos aqui, o proxy está funcionando
+      apiConfig = {...apiConfig, useProxy: true};
+    }
+    
+    // Construir o payload para a busca
+    const searchPayload = buildSearchPayload(config);
+    
+    // Fazer a requisição de busca
+    console.log("Enviando requisição de busca com configuração:", config.name);
+    const searchResponse = await fetch(`${API_BASE_URL}/search`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'X-Use-Proxy': apiConfig.useProxy ? 'true' : 'false',
+        'X-POE-Session-Id': apiConfig.poesessid,
+        'X-CF-Clearance': Array.isArray(apiConfig.cfClearance) ? 
+                          apiConfig.cfClearance[0] : 
+                          apiConfig.cfClearance || '',
+        'X-User-Agent': apiConfig.useragent
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(searchPayload)
     });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`Erro no servidor Python: Status ${response.status}`, errorText);
-      
-      try {
-        const errorJson = JSON.parse(errorText);
-        throw new Error(`Erro do servidor Python: ${errorJson.message || errorJson.error || errorText}`);
-      } catch (e) {
-        throw new Error(`Erro do servidor Python: ${response.status} - ${errorText}`);
+    
+    if (!searchResponse.ok) {
+      const errorText = await searchResponse.text();
+      console.error("Erro na busca:", searchResponse.status, errorText);
+      throw new Error(`Erro ao buscar itens: ${searchResponse.status} - ${errorText}`);
+    }
+    
+    const searchData = await searchResponse.json();
+    
+    // Se não houver resultados, retornar lista vazia
+    if (!searchData.result || searchData.result.length === 0) {
+      console.log("Nenhum item encontrado");
+      return [];
+    }
+    
+    // Buscar os detalhes dos itens (limitado aos primeiros 10)
+    const itemCount = Math.min(searchData.result.length, 10);
+    const itemsToFetch = searchData.result.slice(0, itemCount);
+    
+    console.log(`Buscando detalhes de ${itemCount} itens`);
+    
+    // URL para buscar os detalhes dos itens
+    const fetchUrl = `${API_BASE_URL}/fetch?ids=${itemsToFetch.join(',')}&realm=poe2&query=${searchData.id}`;
+    
+    const fetchResponse = await fetch(fetchUrl, {
+      headers: {
+        'X-Use-Proxy': apiConfig.useProxy ? 'true' : 'false',
+        'X-POE-Session-Id': apiConfig.poesessid,
+        'X-CF-Clearance': Array.isArray(apiConfig.cfClearance) ? 
+                         apiConfig.cfClearance[0] : 
+                         apiConfig.cfClearance || '',
+        'X-User-Agent': apiConfig.useragent
       }
-    }
-
-    const data = await response.json();
-    console.log("Resposta da busca:", data);
+    });
     
-    if (!data.id || !data.result) {
-      throw new Error("Resposta da API inválida - formato inesperado");
+    if (!fetchResponse.ok) {
+      const errorText = await fetchResponse.text();
+      console.error("Erro ao buscar detalhes:", fetchResponse.status, errorText);
+      throw new Error(`Erro ao buscar detalhes dos itens: ${fetchResponse.status} - ${errorText}`);
     }
     
-    return data;
+    const fetchData = await fetchResponse.json();
+    const items = fetchData.result || [];
+    
+    // Processar os itens para o formato interno
+    return items.map((item: any) => processItem(item, searchData.id));
+    
   } catch (error) {
     console.error("Erro ao buscar itens:", error);
     throw error;
   }
 };
 
-export const fetchItemDetails = async (itemIds: string[], queryId: string, apiCredentials: ApiCredentials): Promise<PoeItemResponse> => {
+export const testApiConnection = async (apiConfig: ApiCredentials): Promise<boolean> => {
   try {
-    const idsToFetch = itemIds.slice(0, 10).join(",");
+    const testUrl = `${API_BASE_URL}/test`;
     
-    console.log(`Buscando detalhes via servidor Python: ${idsToFetch}`);
-    
-    const response = await fetch(`${PYTHON_SERVER_URL}/api/fetch?ids=${idsToFetch}&query=${queryId}`, {
-      method: 'GET',
+    const response = await fetch(testUrl, {
       headers: {
-        'Content-Type': 'application/json'
+        'X-Use-Proxy': apiConfig.useProxy ? 'true' : 'false',
+        'X-POE-Session-Id': apiConfig.poesessid,
+        'X-CF-Clearance': Array.isArray(apiConfig.cfClearance) ? 
+                         apiConfig.cfClearance[0] : 
+                         apiConfig.cfClearance || '',
+        'X-User-Agent': apiConfig.useragent
       }
     });
-
+    
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`Erro ao buscar detalhes via servidor Python: Status ${response.status}`, errorText);
-      
-      try {
-        const errorJson = JSON.parse(errorText);
-        throw new Error(`Erro do servidor Python: ${errorJson.message || errorText}`);
-      } catch (e) {
-        throw new Error(`Erro ao buscar detalhes: ${response.status} - ${errorText}`);
-      }
-    }
-
-    const data = await response.json();
-    console.log("Resposta de detalhes:", data);
-    return data;
-  } catch (error) {
-    console.error("Erro ao buscar detalhes dos itens:", error);
-    throw error;
-  }
-};
-
-export const fetchItemsByDirectQuery = async (queryId: string, apiCredentials: ApiCredentials): Promise<Item[]> => {
-  try {
-    const url = `https://www.pathofexile.com/trade2/search/poe2/${queryId}`;
-    console.log(`Tentando acessar consulta direta: ${url}`);
-    
-    const headers = buildHeaders(apiCredentials);
-    
-    let response;
-    try {
-      response = await fetch(url, {
-        method: "GET",
-        headers,
-        credentials: "include",
-        mode: "cors",
-        cache: "no-cache"
-      });
-    } catch (directError) {
-      console.error("Erro ao acessar consulta direta:", directError);
-      
-      for (const proxy of CORS_PROXIES) {
-        try {
-          const proxyUrl = proxy + encodeURIComponent(url);
-          response = await fetch(proxyUrl, {
-            method: "GET",
-            headers: {
-              ...headers,
-              'X-Requested-With': 'XMLHttpRequest'
-            }
-          });
-          break;
-        } catch (error) {
-          console.error(`Falha com proxy ${proxy}:`, error);
-        }
-      }
-    }
-    
-    if (!response || !response.ok) {
-      throw new Error(`Não foi possível acessar a consulta direta: ${response?.status || 'falha na rede'}`);
-    }
-    
-    const html = await response.text();
-    
-    const scriptPattern = /<script\s+id="main-page-data"\s+type="application\/json">([^<]+)<\/script>/;
-    const match = html.match(scriptPattern);
-    
-    if (!match || !match[1]) {
-      throw new Error("Não foi possível encontrar dados do item no HTML");
-    }
-    
-    try {
-      const pageData = JSON.parse(match[1]);
-      if (pageData.items && Array.isArray(pageData.items)) {
-        return pageData.items.map((item: any) => {
-          return {
-            id: item.id || `direct-${Date.now()}`,
-            name: item.name || item.typeLine || "Item desconhecido",
-            category: item.typeLine || "Desconhecido",
-            rarity: item.rarity || "normal",
-            price: item.price?.amount || 0,
-            expectedPrice: item.price?.amount || 0,
-            averagePrice: item.price?.amount || 0,
-            stats: item.properties?.map((prop: any) => ({
-              name: prop.name,
-              value: prop.values?.[0]?.[0] || "N/A"
-            })) || [],
-            seller: item.account?.name || "Desconhecido",
-            listedTime: item.indexed || new Date().toISOString(),
-            iconUrl: item.icon,
-            tradeUrl: url
-          };
-        });
-      }
-    } catch (parseError) {
-      console.error("Erro ao parsear dados do HTML:", parseError);
-    }
-    
-    return [];
-  } catch (error) {
-    console.error("Erro ao buscar via consulta direta:", error);
-    return [];
-  }
-};
-
-const convertApiResponseToItems = (response: PoeItemResponse, queryId: string): Item[] => {
-  if (!response.result || !Array.isArray(response.result)) {
-    return [];
-  }
-
-  return response.result.map(result => {
-    const stats = (result.item.properties || []).map(prop => {
-      return {
-        name: prop.name,
-        value: prop.values?.[0]?.[0] || "N/A"
-      };
-    });
-    
-    const price = result.listing.price?.amount || 0;
-    const currency = result.listing.price?.currency || "chaos";
-    
-    const expectedPrice = price;
-    const avgPrice = price;
-    
-    let dpsStats = [];
-    if (result.item.extended) {
-      if (result.item.extended.dps) {
-        dpsStats.push({ name: 'DPS', value: result.item.extended.dps });
-      }
-      if (result.item.extended.pdps) {
-        dpsStats.push({ name: 'pDPS', value: result.item.extended.pdps });
-      }
-      if (result.item.extended.edps) {
-        dpsStats.push({ name: 'eDPS', value: result.item.extended.edps });
-      }
-    }
-    
-    const tradeUrl = `https://www.pathofexile.com/trade2/search/poe2/${queryId}/${result.id}`;
-    
-    return {
-      id: result.id,
-      name: result.item.name || result.item.typeLine || "Item sem nome",
-      category: result.item.typeLine || "Desconhecido",
-      rarity: result.item.rarity || "normal",
-      price: price,
-      expectedPrice: expectedPrice,
-      averagePrice: avgPrice,
-      stats: [...stats, ...dpsStats],
-      seller: result.listing.account?.name || "Desconhecido",
-      listedTime: result.listing.indexed,
-      iconUrl: result.item.icon,
-      tradeUrl: tradeUrl
-    };
-  });
-};
-
-export const testApiConnection = async (apiCredentials: ApiCredentials): Promise<boolean> => {
-  try {
-    console.log("Testando conexão com servidor Python");
-    
-    const response = await fetch(`${PYTHON_SERVER_URL}/api/test`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
-    
-    const data = await response.json();
-    
-    if (data.success) {
-      console.log("Teste de conexão bem sucedido:", data);
-      return true;
-    } else {
-      console.error("Teste de conexão falhou:", data.message);
       return false;
     }
+    
+    const data = await response.json();
+    return data.success === true;
+    
   } catch (error) {
-    console.error("Erro ao testar conexão:", error);
+    console.error("Erro ao testar conexão com API:", error);
     return false;
   }
 };
 
-export const fetchItems = async (config: TrackingConfiguration, apiCredentials: ApiCredentials): Promise<Item[]> => {
-  try {
-    console.log(`Buscando itens para configuração: ${config.name}`);
-    
-    const hasConfigured = apiCredentials.isConfigured || 
-                         (apiCredentials.fullCurlCommand && apiCredentials.fullCurlCommand.length > 0);
-    
-    if (!hasConfigured) {
-      toast.error("Configuração da API incompleta", {
-        description: "Acesse as configurações para adicionar o comando cURL copiado do seu navegador"
-      });
-      return [];
-    }
-    
-    const connectionOk = await testApiConnection(apiCredentials);
-    if (!connectionOk) {
-      toast.error("Falha na conexão com o servidor Python", {
-        description: "Verifique se o servidor Python está rodando na porta 5000"
-      });
-      return [];
-    }
-    
-    try {
-      const searchResponse = await searchItems(config, apiCredentials);
-      console.log(`IDs encontrados: ${searchResponse.result?.length || 0}`);
-      
-      if (!searchResponse.result || searchResponse.result.length === 0) {
-        toast.info("Nenhum item encontrado com esses filtros");
-        return [];
-      }
-      
-      const directTradeUrl = `https://www.pathofexile.com/trade2/search/poe2/${searchResponse.id}`;
-      toast.info(`Consulta gerada: ${searchResponse.id}`, {
-        description: "Você pode acessar esses resultados diretamente no site oficial",
-        action: {
-          label: "Abrir",
-          onClick: () => window.open(directTradeUrl, '_blank')
+const buildSearchPayload = (config: TrackingConfiguration) => {
+  // Payload base
+  const payload: any = {
+    query: {
+      status: {
+        option: "online"
+      },
+      stats: [
+        {
+          type: "and",
+          filters: []
         }
-      });
-      
-      if (apiCredentials.respectRateLimit) {
-        const delay = apiCredentials.rateLimitDelay || 2000;
-        toast.info(`Respeitando limite de requisições: aguardando ${delay/1000}s...`);
-        await new Promise(resolve => setTimeout(resolve, delay));
+      ],
+      filters: {
+        type_filters: {
+          filters: {
+            category: {
+              option: config.itemType || "weapon"
+            }
+          }
+        }
       }
-      
-      const itemsResponse = await fetchItemDetails(
-        searchResponse.result.slice(0, 10), 
-        searchResponse.id,
-        apiCredentials
-      );
-      
-      const items = convertApiResponseToItems(itemsResponse, searchResponse.id);
-      console.log(`Itens obtidos: ${items.length}`);
-      
-      if (items.length === 0) {
-        toast.warning("Os IDs de itens foram encontrados, mas não foi possível obter detalhes", {
-          description: "Isso pode indicar um problema com o servidor Python"
+    },
+    sort: {
+      price: "asc"
+    }
+  };
+  
+  // Adicionar filtros de estatísticas
+  if (config.stats) {
+    for (const [statId, value] of Object.entries(config.stats)) {
+      if (value > 0) {
+        payload.query.stats[0].filters.push({
+          id: statId,
+          value: {
+            min: value
+          },
+          disabled: false
         });
       }
-      
-      return items;
-    } catch (error: any) {
-      if (error.message && error.message.includes("Unknown category")) {
-        toast.error("Erro: Categoria de item desconhecida", {
-          description: "Verifique se a categoria de item selecionada é válida para PoE 2"
-        });
-      } else if (error.message && error.message.includes("Invalid stat provided")) {
-        toast.error("Erro: Estatística inválida", {
-          description: "Uma ou mais estatísticas não são reconhecidas pela API do Path of Exile 2"
+    }
+  }
+  
+  return payload;
+};
+
+const processItem = (item: any, queryId: string): Item => {
+  const itemData = item.item || {};
+  const listingData = item.listing || {};
+  
+  // Extrair stats básicos
+  const stats: ItemStat[] = [];
+  
+  // Adicionar propriedades base
+  if (itemData.properties) {
+    itemData.properties.forEach((prop: any) => {
+      const name = prop.name;
+      if (prop.values && prop.values.length > 0) {
+        stats.push({
+          name,
+          value: prop.values[0][0],
+          isAffix: false
         });
       } else {
-        toast.error(`Erro: ${error.message || "Erro desconhecido"}`);
+        stats.push({
+          name,
+          value: "",
+          isAffix: false
+        });
       }
-      console.error('Erro detalhado:', error);
-      return [];
-    }
-  } catch (error) {
-    console.error('Erro ao buscar itens:', error);
-    
-    if (error instanceof Error) {
-      toast.error(`Erro: ${error.message}`);
-    } else {
-      toast.error("Erro desconhecido ao acessar a API");
-    }
-    
-    return [];
+    });
   }
+  
+  // Calcular DPS e pDPS se aplicável
+  let totalDps: number | undefined = undefined;
+  let physicalDps: number | undefined = undefined;
+  let elementalDps: number | undefined = undefined;
+  
+  if (itemData.properties) {
+    const dpsProperty = itemData.properties.find((p: any) => p.name === "Total DPS" || p.name.includes("DPS"));
+    if (dpsProperty && dpsProperty.values && dpsProperty.values.length > 0) {
+      totalDps = parseFloat(dpsProperty.values[0][0]);
+    }
+    
+    const physDpsProperty = itemData.properties.find((p: any) => p.name === "Physical DPS" || p.name.includes("Physical"));
+    if (physDpsProperty && physDpsProperty.values && physDpsProperty.values.length > 0) {
+      physicalDps = parseFloat(physDpsProperty.values[0][0]);
+      
+      // Se temos totalDps e physicalDps, podemos calcular elementalDps
+      if (totalDps) {
+        elementalDps = totalDps - physicalDps;
+      }
+    }
+  }
+  
+  // Adicionar mods explícitos
+  const divineAnalysis: DivineAnalysis[] = [];
+  
+  if (itemData.explicitMods) {
+    itemData.explicitMods.forEach((mod: string) => {
+      // Encontrar o stat correspondente a este mod
+      const matchingStat = Object.entries(STAT_RANGES).find(([statId, range]) => {
+        const statLabel = getStatLabel(statId);
+        return mod.includes(statLabel);
+      });
+      
+      if (matchingStat) {
+        const [statId, range] = matchingStat;
+        
+        // Extrair o valor numérico do mod
+        const valueMatch = mod.match(/(\d+(\.\d+)?)/);
+        if (valueMatch) {
+          const value = parseFloat(valueMatch[0]);
+          
+          stats.push({
+            name: getStatLabel(statId),
+            value,
+            min: range.min,
+            max: range.max,
+            isAffix: true
+          });
+          
+          // Analisar se vale a pena usar Divine
+          const analysis = analyzeDivineValue(statId, value);
+          divineAnalysis.push({
+            ...analysis,
+            statName: getStatLabel(statId),
+            statId
+          });
+        }
+      } else {
+        // Se não encontramos o stat correspondente, adicionamos apenas o texto
+        stats.push({
+          name: mod,
+          value: "",
+          isAffix: true
+        });
+      }
+    });
+  }
+  
+  // Dados de preço
+  const priceData = listingData.price || {};
+  const price = priceData.amount || 0;
+  const currency = priceData.currency || "chaos";
+  
+  // Dados do vendedor
+  const seller = listingData.account?.name;
+  
+  // Data de listagem
+  let listedTime = "";
+  if (listingData.indexed) {
+    const date = new Date(listingData.indexed);
+    listedTime = `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+  }
+  
+  // URL para o item no site
+  const tradeUrl = `https://www.pathofexile.com/trade2/search/poe2/${queryId}/${item.id}`;
+  
+  // Montar o objeto final
+  return {
+    id: item.id,
+    name: `${itemData.name || ""} ${itemData.typeLine || ""}`.trim(),
+    category: itemData.typeLine || "",
+    rarity: itemData.rarity || "normal",
+    price,
+    currency,
+    stats,
+    divineAnalysis,
+    totalDps,
+    physicalDps,
+    elementalDps,
+    seller,
+    listedTime,
+    tradeUrl
+  };
 };
