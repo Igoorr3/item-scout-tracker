@@ -9,6 +9,7 @@ import ItemTypeSelect from './ItemTypeSelect';
 import StatFilter from './StatFilter';
 import { TrackingConfiguration } from '@/types/tracking';
 import { Plus, Save, X } from 'lucide-react';
+import { STAT_OPTIONS } from '@/data/statIds';
 
 interface TrackingConfigProps {
   onSave: (config: TrackingConfiguration) => void;
@@ -22,15 +23,24 @@ const TrackingConfig = ({ onSave, defaultConfig }: TrackingConfigProps) => {
   const [enabled, setEnabled] = useState(defaultConfig?.enabled ?? true);
   const [stats, setStats] = useState<Record<string, number>>(defaultConfig?.stats || {});
   const [statFilters, setStatFilters] = useState<string[]>(
-    defaultConfig?.stats ? Object.keys(defaultConfig.stats) : ['dps']
+    defaultConfig?.stats ? Object.keys(defaultConfig.stats) : []
   );
 
   const handleSave = () => {
+    // Verificamos se todos os campos necessários foram preenchidos
+    if (!name.trim()) {
+      setName(`Rastreador para ${itemType || 'Itens'}`);
+    }
+
+    if (!itemType) {
+      setItemType('weapon'); // Valor padrão se não for selecionado
+    }
+
     const config: TrackingConfiguration = {
       id: defaultConfig?.id || Date.now().toString(),
-      name: name || `Tracker para ${itemType}`,
+      name: name.trim() || `Rastreador para ${itemType || 'Itens'}`,
       itemType,
-      refreshInterval: Number(refreshInterval),
+      refreshInterval: Number(refreshInterval) || 30,
       enabled,
       stats,
     };
@@ -39,7 +49,15 @@ const TrackingConfig = ({ onSave, defaultConfig }: TrackingConfigProps) => {
   };
 
   const addStatFilter = () => {
-    setStatFilters([...statFilters, '']);
+    // Adicionamos um stat padrão (o primeiro da lista)
+    const defaultStatId = STAT_OPTIONS[0].value;
+    setStatFilters([...statFilters, defaultStatId]);
+    
+    // Definimos um valor padrão para o stat
+    setStats({
+      ...stats,
+      [defaultStatId]: 1
+    });
   };
 
   const removeStatFilter = (index: number) => {
@@ -78,8 +96,15 @@ const TrackingConfig = ({ onSave, defaultConfig }: TrackingConfigProps) => {
     });
   };
 
+  // Se não houver filtros de estatística, adicionamos um por padrão
+  React.useEffect(() => {
+    if (statFilters.length === 0 && STAT_OPTIONS.length > 0) {
+      addStatFilter();
+    }
+  }, []);
+
   return (
-    <Card className="bg-card border-primary/20 shadow-lg">
+    <Card className="w-full bg-card border-primary/20 shadow-lg">
       <CardHeader className="border-b border-border">
         <CardTitle className="text-primary">Configuração de Rastreamento</CardTitle>
       </CardHeader>

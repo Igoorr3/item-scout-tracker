@@ -8,9 +8,9 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 
-// Estas são as categorias corretas aceitas pela API do PoE2 (valores corrigidos)
+// Estas são as categorias corretas aceitas pela API do PoE2
 const ITEM_TYPES = [
-  { name: "Qualquer", value: "" },
+  { name: "Qualquer", value: "weapon" },
   // Armas
   { name: "Qualquer Arma", value: "weapon" },
   { name: "Arma Corpo a Corpo de Uma Mão", value: "weapon.one" },
@@ -26,7 +26,7 @@ const ITEM_TYPES = [
   { name: "Espada de Duas Mãos", value: "weapon.twosword" },
   { name: "Machado de Duas Mãos", value: "weapon.twoaxe" },
   { name: "Maça de Duas Mãos", value: "weapon.twomace" },
-  { name: "Bastão", value: "weapon.quarterstaff" },
+  { name: "Bastão", value: "weapon.staff" },
   { name: "Arma à Distância", value: "weapon.ranged" },
   { name: "Arco", value: "weapon.bow" },
   { name: "Besta", value: "weapon.crossbow" },
@@ -34,7 +34,6 @@ const ITEM_TYPES = [
   { name: "Varinha", value: "weapon.wand" },
   { name: "Cetro", value: "weapon.sceptre" },
   { name: "Cajado", value: "weapon.staff" },
-  { name: "Vara de Pesca", value: "weapon.fishingrod" },
   // Armaduras
   { name: "Qualquer Armadura", value: "armour" },
   { name: "Capacete", value: "armour.helmet" },
@@ -54,7 +53,6 @@ const ITEM_TYPES = [
   { name: "Qualquer Gema", value: "gem" },
   { name: "Gema de Habilidade", value: "gem.skill" },
   { name: "Gema de Suporte", value: "gem.support" },
-  { name: "Meta Gema", value: "gem.meta" },
   // Joias
   { name: "Qualquer Joia", value: "jewel" },
   // Frascos
@@ -65,17 +63,10 @@ const ITEM_TYPES = [
   { name: "Qualquer Item de Fim de Jogo", value: "map" },
   { name: "Pedra de Caminho", value: "map.waystone" },
   { name: "Fragmento de Mapa", value: "map.fragment" },
-  { name: "Livro de Registros", value: "map.logbook" },
-  { name: "Pedra da Fenda", value: "map.breachstone" },
-  { name: "Barya", value: "map.barya" },
-  { name: "Chave Pináculo", value: "map.pinnacle" },
-  { name: "Chave do Ultimato", value: "map.ultimatum" },
-  { name: "Tábua", value: "map.tablet" },
   // Outros
   { name: "Carta de Adivinhação", value: "card" },
   { name: "Relíquia", value: "relic" },
-  { name: "Qualquer Moeda", value: "currency" },
-  { name: "Presságio", value: "omen" },
+  { name: "Moeda", value: "currency" },
   // Socketáveis
   { name: "Qualquer Encaixável", value: "socket" },
   { name: "Runa", value: "socket.rune" },
