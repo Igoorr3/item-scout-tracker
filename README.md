@@ -13,6 +13,7 @@ Este é um rastreador de itens para Path of Exile 2 que permite monitorar itens 
 - Análise de uso de Divine Orb (mostra se vale a pena usar em cada item)
 - Exibição de DPS total e DPS físico para armas
 - Links diretos para o site de comércio oficial do PoE2
+- Integração com script Python existente
 
 ## Requisitos
 
@@ -20,9 +21,46 @@ Este é um rastreador de itens para Path of Exile 2 que permite monitorar itens 
 - Node.js 18 ou superior (para versão Web)
 - Bibliotecas: requests, tkinter (Python) ou React (Web)
 
-## Instalação
+## Como Executar o Projeto
 
-### Versão Python (Standalone)
+### Versão Web (React)
+
+1. Instale as dependências:
+```bash
+npm install
+# ou
+yarn install
+```
+
+2. Inicie o servidor de desenvolvimento:
+```bash
+npm run dev
+# ou
+yarn dev
+```
+
+3. Para produção:
+```bash
+npm run build
+npm run preview
+# ou
+yarn build
+yarn preview
+```
+
+### API Python (opcional)
+
+Para utilizar a integração Python completa, é necessário executar o servidor de API Python:
+
+```bash
+python api_server.py
+```
+
+Este servidor deve estar rodando na porta 5000 para que a integração funcione corretamente.
+
+## Executando apenas o Script Python Standalone
+
+Se você preferir usar apenas a versão Python standalone:
 
 1. Certifique-se de ter o Python instalado no seu sistema
 2. Instale as dependências necessárias:
@@ -43,31 +81,17 @@ sudo dnf install python3-tkinter
 # No Windows e macOS geralmente já vem incluído com o Python
 ```
 
-### Versão Web (React)
-
-1. Instale o Node.js e npm/yarn
-2. Clone este repositório
-3. Instale as dependências:
+4. Execute o script Python:
 
 ```bash
-npm install
-# ou
-yarn install
+python poe2_item_tracker.py
 ```
 
-4. Inicie o servidor Python para API:
+## Navegação na Interface
 
-```bash
-python api_server.py
-```
-
-5. Inicie o servidor de desenvolvimento:
-
-```bash
-npm start
-# ou
-yarn start
-```
+- A página principal contém os recursos de busca e monitoramento de itens
+- A página de "Integração Python" permite usar/integrar com scripts Python existentes
+- Use o botão "Voltar" para retornar à página principal quando estiver na seção de Python
 
 ## Como Usar
 
@@ -120,6 +144,7 @@ Isso permite contornar as proteções sem violar os termos de serviço, pois voc
 - **Erro 403 (Forbidden)**: Seus cookies provavelmente expiraram. Atualize o POESESSID e cf_clearance.
 - **Erro 400 (Bad Request)**: Verifique se os filtros de estatísticas estão corretos.
 - **Erro 429 (Too Many Requests)**: A API está limitando suas requisições. Aumente o intervalo de monitoramento.
+- **npm start não funciona**: Use `npm run dev` em vez de `npm start` (este projeto usa Vite, não Create React App)
 
 ## Notas Importantes
 
