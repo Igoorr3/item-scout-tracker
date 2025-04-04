@@ -1,8 +1,9 @@
+
 import { Button } from '@/components/ui/button';
 import { Target, Plus, Download } from 'lucide-react'; 
-import { useMobile } from '@/hooks/use-mobile';
+import { useIsMobile } from '@/hooks/use-mobile';
 import ApiConfigDialog from './ApiConfigDialog';
-import { Link } from 'react-router-dom'; // Adicionando o import do Link
+import { Link } from 'react-router-dom'; 
 
 interface TrackerHeaderProps {
   onTrackingClick: () => void;
@@ -10,7 +11,7 @@ interface TrackerHeaderProps {
 }
 
 const TrackerHeader = ({ onTrackingClick, apiConfigured }: TrackerHeaderProps) => {
-  const isMobile = useMobile();
+  const isMobile = useIsMobile();
 
   return (
     <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-6 py-4 border-b">
@@ -54,7 +55,19 @@ const TrackerHeader = ({ onTrackingClick, apiConfigured }: TrackerHeaderProps) =
             </>
           )}
         </Button>
-        <ApiConfigDialog />
+        <ApiConfigDialog 
+          open={false}
+          onOpenChange={() => {}}
+          apiConfig={{
+            poesessid: '',
+            cfClearance: [],
+            useragent: '',
+            isConfigured: false,
+            useProxy: false,
+            debugMode: false
+          }}
+          onSaveConfig={() => {}}
+        />
       </div>
     </div>
   );

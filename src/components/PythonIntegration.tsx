@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { InfoCircle, AlertCircle } from "lucide-react";
+import { Info, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 
 const PythonIntegration = () => {
@@ -249,7 +248,7 @@ if __name__ == "__main__":
           </div>
 
           <Alert className="mt-2">
-            <InfoCircle className="h-4 w-4" />
+            <Info className="h-4 w-4" />
             <AlertDescription className="text-sm">
               Para utilizar esta integração completamente, você precisa de um servidor Python rodando (como Flask ou FastAPI) que execute o script e retorne os resultados. Consulte a documentação para mais informações.
             </AlertDescription>

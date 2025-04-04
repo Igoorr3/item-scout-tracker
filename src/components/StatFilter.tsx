@@ -12,7 +12,7 @@ import {
 import { STAT_OPTIONS } from '@/data/statIds';
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { InfoCircle } from 'lucide-react';
+import { Info } from 'lucide-react';
 
 interface StatFilterProps {
   selectedStat: string;
@@ -90,7 +90,6 @@ const StatFilter = ({ selectedStat, value, onStatChange }: StatFilterProps) => {
               id="use-raw-id"
               checked={useRawStatId}
               onCheckedChange={toggleRawStatId}
-              size="sm"
             />
             <Label htmlFor="use-raw-id" className="text-xs cursor-pointer">
               ID Raw
@@ -98,7 +97,7 @@ const StatFilter = ({ selectedStat, value, onStatChange }: StatFilterProps) => {
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <InfoCircle size={14} className="text-muted-foreground" />
+                  <Info size={14} className="text-muted-foreground" />
                 </TooltipTrigger>
                 <TooltipContent>
                   <p className="text-xs max-w-[250px]">

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -293,11 +292,8 @@ const Index = () => {
   return (
     <div className="container mx-auto p-4 pb-16 relative">
       <TrackerHeader 
-        onCreateTracker={handleCreateTracker} 
-        onConfigureApi={handleConfigureApi}
+        onTrackingClick={handleCreateTracker} 
         apiConfigured={apiConfig.isConfigured}
-        onToggleDebugMode={handleToggleDebugMode}
-        debugMode={debugMode}
       />
       
       {debugMode && <ApiDebugger apiCredentials={apiConfig} />}
