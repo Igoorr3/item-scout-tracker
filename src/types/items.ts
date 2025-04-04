@@ -12,6 +12,11 @@ export interface DivineAnalysis {
   currentPercentile: number;
   potentialGain: number;
   recommendation: string;
+  statName?: string; // Adicionamos esta propriedade
+  statId?: string;   // Adicionamos esta propriedade
+  currentValue?: number;
+  minValue?: number;
+  maxValue?: number;
 }
 
 export interface Item {
