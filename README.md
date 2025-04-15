@@ -3,8 +3,6 @@
 
 Um rastreador de itens para Path of Exile 2 com interface gráfica moderna que permite monitorar itens do mercado e analisar seu potencial para melhorias com Divine Orbs.
 
-![Screenshot do Aplicativo](https://i.imgur.com/example.png)
-
 ## Recursos
 
 - Interface gráfica moderna e intuitiva com suporte a temas claro/escuro
@@ -13,12 +11,14 @@ Um rastreador de itens para Path of Exile 2 com interface gráfica moderna que p
 - Monitoramento automático em intervalos configuráveis
 - Exibição detalhada de propriedades e modificadores dos itens
 - **Análise avançada de Divine Orb**:
-  - Calcula o percentual de melhoria possível para cada modificador
-  - Identifica modificadores que afetam DPS e calcula o ganho potencial
+  - Foco em modificadores que aumentam o DPS (dano físico, velocidade de ataque, critical)
+  - Ignora modificadores que não afetam o dano para recomendações de Divine
+  - Calcula o percentual de melhoria possível para cada modificador relevante
   - Estima o valor potencial do item após usar Divine Orbs
   - Destaca itens com alto potencial para lucro
 - **Cálculo preciso de DPS/PDPS**:
   - Banco de dados integrado com todas as bases de armas disponíveis do Path of Exile 2
+  - Base detalhada de quarterstaffs, maces, crossbows, bows e outras armas
   - Cálculo preciso de DPS físico (PDPS) e DPS total
   - Previsão de DPS mínimo e máximo baseado nos modificadores
   - Destaque de modificadores que impactam DPS
@@ -73,39 +73,30 @@ python poe2_item_tracker.py
    - Configure valores mínimos para DPS/PDPS se desejado
 7. Clique em "Buscar Itens" para uma pesquisa única ou "Monitorar" para pesquisas periódicas
 
-## Entendendo os Cálculos de DPS
-
-O aplicativo identifica automaticamente a base da arma e usa as estatísticas corretas para calcular:
-
-1. **DPS Base**: Dano médio × Velocidade de Ataque
-2. **Modificadores de DPS**: Inclui:
-   - % Dano Físico Aumentado
-   - Adiciona # a # de Dano Físico
-   - % Velocidade de Ataque Aumentada
-   - Dano elemental adicionado
-
-A fórmula geral para DPS é:
-```
-((dano_base_min + dano_base_max) / 2 + (dano_adicionado_min + dano_adicionado_max) / 2) × 
-(velocidade_ataque_base × (1 + %velocidade_ataque / 100)) × 
-(1 + %dano_aumentado / 100)
-```
-
-Para PDPS, apenas o dano físico é considerado no cálculo.
-
 ## Entendendo a Análise de Divine Orb
 
-O aplicativo analisa cada afixo dos itens encontrados para:
+O aplicativo agora foca apenas nos modificadores que realmente afetam o DPS das armas:
 
-1. Calcular onde o valor atual se encontra na faixa possível
-2. Estimar quanto o item pode melhorar com o uso de Divine Orbs
-3. Identificar quais modificadores afetam DPS/PDPS
-4. Fornecer uma estimativa de preço pós-Divine baseada em itens similares
+1. **Modificadores que afetam DPS:**
+   - % Dano Físico Aumentado (local)
+   - Adiciona # a # de Dano Físico
+   - % Velocidade de Ataque (local)
+   - % Chance de Acerto Crítico
+   - % Multiplicador de Dano Crítico
+   - Dano elemental adicionado (Fogo, Gelo, Raio)
+   - +# para Nível de Habilidades de Projétil
 
-Os itens são coloridos na lista de acordo com seu potencial:
-- **Verde**: Alto potencial (>50% de melhoria possível)
-- **Amarelo**: Médio potencial (30-50% de melhoria)
-- **Azul**: Baixo potencial (15-30% de melhoria)
+2. **Priorização Inteligente:**
+   - Apenas recomenda Divine Orb em itens com potencial significativo de ganho de DPS
+   - Não considera modificadores irrelevantes para o cálculo de ganho (resistências, vida, etc.)
+   - Analisa separadamente cada componente DPS (físico vs total)
+
+3. **Apresentação Visual:**
+   - Os itens são coloridos na lista de acordo com seu potencial:
+     - **Verde**: Alto potencial (>50% de melhoria possível)
+     - **Amarelo**: Médio potencial (30-50% de melhoria)
+     - **Azul**: Baixo potencial (15-30% de melhoria)
+   - Mostra valores atuais e máximos possíveis para PDPS e DPS total
 
 ## Modos de Visualização
 
@@ -115,12 +106,18 @@ O aplicativo oferece três modos de visualização que podem ser alternados na i
 2. **Modo PDPS**: Foca apenas no dano físico, ideal para builds baseadas em dano físico
 3. **Modo Misto**: Mostra ambas informações para uma análise completa
 
-## Configuração Avançada
+## Banco de Dados de Armas
 
-O arquivo `poe2_config.ini` é criado automaticamente no mesmo diretório do script e armazena:
-- Suas credenciais de autenticação
-- Preferência de tema (claro/escuro)
-- Outras configurações (configurável apenas editando o arquivo)
+O aplicativo contém um extenso banco de dados com as especificações das bases de armas do PoE2:
+
+- Quarterstaffs (Sinister, Lunar, Striking, Bolting, Aegis, Razor)
+- Maças de Duas Mãos (Anvil Maul, Sacred Maul, Ironwood Greathammer, etc.)
+- Bestas (Stout Crossbow, Engraved Crossbow, Flexed Crossbow, etc.)
+- Arcos (Ironwood Shortbow, Cavalry Bow, Guardian Bow, etc.)
+- Lanças (Orichalcum Spear, Pronged Spear, Stalking Spear, etc.)
+- Maças de Uma Mão (Flanged Mace, Crown Mace, Molten Hammer, etc.)
+
+Cada base de arma é registrada com seus valores corretos de dano físico, chance crítica e velocidade de ataque, permitindo cálculos precisos e recomendações confiáveis.
 
 ## Solução de Problemas
 

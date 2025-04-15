@@ -1,3 +1,4 @@
+
 import { TrackingConfiguration } from '@/types/tracking';
 import { ApiCredentials } from '@/types/api';
 import { Item, ItemStat, DivineAnalysis, WeaponBase } from '@/types/items';
@@ -19,6 +20,7 @@ const DPS_AFFECTING_STAT_IDS = [
   "explicit.stat_709508406",  // Adds Fire Damage
   "explicit.stat_1999113824", // Adds Cold Damage
   "explicit.stat_737908626",  // Adds Lightning Damage
+  "explicit.stat_1202301673", // +# to Level of all Projectile Skills
 ];
 
 export const fetchItems = async (config: TrackingConfiguration, apiConfig: ApiCredentials): Promise<Item[]> => {
@@ -128,8 +130,8 @@ export const fetchItems = async (config: TrackingConfiguration, apiConfig: ApiCr
     
     // Default sorting - by divine potential
     return itemsWithDpsGainPotential.sort((a, b) => {
-      const aDivineWorth = Math.max(...(a.divineAnalysis?.map(d => d.potentialGain) || [0]));
-      const bDivineWorth = Math.max(...(b.divineAnalysis?.map(d => d.potentialGain) || [0]));
+      const aDivineWorth = Math.max(...(a.divineAnalysis?.filter(d => d.affectsDps).map(d => d.potentialGain) || [0]));
+      const bDivineWorth = Math.max(...(b.divineAnalysis?.filter(d => d.affectsDps).map(d => d.potentialGain) || [0]));
       return bDivineWorth - aDivineWorth;
     });
     
@@ -139,7 +141,8 @@ export const fetchItems = async (config: TrackingConfiguration, apiConfig: ApiCr
   }
 };
 
-const testApiConnection = async (apiConfig: ApiCredentials): Promise<boolean> => {
+// Export the testApiConnection function to fix the first build error
+export const testApiConnection = async (apiConfig: ApiCredentials): Promise<boolean> => {
   try {
     const testUrl = `${API_BASE_URL}/test`;
     
@@ -319,7 +322,7 @@ const calculatePotentialDPS = (itemData: any): {
             const magnitudes = mod.magnitudes.filter((m: any) => m.hash === statId);
             if (magnitudes.length >= 2) {
               addedPhysDamageMinRange = [magnitudes[0].min, magnitudes[0].max];
-              addedPhysDamageMaxRange = [magnitudes[1].min, magnatures[1].max];
+              addedPhysDamageMaxRange = [magnitudes[1].min, magnitudes[1].max];
             }
           }
         }
@@ -675,7 +678,8 @@ const processItem = (item: any, queryId: string): Item => {
             (modText.includes("Critical") && (modText.includes("Chance") || modText.includes("Multiplier"))) ||
             (modText.toLowerCase().includes("adds") && 
               (modText.includes("Fire Damage") || modText.includes("Cold Damage") || 
-               modText.includes("Lightning Damage") || modText.includes("Chaos Damage")));
+               modText.includes("Lightning Damage") || modText.includes("Chaos Damage"))) ||
+            modText.includes("to Level of all Projectile Skills");
           
           // If we have min/max, try to extract current value and calculate percentile
           if (min !== undefined && max !== undefined) {
@@ -689,8 +693,8 @@ const processItem = (item: any, queryId: string): Item => {
                 const percentile = Math.round(((currentValue - min) / range) * 100);
                 const potentialGain = Math.round(((max - currentValue) / currentValue) * 100);
                 
-                // Consider worth divine if potential gain is significant and affects DPS
-                const worthDivine = isDpsMod ? potentialGain >= 10 : potentialGain >= 15;
+                // Consider worth divine ONLY if it affects DPS and has significant potential
+                const worthDivine = isDpsMod ? potentialGain >= 10 : false;
                 
                 divineAnalysis.push({
                   worthDivine,
@@ -731,18 +735,18 @@ const processItem = (item: any, queryId: string): Item => {
   let listedTime = "";
   if (listingData.indexed) {
     const date = new Date(listingData.indexed);
-    listedTime = `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() +.1).toString().padStart(2, '0')}/${date.getFullYear().toString().slice(-2)} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+    listedTime = `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear().toString().slice(-2)} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
   }
   
   // URL para o item no site
   const tradeUrl = `https://www.pathofexile.com/trade2/search/poe2/${queryId}/${item.id}`;
   
-  // Montar o objeto final
+  // Montar o objeto final - now with baseType included
   const processedItem: Item = {
     id: item.id,
     name: `${itemData.name || ""} ${typeLine || ""}`.trim(),
     category: typeLine || "",
-    baseType: baseType,
+    baseType: baseType, // Add baseType here
     rarity: itemData.rarity || "normal",
     price,
     currency,

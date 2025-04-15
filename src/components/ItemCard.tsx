@@ -37,20 +37,13 @@ const ItemCard: React.FC<ItemCardProps> = ({ item, displayMode = 'both' }) => {
   const baseStats = item.stats.filter(stat => !stat.isAffix);
   const affixes = item.stats.filter(stat => stat.isAffix);
   
-  // Verifica se há recomendação para usar Divine
-  const hasDivineRecommendation = item.divineAnalysis && 
-    item.divineAnalysis.some(analysis => analysis.worthDivine);
-    
-  // Find DPS-affecting mods and their potential gain
+  // Verifica se há recomendação para usar Divine apenas para mods que afetam DPS
   const dpsAffectingMods = item.divineAnalysis?.filter(a => a.affectsDps) || [];
   const hasDpsImprovingMods = dpsAffectingMods.some(a => a.worthDivine);
+  const hasDivineRecommendation = hasDpsImprovingMods;
     
   // Calculate maximum potential gains for different aspects
-  const maxPotentialGain = item.divineAnalysis && item.divineAnalysis.length > 0 
-    ? Math.max(...item.divineAnalysis.map(a => a.potentialGain)) 
-    : 0;
-    
-  const maxDpsPotentialGain = dpsAffectingMods.length > 0
+  const maxDpsModPotentialGain = dpsAffectingMods.length > 0
     ? Math.max(...dpsAffectingMods.map(a => a.potentialGain)) 
     : 0;
     
@@ -89,7 +82,7 @@ const ItemCard: React.FC<ItemCardProps> = ({ item, displayMode = 'both' }) => {
             {formatCurrency(item.price, item.currency)}
           </Badge>
           
-          {item.expectedPrice && item.expectedPrice > item.price && (
+          {item.expectedPrice && item.expectedPrice > item.price && hasDivineRecommendation && (
             <Badge variant="outline" className="flex gap-1 items-center text-green-600 dark:text-green-400">
               <TrendingUp size={14} /> 
               Potencial: {formatCurrency(item.expectedPrice, item.currency)}
@@ -149,20 +142,30 @@ const ItemCard: React.FC<ItemCardProps> = ({ item, displayMode = 'both' }) => {
           )}
         </div>
         
-        {/* Divine Orb Recommendation */}
+        {/* Divine Orb Recommendation - Only show for DPS-affecting mods */}
         {hasDivineRecommendation && (
-          <div className={`flex items-center mt-1 p-2 rounded text-sm ${getPotentialClass(maxPotentialGain)} bg-muted/40`}>
+          <div className={`flex items-center mt-1 p-2 rounded text-sm ${getPotentialClass(maxDpsModPotentialGain)} bg-muted/40`}>
             <Star size={16} className="mr-2" />
             <div>
               <div>
-                Divine Recomendado! Potencial de ganho total: <strong>{maxPotentialGain.toFixed(1)}%</strong>
+                Divine Recomendado! Potencial de ganho DPS: <strong>{maxDpsModPotentialGain.toFixed(1)}%</strong>
               </div>
               
               {hasDpsImprovingMods && (
                 <div className="mt-1">
-                  <span>Ganho potencial de DPS: <strong>{dpsGainPercentage.toFixed(1)}%</strong></span>
+                  {displayMode === 'dps' && dpsGainPercentage > 0 && (
+                    <span>Ganho total DPS: <strong>{dpsGainPercentage.toFixed(1)}%</strong></span>
+                  )}
                   {displayMode === 'pdps' && pdpsGainPercentage > 0 && (
-                    <span className="ml-2">pDPS: <strong>{pdpsGainPercentage.toFixed(1)}%</strong></span>
+                    <span>Ganho total pDPS: <strong>{pdpsGainPercentage.toFixed(1)}%</strong></span>
+                  )}
+                  {displayMode === 'both' && (
+                    <span>
+                      DPS: <strong>{dpsGainPercentage.toFixed(1)}%</strong>
+                      {pdpsGainPercentage > 0 && (
+                        <span className="ml-2">pDPS: <strong>{pdpsGainPercentage.toFixed(1)}%</strong></span>
+                      )}
+                    </span>
                   )}
                 </div>
               )}
@@ -234,7 +237,7 @@ const ItemCard: React.FC<ItemCardProps> = ({ item, displayMode = 'both' }) => {
                       </div>
                       
                       {analysis && (
-                        <div className={`text-xs mt-0.5 ${getPotentialClass(analysis.potentialGain)}`}>
+                        <div className={`text-xs mt-0.5 ${isDpsAffectingMod ? getPotentialClass(analysis.potentialGain) : "text-muted-foreground"}`}>
                           <div className="flex items-center">
                             {analysis.worthDivine ? (
                               <ThumbsUp size={12} className="mr-1" />
@@ -251,9 +254,13 @@ const ItemCard: React.FC<ItemCardProps> = ({ item, displayMode = 'both' }) => {
                               )}
                             </span>
                           </div>
-                          <div className="mt-0.5">
-                            {analysis.recommendation}
-                          </div>
+                          {isDpsAffectingMod && (
+                            <div className="mt-0.5">
+                              {analysis.worthDivine 
+                                ? `Usar Divine pode melhorar em até ${analysis.potentialGain.toFixed(1)}%` 
+                                : "Não vale a pena usar Divine"}
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
@@ -313,11 +320,11 @@ const ItemCard: React.FC<ItemCardProps> = ({ item, displayMode = 'both' }) => {
             </div>
           )}
           
-          {displayMode === 'both' && maxPotentialGain > 0 && (
-            <div className={`text-xs ${getPotentialClass(maxPotentialGain)}`}>
+          {displayMode === 'both' && hasDpsImprovingMods && maxDpsModPotentialGain > 0 && (
+            <div className={`text-xs ${getPotentialClass(maxDpsModPotentialGain)}`}>
               <span className="flex items-center">
                 <DollarSign size={12} className="mr-1" />
-                Potencial Divine: {maxPotentialGain.toFixed(1)}%
+                Potencial Divine: {maxDpsModPotentialGain.toFixed(1)}%
               </span>
             </div>
           )}
