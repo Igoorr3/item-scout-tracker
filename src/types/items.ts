@@ -12,8 +12,8 @@ export interface DivineAnalysis {
   currentPercentile: number;
   potentialGain: number;
   recommendation: string;
-  statName?: string; // Adicionamos esta propriedade
-  statId?: string;   // Adicionamos esta propriedade
+  statName?: string; 
+  statId?: string;   
   currentValue?: number;
   minValue?: number;
   maxValue?: number;
@@ -33,6 +33,9 @@ export interface Item {
   totalDps?: number;
   physicalDps?: number;
   elementalDps?: number;
+  minDps?: number;    // Minimum possible DPS with poor rolls
+  maxDps?: number;    // Maximum possible DPS with perfect rolls
+  maxPdps?: number;   // Maximum possible Physical DPS
   seller?: string;
   listedTime?: string;
   iconUrl?: string;
