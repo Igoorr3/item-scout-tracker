@@ -14,16 +14,19 @@ import {
   ShieldAlert,
   TrendingUp,
   Star,
-  DollarSign
+  DollarSign,
+  Sword,
+  Zap
 } from "lucide-react";
 import { Item, DivineAnalysis } from "@/types/items";
 import { getStatLabel } from '@/data/statIds';
 
 interface ItemCardProps {
   item: Item;
+  displayMode?: 'dps' | 'pdps' | 'both'; // Added display mode to control what DPS to highlight
 }
 
-const ItemCard: React.FC<ItemCardProps> = ({ item }) => {
+const ItemCard: React.FC<ItemCardProps> = ({ item, displayMode = 'both' }) => {
   const [expanded, setExpanded] = useState(false);
 
   const formatCurrency = (price: number, currency: string) => {
@@ -38,12 +41,24 @@ const ItemCard: React.FC<ItemCardProps> = ({ item }) => {
   const hasDivineRecommendation = item.divineAnalysis && 
     item.divineAnalysis.some(analysis => analysis.worthDivine);
     
-  // Encontra o maior potencial de ganho entre os mods
+  // Find DPS-affecting mods and their potential gain
+  const dpsAffectingMods = item.divineAnalysis?.filter(a => a.affectsDps) || [];
+  const hasDpsImprovingMods = dpsAffectingMods.some(a => a.worthDivine);
+    
+  // Calculate maximum potential gains for different aspects
   const maxPotentialGain = item.divineAnalysis && item.divineAnalysis.length > 0 
     ? Math.max(...item.divineAnalysis.map(a => a.potentialGain)) 
     : 0;
     
-  // Determina a classe de cor baseada no potencial
+  const maxDpsPotentialGain = dpsAffectingMods.length > 0
+    ? Math.max(...dpsAffectingMods.map(a => a.potentialGain)) 
+    : 0;
+    
+  // Determine which DPS improvement to display based on displayMode
+  const dpsGainPercentage = item.dpsGainPotential || 0;
+  const pdpsGainPercentage = item.pdpsGainPotential || 0;
+  
+  // Determine the color class based on potential gain
   const getPotentialClass = (gain: number) => {
     if (gain >= 50) return "text-green-600 dark:text-green-400 font-bold";
     if (gain >= 30) return "text-amber-600 dark:text-amber-400 font-semibold";
@@ -57,7 +72,7 @@ const ItemCard: React.FC<ItemCardProps> = ({ item }) => {
         <div className="flex justify-between items-start">
           <div>
             <h3 className="text-lg font-semibold text-primary">{item.name}</h3>
-            <p className="text-sm text-muted-foreground">{item.category}</p>
+            <p className="text-sm text-muted-foreground">{item.baseType || item.category}</p>
           </div>
           <Badge 
             variant={item.rarity === 'unique' ? 'destructive' : item.rarity === 'rare' ? 'default' : 'outline'}
@@ -95,29 +110,41 @@ const ItemCard: React.FC<ItemCardProps> = ({ item }) => {
           )}
         </div>
 
-        {/* DPS Indicators with Max Potential */}
+        {/* Separate DPS and PDPS Indicators with Max Potential */}
         <div className="flex flex-wrap gap-2">
-          {item.totalDps && (
+          {/* Total DPS display */}
+          {item.totalDps && (displayMode === 'both' || displayMode === 'dps') && (
             <Badge className="bg-amber-600">
-              DPS: {item.totalDps}
+              <Zap size={14} className="mr-1" />
+              DPS: {item.totalDps.toFixed(1)}
               {item.maxDps && item.maxDps > item.totalDps && (
-                <span className="ml-1 text-white/90">(→ {item.maxDps})</span>
+                <span className="ml-1 text-white/90">(→ {item.maxDps.toFixed(1)})</span>
+              )}
+              {dpsGainPercentage > 0 && (
+                <span className="ml-1 text-white">+{dpsGainPercentage.toFixed(1)}%</span>
               )}
             </Badge>
           )}
           
-          {item.physicalDps && (
+          {/* Physical DPS display */}
+          {item.physicalDps && (displayMode === 'both' || displayMode === 'pdps') && (
             <Badge className="bg-slate-600">
-              pDPS: {item.physicalDps}
+              <Sword size={14} className="mr-1" />
+              pDPS: {item.physicalDps.toFixed(1)}
               {item.maxPdps && item.maxPdps > item.physicalDps && (
-                <span className="ml-1 text-white/90">(→ {item.maxPdps})</span>
+                <span className="ml-1 text-white/90">(→ {item.maxPdps.toFixed(1)})</span>
+              )}
+              {pdpsGainPercentage > 0 && (
+                <span className="ml-1 text-white">+{pdpsGainPercentage.toFixed(1)}%</span>
               )}
             </Badge>
           )}
           
-          {item.elementalDps && (
+          {/* Elemental DPS display if it exists */}
+          {item.elementalDps && item.elementalDps > 0 && (
             <Badge className="bg-blue-600">
-              eDPS: {item.elementalDps}
+              <Zap size={14} className="mr-1" />
+              eDPS: {item.elementalDps.toFixed(1)}
             </Badge>
           )}
         </div>
@@ -126,12 +153,27 @@ const ItemCard: React.FC<ItemCardProps> = ({ item }) => {
         {hasDivineRecommendation && (
           <div className={`flex items-center mt-1 p-2 rounded text-sm ${getPotentialClass(maxPotentialGain)} bg-muted/40`}>
             <Star size={16} className="mr-2" />
-            <span>
-              Divine Recomendado! Potencial de ganho: <strong>{maxPotentialGain}%</strong>
-              {item.expectedPrice && item.expectedPrice > item.price && (
-                <span className="ml-1">(Preço estimado: {formatCurrency(item.expectedPrice, item.currency)})</span>
+            <div>
+              <div>
+                Divine Recomendado! Potencial de ganho total: <strong>{maxPotentialGain.toFixed(1)}%</strong>
+              </div>
+              
+              {hasDpsImprovingMods && (
+                <div className="mt-1">
+                  <span>Ganho potencial de DPS: <strong>{dpsGainPercentage.toFixed(1)}%</strong></span>
+                  {displayMode === 'pdps' && pdpsGainPercentage > 0 && (
+                    <span className="ml-2">pDPS: <strong>{pdpsGainPercentage.toFixed(1)}%</strong></span>
+                  )}
+                </div>
               )}
-            </span>
+              
+              {item.expectedPrice && item.expectedPrice > item.price && (
+                <div className="mt-1">
+                  Preço estimado: <strong>{formatCurrency(item.expectedPrice, item.currency)}</strong>
+                  <span className="ml-1">(+{((item.expectedPrice / item.price - 1) * 100).toFixed(1)}%)</span>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -174,10 +216,13 @@ const ItemCard: React.FC<ItemCardProps> = ({ item }) => {
                   const analysis = item.divineAnalysis?.find(a => 
                     a.statName === stat.name || a.statId === statId);
                   
+                  // Highlight DPS affecting mods
+                  const isDpsAffectingMod = analysis?.affectsDps === true;
+                  
                   return (
-                    <div key={`affix-${idx}`} className="text-sm">
+                    <div key={`affix-${idx}`} className={`text-sm ${isDpsAffectingMod ? "border-l-2 border-amber-500 pl-2" : ""}`}>
                       <div className="flex justify-between">
-                        <span>{stat.name}:</span>
+                        <span>{isDpsAffectingMod && <Sword size={12} className="inline mr-1 text-amber-500" />}{stat.name}:</span>
                         <div>
                           <span className="font-medium">{stat.value}</span>
                           {stat.min !== undefined && stat.max !== undefined && (
@@ -199,7 +244,10 @@ const ItemCard: React.FC<ItemCardProps> = ({ item }) => {
                             <span>
                               Roll atual: {analysis.currentPercentile}% do máximo
                               {analysis.potentialGain > 0 && (
-                                <span className="ml-1">(Potencial: +{analysis.potentialGain}%)</span>
+                                <span className="ml-1">(Potencial: +{analysis.potentialGain.toFixed(1)}%)</span>
+                              )}
+                              {isDpsAffectingMod && (
+                                <span className="ml-1 text-amber-500">• Afeta DPS</span>
                               )}
                             </span>
                           </div>
@@ -216,19 +264,27 @@ const ItemCard: React.FC<ItemCardProps> = ({ item }) => {
             
             {!expanded && affixes.length > 3 && (
               <div className="text-sm space-y-1">
-                {affixes.slice(0, 3).map((stat, idx) => (
-                  <div key={`affix-preview-${idx}`} className="flex justify-between">
-                    <span>{stat.name}:</span>
-                    <div>
-                      <span className="font-medium">{stat.value}</span>
-                      {stat.min !== undefined && stat.max !== undefined && (
-                        <span className="text-muted-foreground text-xs ml-1">
-                          [{stat.min}–{stat.max}]
-                        </span>
-                      )}
+                {affixes.slice(0, 3).map((stat, idx) => {
+                  const analysis = item.divineAnalysis?.find(a => a.statName === stat.name);
+                  const isDpsAffectingMod = analysis?.affectsDps === true;
+                  
+                  return (
+                    <div key={`affix-preview-${idx}`} className="flex justify-between">
+                      <span>
+                        {isDpsAffectingMod && <Sword size={12} className="inline mr-1 text-amber-500" />}
+                        {stat.name}:
+                      </span>
+                      <div>
+                        <span className="font-medium">{stat.value}</span>
+                        {stat.min !== undefined && stat.max !== undefined && (
+                          <span className="text-muted-foreground text-xs ml-1">
+                            [{stat.min}–{stat.max}]
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
                 <div className="text-xs text-muted-foreground italic">
                   +{affixes.length - 3} mais modificadores...
                 </div>
@@ -239,11 +295,29 @@ const ItemCard: React.FC<ItemCardProps> = ({ item }) => {
       </CardContent>
       <CardFooter className="px-4 py-2 bg-muted/30 border-t border-border flex justify-between">
         <div>
-          {maxPotentialGain > 0 && (
+          {displayMode === 'dps' && dpsGainPercentage > 0 && (
+            <div className={`text-xs ${getPotentialClass(dpsGainPercentage)}`}>
+              <span className="flex items-center">
+                <Zap size={12} className="mr-1" />
+                Potencial DPS: +{dpsGainPercentage.toFixed(1)}%
+              </span>
+            </div>
+          )}
+          
+          {displayMode === 'pdps' && pdpsGainPercentage > 0 && (
+            <div className={`text-xs ${getPotentialClass(pdpsGainPercentage)}`}>
+              <span className="flex items-center">
+                <Sword size={12} className="mr-1" />
+                Potencial pDPS: +{pdpsGainPercentage.toFixed(1)}%
+              </span>
+            </div>
+          )}
+          
+          {displayMode === 'both' && maxPotentialGain > 0 && (
             <div className={`text-xs ${getPotentialClass(maxPotentialGain)}`}>
               <span className="flex items-center">
                 <DollarSign size={12} className="mr-1" />
-                Potencial Divine: {maxPotentialGain}%
+                Potencial Divine: {maxPotentialGain.toFixed(1)}%
               </span>
             </div>
           )}
