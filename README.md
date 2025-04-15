@@ -1,150 +1,96 @@
 
-# Path of Exile 2 - Item Tracker
+# Path of Exile 2 - Item Tracker (Python)
 
-Este é um rastreador de itens para Path of Exile 2 que permite monitorar itens do mercado com base em filtros personalizados.
+Um rastreador de itens para Path of Exile 2 com interface gráfica moderna que permite monitorar itens do mercado e analisar seu potencial para melhorias com Divine Orbs.
+
+![Screenshot do Aplicativo](https://i.imgur.com/example.png)
 
 ## Recursos
 
-- Interface gráfica simples e intuitiva
+- Interface gráfica moderna e intuitiva com suporte a temas claro/escuro
+- Sistema de abas para gerenciar múltiplas buscas simultaneamente
 - Busca de itens por categoria, estatísticas e preço
 - Monitoramento automático em intervalos configuráveis
-- Contorna as proteções do Cloudflare usando cookies de autenticação
 - Exibição detalhada de propriedades e modificadores dos itens
-- Análise de uso de Divine Orb (mostra se vale a pena usar em cada item)
-- Exibição de DPS total e DPS físico para armas
+- **Análise avançada de Divine Orb**:
+  - Calcula o percentual de melhoria possível para cada modificador
+  - Estima o valor potencial do item após usar Divine Orbs
+  - Calcula DPS/PDPS mínimo e máximo possível
+  - Destaca itens com alto potencial para lucro
+- Contorna as proteções do Cloudflare usando cookies de autenticação
 - Links diretos para o site de comércio oficial do PoE2
-- Integração com script Python existente
 
 ## Requisitos
 
 - Python 3.7 ou superior
-- Node.js 18 ou superior (para versão Web)
-- Bibliotecas: requests, tkinter (Python) ou React (Web)
+- Bibliotecas: 
+  - requests
+  - tkinter (geralmente já incluído com o Python)
+  - configparser
+  - datetime
 
-## Como Executar o Projeto
+## Instalação
 
-### Versão Web (React)
-
-1. Instale as dependências:
-```bash
-npm install
-# ou
-yarn install
-```
-
-2. Inicie o servidor de desenvolvimento:
-```bash
-npm run dev
-# ou
-yarn dev
-```
-
-3. Para produção:
-```bash
-npm run build
-npm run preview
-# ou
-yarn build
-yarn preview
-```
-
-### API Python (opcional)
-
-Para utilizar a integração Python completa, é necessário executar o servidor de API Python:
-
-```bash
-python api_server.py
-```
-
-Este servidor deve estar rodando na porta 5000 para que a integração funcione corretamente.
-
-## Executando apenas o Script Python Standalone
-
-Se você preferir usar apenas a versão Python standalone:
-
-1. Certifique-se de ter o Python instalado no seu sistema
+1. Clone este repositório ou baixe o arquivo `poe2_item_tracker.py`
 2. Instale as dependências necessárias:
 
 ```bash
 pip install requests
 ```
 
-3. A biblioteca `tkinter` geralmente já vem incluída com o Python, mas se necessário:
-
-```bash
-# No Ubuntu/Debian:
-sudo apt-get install python3-tk
-
-# No Fedora:
-sudo dnf install python3-tkinter
-
-# No Windows e macOS geralmente já vem incluído com o Python
-```
-
-4. Execute o script Python:
+3. Execute o aplicativo:
 
 ```bash
 python poe2_item_tracker.py
 ```
 
-## Navegação na Interface
-
-- A página principal contém os recursos de busca e monitoramento de itens
-- A página de "Integração Python" permite usar/integrar com scripts Python existentes
-- Use o botão "Voltar" para retornar à página principal quando estiver na seção de Python
-
 ## Como Usar
 
-1. Configure suas credenciais do Path of Exile:
-   - Você pode obter os cookies acessando o site do Path of Exile (pathofexile.com)
-   - Abrindo as ferramentas de desenvolvedor (F12)
-   - Indo para a aba Application > Storage > Cookies
-   - Procure por POESESSID e cf_clearance
+1. Na primeira execução, você será direcionado para a aba "Configuração"
+2. Configure suas credenciais:
+   - POESESSID: Cookie de autenticação do site do Path of Exile
+   - cf_clearance: Cookie do Cloudflare para contornar proteções
+   - User-Agent: Identificação do seu navegador
 
-2. Configure seus filtros de busca:
-   - Selecione a categoria de item
-   - Defina filtros de estatísticas (vida, resistências, etc.)
-   - Configure faixas de preço
+   Você pode obter esses valores seguindo as instruções na aba "Configuração".
 
-3. Use "Buscar Itens" para uma pesquisa única ou "Iniciar Monitoramento" para pesquisas periódicas
+3. Clique em "Salvar Configuração"
+4. Vá para a aba "Rastreador PoE 2"
+5. Crie uma nova busca clicando em "+ Nova Busca"
+6. Configure seus filtros:
+   - Selecione a categoria de item (armas, armaduras, etc.)
+   - Defina o intervalo de preço
+   - Adicione filtros específicos para estatísticas (vida, resistências, etc.)
+   - Configure valores mínimos para DPS/PDPS se desejado
+7. Clique em "Buscar Itens" para uma pesquisa única ou "Monitorar" para pesquisas periódicas
 
-## Entendendo os IDs de Estatísticas
+## Entendendo a Análise de Divine Orb
 
-A API do PoE2 usa IDs específicos para cada estatística. Os IDs seguem o formato:
-- `explicit.stat_NUMEROID` (para afixos explícitos)
-- `implicit.stat_NUMEROID` (para afixos implícitos)
+O aplicativo analisa cada afixo dos itens encontrados para:
 
-Por exemplo:
-- Vida máxima: `explicit.stat_3299347043`
-- Resistência ao Fogo: `explicit.stat_3372524247`
+1. Calcular onde o valor atual se encontra na faixa possível
+2. Estimar quanto o item pode melhorar com o uso de Divine Orbs
+3. Calcular o DPS mínimo, médio e máximo possível para armas
+4. Fornecer uma estimativa de preço pós-Divine baseada em itens similares
 
-Os IDs internos foram mapeados para nomes legíveis na interface.
+Os itens são coloridos na lista de acordo com seu potencial:
+- **Verde**: Alto potencial (>65% de melhoria possível)
+- **Amarelo**: Médio potencial (35-65% de melhoria)
+- **Vermelho**: Baixo potencial (<35% de melhoria)
 
-## Análise de Divine Orb
+## Configuração Avançada
 
-O aplicativo analisa cada afixo dos itens para determinar se vale a pena usar um Divine Orb:
-
-- Verifica o percentil atual do valor do afixo
-- Calcula o ganho potencial com um reroll
-- Fornece recomendações baseadas na qualidade atual do item
-
-## Por que este método funciona?
-
-A API oficial do Path of Exile 2 usa proteção Cloudflare e requer autenticação para funcionar. O método implementado neste aplicativo:
-
-1. Utiliza cookies válidos do seu navegador (POESESSID e cf_clearance)
-2. Envia o User-Agent adequado para simular um navegador real
-3. Respeita os limites de taxa (rate limits) da API para evitar bloqueios
-4. Utiliza a mesma estrutura de requisições que o site oficial usa
-
-Isso permite contornar as proteções sem violar os termos de serviço, pois você está usando sua própria sessão autenticada.
+O arquivo `poe2_config.ini` é criado automaticamente no mesmo diretório do script e armazena:
+- Suas credenciais de autenticação
+- Preferência de tema (claro/escuro)
+- Outras configurações (configurável apenas editando o arquivo)
 
 ## Solução de Problemas
 
 - **Erro 403 (Forbidden)**: Seus cookies provavelmente expiraram. Atualize o POESESSID e cf_clearance.
 - **Erro 400 (Bad Request)**: Verifique se os filtros de estatísticas estão corretos.
 - **Erro 429 (Too Many Requests)**: A API está limitando suas requisições. Aumente o intervalo de monitoramento.
-- **npm start não funciona**: Use `npm run dev` em vez de `npm start` (este projeto usa Vite, não Create React App)
+- **Interface não aparece**: Verifique se o tkinter está instalado corretamente no seu sistema.
 
 ## Notas Importantes
 
