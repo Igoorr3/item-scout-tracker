@@ -1,47 +1,25 @@
-
 import { TrackingConfiguration } from '@/types/tracking';
 import { ApiCredentials } from '@/types/api';
-import { Item, ItemStat, DivineAnalysis } from '@/types/items';
+import { Item, ItemStat, DivineAnalysis, WeaponBase } from '@/types/items';
 import { analyzeDivineValue, STAT_RANGES, getStatLabel } from '@/data/statIds';
+import { findWeaponBase } from '@/data/weaponBases';
 
 const API_BASE_URL = '/api';
 
-// Weapon base data (simplified version)
-interface WeaponBase {
-  name: string;
-  baseDamage: [number, number]; // [min, max]
-  aps: number; // attacks per second
-  critChance: number;
-}
-
-// Sample weapon base data - would be expanded with data from poe2db.tw
-const WEAPON_BASES: Record<string, WeaponBase> = {
-  "Quarterstaff": { 
-    name: "Quarterstaff", 
-    baseDamage: [130, 240], 
-    aps: 1.3, 
-    critChance: 6.0 
-  },
-  "Striking Quarterstaff": { 
-    name: "Striking Quarterstaff", 
-    baseDamage: [200, 370], 
-    aps: 1.4, 
-    critChance: 10.0 
-  },
-  "Crossbow": { 
-    name: "Crossbow", 
-    baseDamage: [168, 315], 
-    aps: 1.1, 
-    critChance: 6.0 
-  },
-  "Engraved Crossbow": { 
-    name: "Engraved Crossbow", 
-    baseDamage: [220, 410], 
-    aps: 1.2, 
-    critChance: 7.5 
-  },
-  // Add more weapon bases as needed
-};
+// DPS-affecting mod IDs
+const DPS_AFFECTING_STAT_IDS = [
+  "explicit.stat_1509134228", // Increased Physical Damage
+  "explicit.stat_2901986750", // Increased Physical Damage (local)
+  "explicit.stat_1940865751", // Adds Physical Damage
+  "explicit.stat_210067635",  // Attack Speed
+  "explicit.stat_2923486259", // Attack Speed (local)
+  "explicit.stat_2628039082", // Critical Strike Chance
+  "explicit.stat_2311243048", // Critical Strike Multiplier
+  "explicit.stat_2301191210", // Critical Strike Multiplier
+  "explicit.stat_709508406",  // Adds Fire Damage
+  "explicit.stat_1999113824", // Adds Cold Damage
+  "explicit.stat_737908626",  // Adds Lightning Damage
+];
 
 export const fetchItems = async (config: TrackingConfiguration, apiConfig: ApiCredentials): Promise<Item[]> => {
   try {
@@ -128,8 +106,28 @@ export const fetchItems = async (config: TrackingConfiguration, apiConfig: ApiCr
     // Calcular preços previstos baseados no potencial Divine
     const itemsWithPredictedPrices = processedItems.map(calculatePredictedPrice);
     
-    // Ordenar itens por potencial de melhoria (do melhor para o pior)
-    return itemsWithPredictedPrices.sort((a, b) => {
+    // Calculate DPS and PDPS gain potentials for better sorting
+    const itemsWithDpsGainPotential = itemsWithPredictedPrices.map(item => {
+      if (!item.totalDps || !item.maxDps) return item;
+      
+      // Calculate potential gains as percentages
+      const dpsGainPotential = item.maxDps > item.totalDps 
+        ? ((item.maxDps - item.totalDps) / item.totalDps) * 100 
+        : 0;
+        
+      const pdpsGainPotential = item.physicalDps && item.maxPdps && item.maxPdps > item.physicalDps
+        ? ((item.maxPdps - item.physicalDps) / item.physicalDps) * 100
+        : 0;
+        
+      return {
+        ...item,
+        dpsGainPotential,
+        pdpsGainPotential
+      };
+    });
+    
+    // Default sorting - by divine potential
+    return itemsWithDpsGainPotential.sort((a, b) => {
       const aDivineWorth = Math.max(...(a.divineAnalysis?.map(d => d.potentialGain) || [0]));
       const bDivineWorth = Math.max(...(b.divineAnalysis?.map(d => d.potentialGain) || [0]));
       return bDivineWorth - aDivineWorth;
@@ -141,7 +139,7 @@ export const fetchItems = async (config: TrackingConfiguration, apiConfig: ApiCr
   }
 };
 
-export const testApiConnection = async (apiConfig: ApiCredentials): Promise<boolean> => {
+const testApiConnection = async (apiConfig: ApiCredentials): Promise<boolean> => {
   try {
     const testUrl = `${API_BASE_URL}/test`;
     
@@ -215,13 +213,16 @@ const buildSearchPayload = (config: TrackingConfiguration) => {
   return payload;
 };
 
-// Função para calcular DPS potencial com base nos modificadores
-const calculatePotentialDPS = (itemData: any, baseStats: any): { 
+const calculatePotentialDPS = (itemData: any): { 
   currentDps: number, 
   minDps: number, 
   maxDps: number,
   currentPdps: number,
-  maxPdps: number
+  minPdps: number,
+  maxPdps: number,
+  currentPhysDamageMin: number,
+  currentPhysDamageMax: number,
+  currentAttackSpeed: number
 } => {
   // Valores padrão
   let increasedPhysicalDamage = 0;
@@ -231,65 +232,61 @@ const calculatePotentialDPS = (itemData: any, baseStats: any): {
   let addedElementalMax = 0;
   let increasedAttackSpeed = 0;
   
-  // Base do item (se disponível)
-  let baseName = itemData.typeLine || "";
-  let baseItemData = WEAPON_BASES[baseName];
+  // Extract the base type name from the item
+  const baseTypeName = itemData.typeLine || "";
   
-  // Se não encontrar o nome exato, tentamos parcial
-  if (!baseItemData) {
-    for (const [name, data] of Object.entries(WEAPON_BASES)) {
-      if (baseName.includes(name)) {
-        baseItemData = data;
-        break;
+  // Get the base data from our database
+  const baseData = findWeaponBase(baseTypeName);
+  
+  if (!baseData) {
+    console.warn(`Base data not found for: ${baseTypeName}`);
+  }
+  
+  // Use base data or fallbacks if not found
+  const basePhysMin = baseData?.physDamageMin || 50;
+  const basePhysMax = baseData?.physDamageMax || 100;
+  const baseAPS = baseData?.attacksPerSecond || 1.3;
+  
+  // Check if weapon has elemental base damage
+  let baseEleMin = baseData?.eleDamageMin || 0;
+  let baseEleMax = baseData?.eleDamageMax || 0;
+  
+  // Pegar valores dos mods de explicit e implicit
+  const allMods = [
+    ...(itemData.explicitMods || []),
+    ...(itemData.implicitMods || [])
+  ];
+  
+  for (const mod of allMods) {
+    // Increased Physical Damage
+    if (mod.includes("increased Physical Damage")) {
+      const match = mod.match(/(\d+)%/);
+      if (match) increasedPhysicalDamage = parseInt(match[1], 10);
+    }
+    
+    // Added Physical Damage
+    if (mod.toLowerCase().includes("adds") && mod.includes("to") && mod.includes("physical damage")) {
+      const match = mod.match(/Adds (\d+) to (\d+) Physical Damage/i);
+      if (match) {
+        addedPhysicalMin = parseInt(match[1], 10);
+        addedPhysicalMax = parseInt(match[2], 10);
       }
     }
-  }
-  
-  // Valores padrão se não tivermos a base
-  let basePhysMin = 100;
-  let basePhysMax = 200;
-  let baseAPS = 1.3;
-  
-  // Se tivermos os dados da base, usamos eles
-  if (baseItemData) {
-    basePhysMin = baseItemData.baseDamage[0];
-    basePhysMax = baseItemData.baseDamage[1];
-    baseAPS = baseItemData.aps;
-  }
-  
-  // Pegar valores dos mods
-  if (itemData.explicitMods) {
-    for (const mod of itemData.explicitMods) {
-      // Increased Physical Damage
-      if (mod.includes("increased Physical Damage")) {
-        const match = mod.match(/(\d+)%/);
-        if (match) increasedPhysicalDamage = parseInt(match[1], 10);
+    
+    // Added Elemental Damage (all types)
+    if (mod.toLowerCase().includes("adds") && mod.includes("to") && 
+       (mod.includes("Fire Damage") || mod.includes("Cold Damage") || mod.includes("Lightning Damage") || mod.includes("Chaos Damage"))) {
+      const match = mod.match(/Adds (\d+) to (\d+)/);
+      if (match) {
+        addedElementalMin += parseInt(match[1], 10);
+        addedElementalMax += parseInt(match[2], 10);
       }
-      
-      // Added Physical Damage
-      if (mod.toLowerCase().includes("adds") && mod.includes("to") && mod.includes("physical damage")) {
-        const match = mod.match(/Adds (\d+) to (\d+) Physical Damage/i);
-        if (match) {
-          addedPhysicalMin = parseInt(match[1], 10);
-          addedPhysicalMax = parseInt(match[2], 10);
-        }
-      }
-      
-      // Added Elemental Damage (simplificado para qualquer tipo de dano elemental)
-      if (mod.toLowerCase().includes("adds") && mod.includes("to") && 
-         (mod.includes("Fire Damage") || mod.includes("Cold Damage") || mod.includes("Lightning Damage"))) {
-        const match = mod.match(/Adds (\d+) to (\d+)/);
-        if (match) {
-          addedElementalMin += parseInt(match[1], 10);
-          addedElementalMax += parseInt(match[2], 10);
-        }
-      }
-      
-      // Increased Attack Speed
-      if (mod.includes("increased Attack Speed")) {
-        const match = mod.match(/(\d+)%/);
-        if (match) increasedAttackSpeed = parseInt(match[1], 10);
-      }
+    }
+    
+    // Increased Attack Speed
+    if (mod.includes("increased Attack Speed")) {
+      const match = mod.match(/(\d+)%/);
+      if (match) increasedAttackSpeed = parseInt(match[1], 10);
     }
   }
   
@@ -299,7 +296,7 @@ const calculatePotentialDPS = (itemData: any, baseStats: any): {
   let addedPhysDamageMaxRange = [0, 0];
   let attackSpeedRange = [0, 0];
   
-  // Extrair os ranges das estatísticas
+  // Extrair os ranges das estatísticas da API
   if (itemData.extended?.hashes?.explicit) {
     for (const hash of itemData.extended.hashes.explicit) {
       const statId = hash[0];
@@ -322,7 +319,7 @@ const calculatePotentialDPS = (itemData: any, baseStats: any): {
             const magnitudes = mod.magnitudes.filter((m: any) => m.hash === statId);
             if (magnitudes.length >= 2) {
               addedPhysDamageMinRange = [magnitudes[0].min, magnitudes[0].max];
-              addedPhysDamageMaxRange = [magnitudes[1].min, magnitudes[1].max];
+              addedPhysDamageMaxRange = [magnitudes[1].min, magnatures[1].max];
             }
           }
         }
@@ -341,79 +338,122 @@ const calculatePotentialDPS = (itemData: any, baseStats: any): {
     }
   }
   
-  // Calcular valores atuais de dano físico
+  // CURRENT VALUES CALCULATION
+  
+  // Physical damage calculation
   const physDamageMult = 1 + (increasedPhysicalDamage / 100);
   const currentPhysMin = (basePhysMin * physDamageMult) + addedPhysicalMin;
   const currentPhysMax = (basePhysMax * physDamageMult) + addedPhysicalMax;
   
-  // Calcular APS atual
+  // Attack speed calculation
   const currentAPS = baseAPS * (1 + (increasedAttackSpeed / 100));
   
-  // Calcular DPS atual
+  // DPS calculations
   const currentPhysDps = ((currentPhysMin + currentPhysMax) / 2) * currentAPS;
-  const currentEleDps = ((addedElementalMin + addedElementalMax) / 2) * currentAPS;
+  
+  // Handle base elemental damage + added elemental damage
+  const currentEleDps = ((baseEleMin + baseEleMax) / 2 + (addedElementalMin + addedElementalMax) / 2) * currentAPS;
   const currentTotalDps = currentPhysDps + currentEleDps;
   
-  // Calcular DPS máximo possível (com rolls perfeitos)
+  // MAXIMUM VALUES CALCULATION
+  
+  // Max increased phys damage
   const maxIncreasedPhys = incPhysDamageRange[1] || increasedPhysicalDamage;
   const maxPhysDamageMult = 1 + (maxIncreasedPhys / 100);
   
+  // Max added phys damage
   const maxAddedPhysMin = addedPhysDamageMinRange[1] || addedPhysicalMin;
   const maxAddedPhysMax = addedPhysDamageMaxRange[1] || addedPhysicalMax;
   
+  // Max attack speed
   const maxAttackSpeed = attackSpeedRange[1] || increasedAttackSpeed;
   const maxAPS = baseAPS * (1 + (maxAttackSpeed / 100));
   
+  // Max damage values
   const maxPhysMin = (basePhysMin * maxPhysDamageMult) + maxAddedPhysMin;
   const maxPhysMax = (basePhysMax * maxPhysDamageMult) + maxAddedPhysMax;
   
+  // Max DPS
   const maxPhysDps = ((maxPhysMin + maxPhysMax) / 2) * maxAPS;
-  const maxTotalDps = maxPhysDps + currentEleDps; // Mantemos os elemental damage atuais
+  const maxTotalDps = maxPhysDps + currentEleDps; // Keep current ele damage
   
-  // Calcular DPS mínimo possível (com rolls ruins)
+  // MINIMUM VALUES CALCULATION
+  
+  // Min increased phys damage
   const minIncreasedPhys = incPhysDamageRange[0] || increasedPhysicalDamage;
   const minPhysDamageMult = 1 + (minIncreasedPhys / 100);
   
+  // Min added phys damage
   const minAddedPhysMin = addedPhysDamageMinRange[0] || addedPhysicalMin;
   const minAddedPhysMax = addedPhysDamageMaxRange[0] || addedPhysicalMax;
   
+  // Min attack speed
   const minAttackSpeed = attackSpeedRange[0] || increasedAttackSpeed;
   const minAPS = baseAPS * (1 + (minAttackSpeed / 100));
   
+  // Min damage values
   const minPhysMin = (basePhysMin * minPhysDamageMult) + minAddedPhysMin;
   const minPhysMax = (basePhysMax * minPhysDamageMult) + minAddedPhysMax;
   
+  // Min DPS
   const minPhysDps = ((minPhysMin + minPhysMax) / 2) * minAPS;
-  const minTotalDps = minPhysDps + currentEleDps; // Mantemos os elemental damage atuais
+  const minTotalDps = minPhysDps + currentEleDps; // Keep current ele damage
   
   return {
-    currentDps: currentTotalDps,
-    minDps: minTotalDps,
-    maxDps: maxTotalDps,
-    currentPdps: currentPhysDps,
-    maxPdps: maxPhysDps
+    currentDps: parseFloat(currentTotalDps.toFixed(2)),
+    minDps: parseFloat(minTotalDps.toFixed(2)),
+    maxDps: parseFloat(maxTotalDps.toFixed(2)),
+    currentPdps: parseFloat(currentPhysDps.toFixed(2)),
+    minPdps: parseFloat(minPhysDps.toFixed(2)),
+    maxPdps: parseFloat(maxPhysDps.toFixed(2)),
+    currentPhysDamageMin: parseFloat(currentPhysMin.toFixed(2)),
+    currentPhysDamageMax: parseFloat(currentPhysMax.toFixed(2)),
+    currentAttackSpeed: parseFloat(currentAPS.toFixed(2))
   };
 };
 
-// Calcula o preço previsto baseado na melhoria potencial
 const calculatePredictedPrice = (item: Item): Item => {
   if (!item.divineAnalysis || item.divineAnalysis.length === 0) {
     return item;
   }
   
-  // Calculamos o potencial de ganho em percentual 
-  const maxPotentialGain = Math.max(...item.divineAnalysis.map(a => a.potentialGain));
+  // Focus on DPS-affecting mods for weapons
+  const dpsAffectingMods = item.divineAnalysis.filter(a => a.affectsDps === true);
   
-  // Um modelo simples: 
-  // - Se podemos ganhar até 20%, aumentamos o preço em até 10%
-  // - Se podemos ganhar 20-50%, aumentamos o preço em até 30%
-  // - Se podemos ganhar >50%, aumentamos o preço em até 50%
+  // For weapons, primarily look at DPS gains
+  let maxPotentialGain = 0;
+  let isWeapon = false;
+  
+  if (item.totalDps && item.maxDps) {
+    isWeapon = true;
+    const dpsGain = ((item.maxDps - item.totalDps) / item.totalDps) * 100;
+    maxPotentialGain = Math.max(dpsGain, maxPotentialGain);
+  }
+  
+  // If it's not a weapon or we don't have DPS values, use the general mod potential
+  if (!isWeapon || maxPotentialGain < 10) {
+    // Use DPS-affecting mods first if available
+    if (dpsAffectingMods.length > 0) {
+      maxPotentialGain = Math.max(...dpsAffectingMods.map(a => a.potentialGain));
+    } else {
+      // Otherwise use all mods
+      maxPotentialGain = Math.max(...item.divineAnalysis.map(a => a.potentialGain));
+    }
+  }
+  
+  // Price model:
+  // - Up to 15% gain: minimal price increase
+  // - 15-30% gain: moderate price increase
+  // - 30-50% gain: significant price increase
+  // - >50% gain: large price increase
   let priceMultiplier = 1;
   
   if (maxPotentialGain >= 50) {
+    priceMultiplier = 1.75; // +75%
+  } else if (maxPotentialGain >= 30) {
     priceMultiplier = 1.5; // +50%
-  } else if (maxPotentialGain >= 20) {
-    priceMultiplier = 1.3; // +30%
+  } else if (maxPotentialGain >= 15) {
+    priceMultiplier = 1.25; // +25%
   } else if (maxPotentialGain > 0) {
     priceMultiplier = 1.1; // +10%
   }
@@ -431,6 +471,10 @@ const calculatePredictedPrice = (item: Item): Item => {
 const processItem = (item: any, queryId: string): Item => {
   const itemData = item.item || {};
   const listingData = item.listing || {};
+  
+  // Extract the base type
+  const typeLine = itemData.typeLine || "";
+  const baseType = itemData.baseType || typeLine;
   
   // Extrair stats básicos
   const stats: ItemStat[] = [];
@@ -455,35 +499,65 @@ const processItem = (item: any, queryId: string): Item => {
     });
   }
   
-  // Calcular DPS e pDPS
+  // Calcular DPS avançado para armas
+  let dpsValues = {
+    currentDps: 0,
+    minDps: 0,
+    maxDps: 0,
+    currentPdps: 0,
+    minPdps: 0,
+    maxPdps: 0,
+    currentPhysDamageMin: 0,
+    currentPhysDamageMax: 0,
+    currentAttackSpeed: 0
+  };
+  
   let totalDps: number | undefined = undefined;
   let physicalDps: number | undefined = undefined;
   let elementalDps: number | undefined = undefined;
   let minDps: number | undefined = undefined;
   let maxDps: number | undefined = undefined;
+  let minPdps: number | undefined = undefined;
   let maxPdps: number | undefined = undefined;
+  let currentPhysDamageMin: number | undefined = undefined;
+  let currentPhysDamageMax: number | undefined = undefined;
+  let currentAttackSpeed: number | undefined = undefined;
   
-  // Calcular DPS usando nossa função avançada
-  if (itemData.typeLine && 
-      (itemData.typeLine.includes("Sword") || 
-       itemData.typeLine.includes("Axe") || 
-       itemData.typeLine.includes("Mace") || 
-       itemData.typeLine.includes("Staff") ||
-       itemData.typeLine.includes("Quarterstaff") ||
-       itemData.typeLine.includes("Bow") ||
-       itemData.typeLine.includes("Crossbow") ||
-       itemData.typeLine.includes("Wand") ||
-       itemData.typeLine.includes("Sceptre"))) {
+  // Identificar se é uma arma pela categoria ou tipo
+  const isWeapon = 
+    typeLine.includes("Sword") || 
+    typeLine.includes("Axe") || 
+    typeLine.includes("Mace") || 
+    typeLine.includes("Staff") ||
+    typeLine.includes("Quarterstaff") ||
+    typeLine.includes("Bow") ||
+    typeLine.includes("Crossbow") ||
+    typeLine.includes("Spear") ||
+    typeLine.includes("Wand") ||
+    typeLine.includes("Sceptre") ||
+    typeLine.includes("Dagger") ||
+    typeLine.includes("Hammer") ||
+    typeLine.includes("Greathammer") ||
+    typeLine.includes("Flail") ||
+    typeLine.includes("Claw");
+  
+  if (isWeapon) {
+    // Usar nossa função avançada de cálculo de DPS
+    dpsValues = calculatePotentialDPS(itemData);
     
-    const dpsValues = calculatePotentialDPS(itemData, {});
-    totalDps = Math.round(dpsValues.currentDps * 10) / 10;
-    physicalDps = Math.round(dpsValues.currentPdps * 10) / 10;
-    elementalDps = Math.round((dpsValues.currentDps - dpsValues.currentPdps) * 10) / 10;
-    minDps = Math.round(dpsValues.minDps * 10) / 10;
-    maxDps = Math.round(dpsValues.maxDps * 10) / 10;
-    maxPdps = Math.round(dpsValues.maxPdps * 10) / 10;
+    totalDps = dpsValues.currentDps;
+    physicalDps = dpsValues.currentPdps;
+    elementalDps = totalDps - physicalDps;
+    minDps = dpsValues.minDps;
+    maxDps = dpsValues.maxDps;
+    minPdps = dpsValues.minPdps;
+    maxPdps = dpsValues.maxPdps;
+    currentPhysDamageMin = dpsValues.currentPhysDamageMin;
+    currentPhysDamageMax = dpsValues.currentPhysDamageMax;
+    currentAttackSpeed = dpsValues.currentAttackSpeed;
+    
   } else if (itemData.properties) {
-    // Fallback para o método simples
+    // Fallback para o método simples (para itens não-armas)
     const dpsProperty = itemData.properties.find((p: any) => p.name === "Total DPS" || p.name.includes("DPS"));
     if (dpsProperty && dpsProperty.values && dpsProperty.values.length > 0) {
       totalDps = parseFloat(dpsProperty.values[0][0]);
@@ -503,18 +577,42 @@ const processItem = (item: any, queryId: string): Item => {
   // Adicionar mods explícitos e calcular potencial Divine
   const divineAnalysis: DivineAnalysis[] = [];
   
+  // Mapear stat IDs para os mods (para identificar quais afetam DPS)
+  const modStatIdMap = new Map<string, string>();
+  
+  if (itemData.extended?.hashes?.explicit) {
+    for (const hashEntry of itemData.extended.hashes.explicit) {
+      if (Array.isArray(hashEntry) && hashEntry.length >= 2) {
+        const statId = hashEntry[0];
+        const indices = hashEntry[1];
+        
+        if (Array.isArray(indices)) {
+          for (const idx of indices) {
+            // Converter o índice para string para usar como chave no mapa
+            modStatIdMap.set(idx.toString(), statId);
+          }
+        }
+      }
+    }
+  }
+  
   if (itemData.explicitMods) {
     itemData.explicitMods.forEach((mod: string, index: number) => {
+      // Get statId for this mod if available
+      const statId = modStatIdMap.get(index.toString());
+      
+      // Verificar se o mod afeta DPS (importante para armas)
+      const affectsDps = statId && DPS_AFFECTING_STAT_IDS.includes(statId);
+      
       // Encontrar o stat correspondente a este mod
-      const matchingStat = Object.entries(STAT_RANGES).find(([statId, range]) => {
-        const statLabel = getStatLabel(statId);
-        return mod.includes(statLabel);
+      const matchingStat = Object.entries(STAT_RANGES).find(([id, range]) => {
+        return id === statId || mod.includes(getStatLabel(id));
       });
       
       if (matchingStat) {
         const [statId, range] = matchingStat;
         
-        // Extrair o valor numérico do mod
+        // Extract the numeric value from the mod
         const valueMatch = mod.match(/(\d+(\.\d+)?)/);
         if (valueMatch) {
           const value = parseFloat(valueMatch[0]);
@@ -527,30 +625,30 @@ const processItem = (item: any, queryId: string): Item => {
             isAffix: true
           });
           
-          // Analisar se vale a pena usar Divine
+          // Analyze Divine worth
           const analysis = analyzeDivineValue(statId, value);
           
-          // Adicionar estatísticas extras à análise para mostrar na UI
+          // Add extra stats to analysis for UI display
           const enhancedAnalysis: DivineAnalysis = {
             ...analysis,
             statName: getStatLabel(statId),
             statId,
             currentValue: value,
             minValue: range.min,
-            maxValue: range.max
+            maxValue: range.max,
+            affectsDps
           };
           
           divineAnalysis.push(enhancedAnalysis);
         }
       } else {
-        // Se não encontramos o stat correspondente, adicionamos apenas o texto
-        // Mas antes tentamos extrair valores com range entre colchetes
+        // Try to extract values with range in brackets
         const rangeMatch = mod.match(/(.*?)(\s+\[.*?\])?$/);
         if (rangeMatch) {
           const modText = rangeMatch[1].trim();
           const rangeText = rangeMatch[2]?.trim() || "";
           
-          // Extrair os valores min e max do range se disponível
+          // Extract min/max values from range if available
           let min: number | undefined = undefined;
           let max: number | undefined = undefined;
           
@@ -570,19 +668,29 @@ const processItem = (item: any, queryId: string): Item => {
             isAffix: true
           });
           
-          // Se temos min e max, podemos tentar extrair o valor atual também
+          // Check if this mod affects DPS by keyword matching
+          const isDpsMod = 
+            (modText.includes("Physical Damage") && !modText.includes("taken")) ||
+            modText.includes("Attack Speed") ||
+            (modText.includes("Critical") && (modText.includes("Chance") || modText.includes("Multiplier"))) ||
+            (modText.toLowerCase().includes("adds") && 
+              (modText.includes("Fire Damage") || modText.includes("Cold Damage") || 
+               modText.includes("Lightning Damage") || modText.includes("Chaos Damage")));
+          
+          // If we have min/max, try to extract current value and calculate percentile
           if (min !== undefined && max !== undefined) {
             const valueMatch = modText.match(/(\d+(\.\d+)?)/);
             if (valueMatch) {
               const currentValue = parseFloat(valueMatch[0]);
               
-              // Calcular a porcentagem em relação ao máximo
+              // Calculate percentile relative to max
               const range = max - min;
               if (range > 0) {
                 const percentile = Math.round(((currentValue - min) / range) * 100);
                 const potentialGain = Math.round(((max - currentValue) / currentValue) * 100);
                 
-                const worthDivine = potentialGain >= 15; // Consideramos valer a pena se puder melhorar 15% ou mais
+                // Consider worth divine if potential gain is significant and affects DPS
+                const worthDivine = isDpsMod ? potentialGain >= 10 : potentialGain >= 15;
                 
                 divineAnalysis.push({
                   worthDivine,
@@ -594,7 +702,8 @@ const processItem = (item: any, queryId: string): Item => {
                   statName: modText,
                   currentValue,
                   minValue: min,
-                  maxValue: max
+                  maxValue: max,
+                  affectsDps: isDpsMod
                 });
               }
             }
@@ -622,7 +731,7 @@ const processItem = (item: any, queryId: string): Item => {
   let listedTime = "";
   if (listingData.indexed) {
     const date = new Date(listingData.indexed);
-    listedTime = `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+    listedTime = `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() +.1).toString().padStart(2, '0')}/${date.getFullYear().toString().slice(-2)} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
   }
   
   // URL para o item no site
@@ -631,8 +740,9 @@ const processItem = (item: any, queryId: string): Item => {
   // Montar o objeto final
   const processedItem: Item = {
     id: item.id,
-    name: `${itemData.name || ""} ${itemData.typeLine || ""}`.trim(),
-    category: itemData.typeLine || "",
+    name: `${itemData.name || ""} ${typeLine || ""}`.trim(),
+    category: typeLine || "",
+    baseType: baseType,
     rarity: itemData.rarity || "normal",
     price,
     currency,
@@ -643,7 +753,11 @@ const processItem = (item: any, queryId: string): Item => {
     elementalDps,
     minDps,
     maxDps,
+    minPdps,
     maxPdps,
+    currentPhysDamageMin,
+    currentPhysDamageMax,
+    currentAttackSpeed,
     seller,
     listedTime,
     tradeUrl

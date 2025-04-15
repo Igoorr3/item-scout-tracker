@@ -17,7 +17,7 @@ export interface DivineAnalysis {
   currentValue?: number;
   minValue?: number;
   maxValue?: number;
-  affectsDps?: boolean; // Added to track whether a mod affects weapon DPS
+  affectsDps?: boolean; // Tracks whether a mod affects weapon DPS
 }
 
 export interface WeaponBase {
@@ -38,7 +38,7 @@ export interface Item {
   id: string;
   name: string;
   category: string;
-  baseType: string; // Added to track the specific base type
+  baseType: string; // The specific base type
   rarity: string; // normal, magic, rare, unique
   price: number;
   currency: string;
@@ -47,7 +47,7 @@ export interface Item {
   stats: ItemStat[];
   divineAnalysis?: DivineAnalysis[];
   
-  // Split DPS values more explicitly
+  // Split DPS values
   totalDps?: number;
   physicalDps?: number;
   elementalDps?: number;
