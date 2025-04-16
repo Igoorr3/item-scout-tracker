@@ -43,23 +43,6 @@ STAT_MAP = {
     "Adds # to # Fire Damage": "explicit.stat_709508406",    # Flat Fire
     "+# to Level of all Projectile Skills": "explicit.stat_1202301673"
 }
-
-# Lista de mods que afetam diretamente o DPS
-DPS_AFFECTING_STATS = [
-    "explicit.stat_1509134228",  # Increased Physical Damage
-    "explicit.stat_2901986750",  # Increased Physical Damage (local)
-    "explicit.stat_1940865751",  # Adds Physical Damage
-    "explicit.stat_210067635",   # Attack Speed
-    "explicit.stat_2923486259",  # Attack Speed (local)
-    "explicit.stat_2628039082",  # Critical Strike Chance
-    "explicit.stat_2311243048",  # Critical Strike Multiplier
-    "explicit.stat_2301191210",  # Critical Strike Multiplier
-    "explicit.stat_709508406",   # Adds Fire Damage
-    "explicit.stat_1999113824",  # Adds Cold Damage
-    "explicit.stat_737908626",   # Adds Lightning Damage
-    "explicit.stat_1202301673",  # +# to Level of all Projectile Skills
-]
-
 ITEM_CATEGORIES = {
     "Any": "any", "Any Weapon": "weapon", "Any One-Handed Melee Weapon": "weapon.one", "Unarmed": "weapon.unarmed",
     "Claw": "weapon.claw", "Dagger": "weapon.dagger", "One-Handed Sword": "weapon.onesword", "One-Handed Axe": "weapon.oneaxe",
@@ -73,197 +56,26 @@ ITEM_CATEGORIES = {
     "Focus": "armour.focus", "Buckler": "armour.buckler", "Any Accessory": "accessory", "Amulet": "accessory.amulet",
     "Belt": "accessory.belt", "Ring": "accessory.ring",
 }
-
-# Base de dados das armas do PoE2 (adicionado com base nas informações fornecidas)
-WEAPON_BASES = {
-    # Quarterstaffs
-    "Sinister Quarterstaff": {
-        "physDamageMin": 55, "physDamageMax": 92,
-        "critChance": 11.5, "attacksPerSecond": 1.4, "weaponRange": 1.3
-    },
-    "Lunar Quarterstaff": {
-        "physDamageMin": 50, "physDamageMax": 103,
-        "critChance": 10.0, "attacksPerSecond": 1.5, "weaponRange": 1.3
-    },
-    "Striking Quarterstaff": {
-        "physDamageMin": 53, "physDamageMax": 111,
-        "critChance": 10.0, "attacksPerSecond": 1.4, "weaponRange": 1.3,
-        "implicitMod": "16% increased Melee Strike Range with this weapon"
-    },
-    "Bolting Quarterstaff": {
-        "physDamageMin": 0, "physDamageMax": 0,
-        "eleDamageMin": 43, "eleDamageMax": 172, "eleDamageType": "lightning",
-        "critChance": 10.0, "attacksPerSecond": 1.4, "weaponRange": 1.3,
-        "implicitMod": "100% of Physical Damage Converted to Lightning Damage"
-    },
-    "Aegis Quarterstaff": {
-        "physDamageMin": 58, "physDamageMax": 97,
-        "critChance": 10.0, "attacksPerSecond": 1.4, "weaponRange": 1.3,
-        "implicitMod": "+(10–15)% to Block chance"
-    },
-    "Razor Quarterstaff": {
-        "physDamageMin": 65, "physDamageMax": 108,
-        "critChance": 10.0, "attacksPerSecond": 1.4, "weaponRange": 1.3
-    },
-    "Quarterstaff": {
-        "physDamageMin": 50, "physDamageMax": 90,
-        "critChance": 10.0, "attacksPerSecond": 1.4, "weaponRange": 1.3
-    },
-    
-    # Two-handed Maces
-    "Anvil Maul": {
-        "physDamageMin": 112, "physDamageMax": 151,
-        "critChance": 5.0, "attacksPerSecond": 1.05, "weaponRange": 1.3
-    },
-    "Sacred Maul": {
-        "physDamageMin": 76, "physDamageMax": 158,
-        "critChance": 5.0, "attacksPerSecond": 1.2, "weaponRange": 1.3
-    },
-    "Ironwood Greathammer": {
-        "physDamageMin": 94, "physDamageMax": 174,
-        "critChance": 5.0, "attacksPerSecond": 1.05, "weaponRange": 1.3,
-        "implicitMod": "Causes (30–50)% increased Stun Buildup"
-    },
-    "Fanatic Greathammer": {
-        "physDamageMin": 89, "physDamageMax": 120,
-        "critChance": 5.0, "attacksPerSecond": 1.05, "weaponRange": 1.3,
-        "implicitMod": "Strikes deal Splash damage to targets within 1.5 metres"
-    },
-    "Ruination Maul": {
-        "physDamageMin": 113, "physDamageMax": 138,
-        "critChance": 5.0, "attacksPerSecond": 1.1, "weaponRange": 1.3,
-        "implicitMod": "Causes Enemies to Explode on Critical kill, for 10% of their Life as Physical Damage"
-    },
-    "Massive Greathammer": {
-        "physDamageMin": 119, "physDamageMax": 161,
-        "critChance": 5.0, "attacksPerSecond": 1.1, "weaponRange": 1.3
-    },
-    
-    # Crossbows
-    "Stout Crossbow": {
-        "physDamageMin": 30, "physDamageMax": 119,
-        "critChance": 5.0, "attacksPerSecond": 1.55, "reloadTime": 0.75
-    },
-    "Engraved Crossbow": {
-        "physDamageMin": 31, "physDamageMax": 124,
-        "critChance": 5.0, "attacksPerSecond": 1.6, "reloadTime": 0.8
-    },
-    "Flexed Crossbow": {
-        "physDamageMin": 32, "physDamageMax": 127,
-        "critChance": 5.0, "attacksPerSecond": 1.6, "reloadTime": 0.85,
-        "implicitMod": "(20–30)% increased Bolt Speed"
-    },
-    "Gemini Crossbow": {
-        "physDamageMin": 28, "physDamageMax": 112,
-        "critChance": 5.0, "attacksPerSecond": 1.6, "reloadTime": 1.1,
-        "implicitMod": "Loads an additional bolt"
-    },
-    "Siege Crossbow": {
-        "physDamageMin": 29, "physDamageMax": 115,
-        "critChance": 5.0, "attacksPerSecond": 1.65, "reloadTime": 0.75,
-        "implicitMod": "Grenade Skills Fire an additional Projectile"
-    },
-    "Desolate Crossbow": {
-        "physDamageMin": 33, "physDamageMax": 132,
-        "critChance": 5.0, "attacksPerSecond": 1.6, "reloadTime": 0.8
-    },
-    
-    # Bows
-    "Ironwood Shortbow": {
-        "physDamageMin": 41, "physDamageMax": 76,
-        "critChance": 5.0, "attacksPerSecond": 1.25
-    },
-    "Cavalry Bow": {
-        "physDamageMin": 49, "physDamageMax": 82,
-        "critChance": 5.0, "attacksPerSecond": 1.2
-    },
-    "Guardian Bow": {
-        "physDamageMin": 53, "physDamageMax": 80,
-        "critChance": 5.0, "attacksPerSecond": 1.15,
-        "implicitMod": "(20–30)% chance to Chain an additional time"
-    },
-    "Gemini Bow": {
-        "physDamageMin": 39, "physDamageMax": 73,
-        "critChance": 5.0, "attacksPerSecond": 1.2,
-        "implicitMod": "Bow Attacks fire an additional Arrow"
-    },
-    "Fanatic Bow": {
-        "physDamageMin": 0, "physDamageMax": 0,
-        "eleDamageMin": 52, "eleDamageMax": 87, "eleDamageType": "chaos",
-        "critChance": 5.0, "attacksPerSecond": 1.2,
-        "implicitMod": "100% of Physical Damage Converted to Chaos Damage"
-    },
-    "Warmonger Bow": {
-        "physDamageMin": 56, "physDamageMax": 84,
-        "critChance": 5.0, "attacksPerSecond": 1.2
-    },
-    
-    # Spears
-    "Orichalcum Spear": {
-        "physDamageMin": 38, "physDamageMax": 70,
-        "critChance": 5.0, "attacksPerSecond": 1.6, "weaponRange": 1.5,
-        "implicitMod": "Grants Skill: Spear Throw"
-    },
-    "Pronged Spear": {
-        "physDamageMin": 40, "physDamageMax": 75,
-        "critChance": 5.0, "attacksPerSecond": 1.6, "weaponRange": 1.5,
-        "implicitMod": "Grants Skill: Spear Throw"
-    },
-    "Stalking Spear": {
-        "physDamageMin": 44, "physDamageMax": 82,
-        "critChance": 5.0, "attacksPerSecond": 1.55, "weaponRange": 1.5,
-        "implicitMod": "Grants Skill: Spear Throw\n(15–25)% chance to Maim on Hit"
-    },
-    "Flying Spear": {
-        "physDamageMin": 41, "physDamageMax": 76,
-        "critChance": 5.0, "attacksPerSecond": 1.6, "weaponRange": 1.5,
-        "implicitMod": "Grants Skill: Spear Throw\n(25–35)% increased Projectile Speed with this Weapon"
-    },
-    "Grand Spear": {
-        "physDamageMin": 46, "physDamageMax": 85,
-        "critChance": 5.0, "attacksPerSecond": 1.5, "weaponRange": 1.5,
-        "implicitMod": "Grants Skill: Spear Throw"
-    },
-    "Spiked Spear": {
-        "physDamageMin": 41, "physDamageMax": 76,
-        "critChance": 6.5, "attacksPerSecond": 1.6, "weaponRange": 1.5,
-        "implicitMod": "Grants Skill: Spear Throw"
-    },
-    
-    # One-handed Maces
-    "Flanged Mace": {
-        "physDamageMin": 45, "physDamageMax": 67,
-        "critChance": 5.0, "attacksPerSecond": 1.55, "weaponRange": 1.1
-    },
-    "Crown Mace": {
-        "physDamageMin": 43, "physDamageMax": 89,
-        "critChance": 5.0, "attacksPerSecond": 1.4, "weaponRange": 1.1
-    },
-    "Molten Hammer": {
-        "physDamageMin": 30.5, "physDamageMax": 50.5,
-        "eleDamageMin": 30.5, "eleDamageMax": 50.5, "eleDamageType": "fire",
-        "critChance": 5.0, "attacksPerSecond": 1.45, "weaponRange": 1.1,
-        "implicitMod": "50% of Physical Damage Converted to Fire Damage"
-    },
-    "Strife Pick": {
-        "physDamageMin": 49, "physDamageMax": 66,
-        "critChance": 7.0, "attacksPerSecond": 1.45, "weaponRange": 1.1,
-        "implicitMod": "+(10–15)% to Critical Damage Bonus"
-    },
-    "Fortified Hammer": {
-        "physDamageMin": 60, "physDamageMax": 73,
-        "critChance": 5.0, "attacksPerSecond": 1.4, "weaponRange": 1.1,
-        "implicitMod": "Causes Daze buildup equal to 100% of Damage dealt"
-    },
-    "Marauding Mace": {
-        "physDamageMin": 51, "physDamageMax": 84,
-        "critChance": 5.0, "attacksPerSecond": 1.45, "weaponRange": 1.1
-    }
-}
-
 CURRENCIES = [
     "divine", "exalted", "chaos", "alchemy", "annulment", "regal", "vaal",
     "augmentation", "transmutation", "mirror", "gold"
+]
+
+# --- Novos Mapeamentos de DPS para Divine ---
+# Mods que realmente afetam o DPS para armas
+DAMAGE_MODS = [
+    "Increased Physical Damage",
+    "Adds # to # Physical Damage",
+    "Attack Speed",
+    "Critical Strike Chance",
+    "+#% Critical Strike Chance",
+    "Critical Strike Multiplier",
+    "+#% Critical Strike Multiplier",
+    "Critical Damage Bonus",
+    "Adds # to # Fire Damage",
+    "Adds # to # Cold Damage",
+    "Adds # to # Lightning Damage",
+    "+# to Level of all Projectile Skills"
 ]
 
 # --- Definições de Cores (LIGHT_COLORS, DARK_COLORS) (Mantidas Iguais) ---
@@ -374,8 +186,8 @@ class PoeTracker:
         self.sort_column = None # Coluna de ordenação ativa (global)
         self.sort_reverse = False # Direção da ordenação (global)
         
-        # Preferência para visualização de DPS/PDPS (nova opção)
-        self.dps_display_mode = tk.StringVar(value="both")  # 'dps', 'pdps', ou 'both'
+        # --- Nova variável para controlar o modo de visualização de DPS ---
+        self.dps_display_mode = tk.StringVar(value="Both") # "DPS", "PDPS", ou "Both"
 
         # --- Gerenciamento de Abas de Busca ---
         self.search_tabs_data = {} # Dicionário principal: {tab_id: {data...}, ...}
@@ -383,7 +195,7 @@ class PoeTracker:
         self.active_tab_id = None # ID da aba atualmente visível
 
         # --- Título e Geometria ---
-        self.root.title("Path of Exile 2 - Item Tracker (v42.0 - Análise de DPS Melhorada)") # Título Atualizado
+        self.root.title("Path of Exile 2 - Item Tracker (v41.0 - Abas Múltiplas)") # Título Atualizado
         self.root.geometry("1550x850") # Aumentado para acomodar melhor
 
         self.create_ui()
@@ -461,15 +273,17 @@ IMPORTANTE:
 
         rename_tab_button = ttk.Button(tab_control_frame, text="Renomear Busca", command=self.rename_search_tab, style='TButton')
         rename_tab_button.pack(side=tk.LEFT, padx=5)
-        
-        # Adicionando controle para modo de visualização DPS/PDPS
-        ttk.Label(tab_control_frame, text="Modo de DPS:", style='TLabel').pack(side=tk.LEFT, padx=(20, 5))
-        dps_mode_combo = ttk.Combobox(tab_control_frame, textvariable=self.dps_display_mode, width=10, style='TCombobox', 
-                                      values=["both", "dps", "pdps"])
-        dps_mode_combo.pack(side=tk.LEFT, padx=5)
-        dps_mode_combo.current(0)  # Valor padrão "both"
-        self.dps_display_mode.trace_add("write", self.on_dps_mode_change)
 
+        # --- Controles para Modo de DPS ---
+        dps_mode_frame = ttk.Frame(tab_control_frame, style='TFrame')
+        dps_mode_frame.pack(side=tk.RIGHT, padx=10)
+        ttk.Label(dps_mode_frame, text="Modo DPS:", style='TLabel').pack(side=tk.LEFT, padx=(0, 5))
+        ttk.Radiobutton(dps_mode_frame, text="DPS", variable=self.dps_display_mode, value="DPS", 
+                     command=self.update_dps_display).pack(side=tk.LEFT)
+        ttk.Radiobutton(dps_mode_frame, text="PDPS", variable=self.dps_display_mode, value="PDPS", 
+                     command=self.update_dps_display).pack(side=tk.LEFT)
+        ttk.Radiobutton(dps_mode_frame, text="Ambos", variable=self.dps_display_mode, value="Both", 
+                     command=self.update_dps_display).pack(side=tk.LEFT)
 
         # Notebook interno para as abas de busca
         self.search_notebook = ttk.Notebook(tracker_base_frame, style='TNotebook')
@@ -487,19 +301,6 @@ IMPORTANTE:
         # Adiciona a primeira aba de busca ao iniciar
         if not self.search_tabs_data:
              self.add_search_tab() # Nome padrão será gerado
-
-    def on_dps_mode_change(self, *args):
-        """Callback quando o modo de visualização DPS/PDPS muda"""
-        mode = self.dps_display_mode.get()
-        self.log_message(f"Modo de visualização alterado para: {mode}", "info", use_global_log=True)
-        
-        # Reordenar o treeview da aba ativa se existir
-        if self.active_tab_id and self.sort_column:
-            self.sort_treeview(self.sort_column, self.active_tab_id)
-            
-        # Forçar atualização da UI para refletir a mudança de modo
-        if hasattr(self, 'root') and self.root.winfo_exists():
-            self.root.update_idletasks()
 
     def add_search_tab(self, tab_name=None):
         """Adiciona uma nova aba de busca ao notebook."""
@@ -593,7 +394,7 @@ IMPORTANTE:
         ttk.Label(filters_frame, text="Max:", style='TLabel').grid(row=1, column=4, sticky=tk.W, padx=(10, 2), pady=2)
         ttk.Entry(filters_frame, textvariable=tab_data['price_max'], width=8, style='TEntry').grid(row=1, column=5, sticky=tk.W, padx=2, pady=2)
 
-        # DPS/PDPS - Separados visualmente 
+        # DPS/PDPS
         ttk.Label(filters_frame, text="DPS Min:", style='TLabel').grid(row=2, column=0, sticky=tk.W, padx=5, pady=2)
         ttk.Entry(filters_frame, textvariable=tab_data['dps_min'], width=8, style='TEntry').grid(row=2, column=1, sticky=tk.W, padx=5, pady=2)
         ttk.Label(filters_frame, text="PDPS Min:", style='TLabel').grid(row=2, column=2, sticky=tk.W, padx=(15,2), pady=2)
@@ -627,30 +428,17 @@ IMPORTANTE:
         results_frame = ttk.LabelFrame(tab_frame, text="Itens Encontrados", style='TLabelframe')
         results_frame.grid(row=1, column=0, sticky="nsew", padx=(10, 5), pady=5)
         results_frame.grid_rowconfigure(0, weight=1); results_frame.grid_columnconfigure(0, weight=1)
-        
-        # MODIFICADO: Colunas separadas para DPS e PDPS
-        columns = ('nome', 'preco', 'dps', 'pdps', 'vendedor', 'data_listagem', 'whisper')
+        columns = ('nome', 'preco', 'dps', 'vendedor', 'data_listagem', 'whisper')
         results_tree = ttk.Treeview(results_frame, columns=columns, show='headings', style='Treeview')
         tab_data['results_tree'] = results_tree # Armazena a referência
-        
         # Configuração das colunas e headings
         results_tree.heading('nome', text='Nome', command=lambda c='nome': self.sort_treeview(c))
         results_tree.heading('preco', text='Preço', command=lambda c='preco': self.sort_treeview(c))
-        results_tree.heading('dps', text='DPS', command=lambda c='dps': self.sort_treeview(c))
-        results_tree.heading('pdps', text='PDPS', command=lambda c='pdps': self.sort_treeview(c))
+        results_tree.heading('dps', text='DPS/PDPS', command=lambda c='dps': self.sort_treeview(c))
         results_tree.heading('vendedor', text='Vendedor', command=lambda c='vendedor': self.sort_treeview(c))
         results_tree.heading('data_listagem', text='Listado em', command=lambda c='data_listagem': self.sort_treeview(c))
         results_tree.heading('whisper', text='Whisper', command=lambda: messagebox.showinfo("Ajuda - Whisper", "Clique duplo na linha de um item (na coluna 'Whisper' ou outra) para copiar a mensagem de compra."))
-        
-        # Ajuste das larguras das colunas
-        results_tree.column('nome', width=240, anchor=tk.W)
-        results_tree.column('preco', width=100, anchor=tk.E)
-        results_tree.column('dps', width=70, anchor=tk.CENTER)
-        results_tree.column('pdps', width=70, anchor=tk.CENTER)
-        results_tree.column('vendedor', width=120, anchor=tk.W)
-        results_tree.column('data_listagem', width=100, anchor=tk.CENTER)
-        results_tree.column('whisper', width=60, anchor=tk.CENTER)
-        
+        results_tree.column('nome', width=250, anchor=tk.W); results_tree.column('preco', width=110, anchor=tk.E); results_tree.column('dps', width=90, anchor=tk.CENTER); results_tree.column('vendedor', width=130, anchor=tk.W); results_tree.column('data_listagem', width=100, anchor=tk.CENTER); results_tree.column('whisper', width=60, anchor=tk.CENTER)
         # Scrollbars
         vsb = ttk.Scrollbar(results_frame, orient=tk.VERTICAL, command=results_tree.yview, style='Vertical.TScrollbar')
         hsb = ttk.Scrollbar(results_frame, orient=tk.HORIZONTAL, command=results_tree.xview, style='Horizontal.TScrollbar')
@@ -667,7 +455,7 @@ IMPORTANTE:
         tab_data['details_text'] = details_text # Armazena referência
         details_text.config(state=tk.DISABLED)
 
-        # --- Área de Análise (Divine Orb) - Modificada para mostrar resumo mais compacto ---
+        # --- Área de Análise (Divine Orb) ---
         analysis_frame = ttk.LabelFrame(tab_frame, text="Potencial do Item (Divine Orb)", style='TLabelframe')
         analysis_frame.grid(row=1, column=2, sticky="nsew", padx=(5, 10), pady=5)
         analysis_frame.rowconfigure(0, weight=1); analysis_frame.columnconfigure(0, weight=1)
@@ -676,135 +464,716 @@ IMPORTANTE:
         tab_data['analysis_text'] = analysis_text # Armazena referência
         analysis_text.config(state=tk.DISABLED)
 
-    # ... keep existing code (o restante das funções da classe PoeTracker)
+    def _add_stat_filter_widget(self, tab_id, row_index):
+        """Adiciona os widgets para uma linha de filtro de stat na UI da aba especificada."""
+        if tab_id not in self.search_tabs_data: return
+        tab_data = self.search_tabs_data[tab_id]
+        parent_frame = tab_data.get('stats_frame_container_widget')
+        if not parent_frame: return # Segurança
 
-    def find_weapon_base(self, item_name):
-        """Encontra a base da arma pelo nome ou correspondência parcial."""
-        # Tentar correspondência exata primeiro
-        if item_name in WEAPON_BASES:
-            return WEAPON_BASES[item_name]
-        
-        # Tentar encontrar por correspondência parcial
-        for base_name, base_data in WEAPON_BASES.items():
-            if base_name in item_name:
-                return base_data
-        
-        # Verificar categorias comuns como fallback
-        if "quarterstaff" in item_name.lower():
-            return WEAPON_BASES.get("Quarterstaff")
-        elif "bow" in item_name.lower() and "cross" not in item_name.lower():
-            return WEAPON_BASES.get("Cavalry Bow")
-        elif "crossbow" in item_name.lower():
-            return WEAPON_BASES.get("Engraved Crossbow")
-        elif "spear" in item_name.lower():
-            return WEAPON_BASES.get("Pronged Spear")
-        elif "maul" in item_name.lower() or ("hammer" in item_name.lower() and "great" in item_name.lower()):
-            return WEAPON_BASES.get("Sacred Maul")
-        elif "mace" in item_name.lower() or ("hammer" in item_name.lower() and "great" not in item_name.lower()):
-            return WEAPON_BASES.get("Crown Mace")
-        
-        # Nenhuma correspondência encontrada
-        return None
+        stat_var = tk.StringVar()
+        min_value_var = tk.StringVar()
+        max_value_var = tk.StringVar()
 
+        # Adiciona as variáveis às listas da aba
+        tab_data['stat_entries'].append(stat_var)
+        tab_data['stat_min_values'].append(min_value_var)
+        tab_data['stat_max_values'].append(max_value_var)
+
+        # Cria os widgets
+        ttk.Label(parent_frame, text=f"Stat {row_index+1}:", style='TLabel').grid(row=row_index, column=0, sticky=tk.W, padx=5, pady=2)
+        stat_combo = ttk.Combobox(parent_frame, textvariable=stat_var, width=25, style='TCombobox', values=[""] + sorted(list(STAT_MAP.keys())))
+        stat_combo.grid(row=row_index, column=1, columnspan=2, sticky=tk.EW, padx=5, pady=2)
+        ttk.Label(parent_frame, text="Min:", style='TLabel').grid(row=row_index, column=3, sticky=tk.W, padx=(10,2))
+        ttk.Entry(parent_frame, textvariable=min_value_var, width=6, style='TEntry').grid(row=row_index, column=4, sticky=tk.W, padx=2)
+        ttk.Label(parent_frame, text="Max:", style='TLabel').grid(row=row_index, column=5, sticky=tk.W, padx=2)
+        ttk.Entry(parent_frame, textvariable=max_value_var, width=6, style='TEntry').grid(row=row_index, column=6, sticky=tk.W, padx=(2,5))
+        parent_frame.columnconfigure(1, weight=1)
+
+    def _handle_add_stat_click_tab(self, tab_id):
+        """Adiciona uma nova linha de filtro de stat na aba especificada."""
+        if tab_id not in self.search_tabs_data: return
+        tab_data = self.search_tabs_data[tab_id]
+        add_button = tab_data.get('add_stat_button')
+        if not add_button: return # Segurança
+
+        current_row_count = len(tab_data['stat_entries'])
+        self._add_stat_filter_widget(tab_id, current_row_count)
+        # Move o botão '+ Stat' para baixo
+        add_button.grid(row=current_row_count + 1, column=0, columnspan=7, padx=5, pady=(5,0), sticky="ew")
+
+    def remove_search_tab(self):
+        """Remove a aba de busca atualmente ativa."""
+        if not self.active_tab_id:
+            messagebox.showinfo("Info", "Nenhuma aba de busca selecionada.")
+            return
+
+        if len(self.search_tabs_data) <= 1:
+            messagebox.showwarning("Aviso", "Não é possível fechar a última aba de busca.")
+            return
+
+        tab_to_remove_id = self.active_tab_id
+        tab_data = self.search_tabs_data[tab_to_remove_id]
+        tab_name = tab_data['name']
+
+        # Verifica se está monitorando
+        is_polling_active = tab_data.get('is_polling', False)
+        if is_polling_active:
+            if messagebox.askyesno("Parar Monitoramento?", f"A busca '{tab_name}' está sendo monitorada.\nDeseja parar o monitoramento e fechar a aba?"):
+                self.stop_polling(tab_to_remove_id, join_thread=True) # Tenta parar e aguardar thread
+                # Re-verifica se parou (pode ter sido cancelado pelo usuário no join implícito)
+                if self.search_tabs_data[tab_to_remove_id].get('is_polling', False):
+                     return # Não parou, não remove
+            else:
+                return # Usuário cancelou
+
+        # Procede com a remoção
+        try:
+             # Para o notebook esquecer o frame da aba
+             self.search_notebook.forget(tab_data['tab_frame'])
+             # Remove os dados da aba do dicionário
+             del self.search_tabs_data[tab_to_remove_id]
+             self.log_message(f"Aba de busca '{tab_name}' removida.", "info", use_global_log=True)
+             # O evento <<NotebookTabChanged>> deve atualizar o active_tab_id,
+             # mas podemos forçar a seleção da primeira aba restante se necessário.
+             if self.search_tabs_data:
+                 # Seleciona a primeira aba restante (índice 0)
+                 first_remaining_tab_id = list(self.search_tabs_data.keys())[0]
+                 self.search_notebook.select(self.search_tabs_data[first_remaining_tab_id]['tab_frame'])
+             else:
+                 self.active_tab_id = None # Nenhuma aba restante
+
+        except Exception as e:
+             self.log_message(f"Erro ao remover aba '{tab_name}': {e}", "error", use_global_log=True)
+             messagebox.showerror("Erro", f"Não foi possível remover a aba:\n{e}")
+
+    def rename_search_tab(self):
+         """ Permite renomear a aba ativa """
+         if not self.active_tab_id:
+             messagebox.showinfo("Info", "Nenhuma aba selecionada para renomear.")
+             return
+
+         tab_data = self.search_tabs_data[self.active_tab_id]
+         old_name = tab_data['name']
+
+         new_name = simpledialog.askstring("Renomear Aba", f"Digite o novo nome para '{old_name}':", parent=self.root)
+
+         if new_name and new_name.strip():
+             new_name = new_name.strip()
+             tab_data['name'] = new_name
+             self.search_notebook.tab(tab_data['tab_frame'], text=new_name) # Atualiza texto da aba no notebook
+             self.log_message(f"Aba '{old_name}' renomeada para '{new_name}'.", "info", use_global_log=True)
+         elif new_name is not None: # Se clicou OK mas deixou vazio
+             messagebox.showwarning("Nome Inválido", "O nome da aba não pode ser vazio.")
+
+    def on_tab_change(self, event):
+        """Callback quando a aba ativa do notebook de buscas muda."""
+        try:
+            # `select()` retorna o path do widget do frame da aba selecionada
+            selected_widget_path = self.search_notebook.select()
+            if not selected_widget_path: # Pode acontecer durante a remoção
+                 self.active_tab_id = None
+                 return
+
+            # Encontra o tab_id cujo frame corresponde ao path selecionado
+            new_active_id = None
+            for tid, tdata in self.search_tabs_data.items():
+                # Compara o path string do widget frame da aba
+                if str(tdata.get('tab_frame')) == selected_widget_path:
+                    new_active_id = tid
+                    break
+
+            if new_active_id:
+                self.active_tab_id = new_active_id
+                # Opcional: Atualizar status global
+                # active_tab_name = self.search_tabs_data[self.active_tab_id]['name']
+                # self.update_status(f"Aba ativa: {active_tab_name}")
+            else:
+                # Isso não deveria acontecer em operação normal
+                # self.log_message("Não foi possível identificar a aba ativa após mudança.", "warning", use_global_log=True)
+                self.active_tab_id = None # Garante que não fique com ID inválido
+
+        except Exception as e:
+            # Pode dar erro tk.TclError: invalid command name ".!notebook.!frame2.!notebook.!frame..." se a aba for destruída rapidamente
+            # É geralmente seguro ignorar aqui.
+            # self.log_message(f"Erro ao processar mudança de aba: {e}", "warning", use_global_log=True)
+            self.active_tab_id = None # Reseta em caso de erro
+            pass
+
+    # --- Nova Função para Atualizar o Display de DPS/PDPS ---
+    def update_dps_display(self):
+        """Atualiza a exibição de DPS/PDPS em todas as abas com base no modo selecionado."""
+        mode = self.dps_display_mode.get()
+        
+        # Itera por todas as abas e atualiza o display do DPS/PDPS
+        for tab_id, tab_data in self.search_tabs_data.items():
+            tree = tab_data.get('results_tree')
+            if not tree or not tree.winfo_exists():
+                continue
+                
+            # Atualiza o cabeçalho da coluna
+            if mode == "DPS":
+                tree.heading('dps', text='DPS')
+            elif mode == "PDPS":
+                tree.heading('dps', text='PDPS')
+            else: # Both
+                tree.heading('dps', text='DPS/PDPS')
+                
+            # Atualiza os valores nas linhas
+            for item_id in tree.get_children():
+                item_details = tab_data['_item_details_cache'].get(item_id)
+                if not item_details:
+                    continue
+                    
+                dps_num = item_details.get('dps')
+                pdps_num = item_details.get('pdps')
+                
+                # Define o texto baseado no modo
+                if mode == "DPS":
+                    dps_display = f"{dps_num:.1f}" if dps_num is not None else "-"
+                    tree.set(item_id, 'dps', dps_display)
+                elif mode == "PDPS":
+                    pdps_display = f"{pdps_num:.1f}" if pdps_num is not None else "-"
+                    tree.set(item_id, 'dps', pdps_display)
+                else: # Both
+                    dps_display = f"{dps_num:.1f}" if dps_num is not None else "-"
+                    pdps_display = f"{pdps_num:.1f}" if pdps_num is not None else "-"
+                    dps_pdps_str = f"{dps_display}"
+                    if pdps_display != "-" and pdps_display != dps_display:
+                        dps_pdps_str += f" / {pdps_display}"
+                    tree.set(item_id, 'dps', dps_pdps_str)
+        
+        # Opcional: Reordenar a lista se estiver ordenando por DPS
+        if self.sort_column == 'dps' and self.active_tab_id:
+            self.sort_treeview('dps', self.active_tab_id)
+
+    # --- Funções de Autocomplete Adaptadas para Abas ---
+    def _update_category_list_for_tab(self, tab_id, filter_text=""):
+        """Atualiza a lista de valores do combobox de categoria da aba especificada."""
+        if tab_id not in self.search_tabs_data: return
+        tab_data = self.search_tabs_data[tab_id]
+        category_combo = tab_data.get('category_combo_widget')
+        if not category_combo or not category_combo.winfo_exists(): return
+
+        filter_text = filter_text.lower().strip()
+        all_categories = sorted(list(ITEM_CATEGORIES.keys()))
+        if not filter_text:
+            current_values = tuple([""] + all_categories)
+        else:
+            filtered = [cat for cat in all_categories if cat.lower().startswith(filter_text)]
+            current_values = tuple([""] + filtered)
+
+        # Evita redefinir se a lista não mudou (melhora performance)
+        if category_combo['values'] != current_values:
+            category_combo['values'] = current_values
+
+    def _filter_category_combo_event_tab(self, event, tab_id):
+        """Callback KeyRelease para combobox de categoria da aba."""
+        if tab_id not in self.search_tabs_data: return
+        tab_data = self.search_tabs_data[tab_id]
+        category_combo = tab_data.get('category_combo_widget')
+        if not category_combo or not category_combo.winfo_exists(): return
+
+        # Ignora teclas que não modificam o texto
+        ignore_keys = ('Shift_L', 'Shift_R', 'Control_L', 'Control_R', 'Alt_L', 'Alt_R',
+                       'Up', 'Down', 'Left', 'Right', 'Tab', 'Caps_Lock', 'Num_Lock',
+                       'Home', 'End', 'Page_Up', 'Page_Down', 'Insert', 'Delete', 'Escape',
+                       'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12')
+        if event.keysym in ignore_keys:
+             return
+        # Se pressionou Enter ou Tab, talvez restaurar a lista completa? (Opcional)
+        # if event.keysym in ('Return', 'KP_Enter', 'Tab'):
+        #      self.root.after(100, lambda tid=tab_id: self._update_category_list_for_tab(tid))
+        #      return
+
+        current_text = tab_data['selected_category'].get()
+        self._update_category_list_for_tab(tab_id, current_text)
+
+        # Força a abertura da lista suspensa após um pequeno delay
+        # para permitir que a atualização de 'values' seja processada
+        def open_dropdown():
+            if category_combo.winfo_exists():
+                # Tenta gerar o evento para abrir. Pode não funcionar 100% em todos os OS/themes.
+                # Uma alternativa é definir o foco e depois gerar <Down>, mas pode ser intrusivo.
+                 try:
+                    # category_combo.focus_set() # Pode tirar o foco de onde o usuário estava digitando
+                    category_combo.event_generate('<Button-1>') # Simula clique para abrir
+                    category_combo.event_generate('<Down>')     # Move para a primeira opção
+                 except tk.TclError: pass # Ignora erro se widget for destruído
+        self.root.after(50, open_dropdown)
+
+
+    def _restore_category_list_event_tab(self, event, tab_id):
+         """Callback para restaurar lista completa da categoria da aba (Click, FocusOut)."""
+         # Delay para permitir a seleção antes de restaurar a lista completa
+         self.root.after(150, lambda tid=tab_id: self._update_category_list_for_tab(tid))
+
+    def load_config(self):
+        """Carrega configurações globais (cookies, tema)."""
+        if os.path.exists(CONFIG_FILE):
+            config = configparser.ConfigParser()
+            try:
+                config.read(CONFIG_FILE)
+                if 'Authentication' in config:
+                    self.poesessid.set(config['Authentication'].get('poesessid', ''))
+                    self.cf_clearance.set(config['Authentication'].get('cf_clearance', ''))
+                    default_ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
+                    self.useragent.set(config['Authentication'].get('useragent', default_ua))
+                    self.log_message("Configuração de autenticação carregada.", "info", use_global_log=True)
+                else:
+                     self.log_message(f"Seção [Authentication] não encontrada.", "warning", use_global_log=True)
+
+                if 'Preferences' in config:
+                    dark_mode_pref = config['Preferences'].getboolean('DarkMode', False)
+                    self.dark_mode_enabled.set(dark_mode_pref)
+                    self.log_message(f"Preferência de tema carregada (Modo Escuro: {dark_mode_pref}).", "info", use_global_log=True)
+
+                # Opcional: Carregar estado das abas (mais complexo, não implementado aqui)
+                # Ex: Ler seções [Busca1], [Busca2] e recriar as abas com seus filtros
+
+            except Exception as e:
+                messagebox.showerror("Erro ao Carregar", f"Falha ao ler arquivo de configuração:\n{e}")
+                self.log_message(f"Falha ao carregar config: {e}", "error", use_global_log=True)
+        else:
+            self.log_message(f"Arquivo '{CONFIG_FILE}' não encontrado. Usando padrões.", "info", use_global_log=True)
+
+    def save_config(self):
+        """Salva configurações globais (cookies, tema)."""
+        config = configparser.ConfigParser()
+        if os.path.exists(CONFIG_FILE):
+            try: config.read(CONFIG_FILE) # Preserva outras seções
+            except Exception as e_read:
+                self.log_message(f"Aviso: Não foi possível ler config existente ao salvar: {e_read}", "warning", use_global_log=True)
+
+        if 'Authentication' not in config: config['Authentication'] = {}
+        config['Authentication']['poesessid'] = self.poesessid.get()
+        config['Authentication']['cf_clearance'] = self.cf_clearance.get()
+        config['Authentication']['useragent'] = self.useragent.get()
+
+        if 'Preferences' not in config: config['Preferences'] = {}
+        config['Preferences']['DarkMode'] = str(self.dark_mode_enabled.get())
+
+        # Opcional: Salvar estado das abas (filtros, nomes)
+        # Ex: Iterar por self.search_tabs_data e criar seções [Busca_ID] ou [Busca_Nome]
+
+        try:
+            with open(CONFIG_FILE, 'w') as configfile:
+                config.write(configfile)
+            # Não mostra messagebox ao salvar no fechamento, apenas log
+            self.log_message("Configuração salva.", "info", use_global_log=True)
+        except Exception as e:
+            messagebox.showerror("Erro ao Salvar", f"Falha ao salvar configuração:\n{e}")
+            self.log_message(f"Falha ao salvar config: {e}", "error", use_global_log=True)
+
+    def show_browser_instructions(self):
+        """Foca na aba de configuração para mostrar as instruções."""
+        try:
+            if not self.root.winfo_exists(): return
+            # Acha o notebook principal (assumindo ser o primeiro filho da raiz)
+            main_notebook = self.root.winfo_children()[0]
+            if isinstance(main_notebook, ttk.Notebook):
+                # Tenta encontrar o índice da aba "Configuração"
+                config_tab_index = -1
+                for i, tab_id_widget in enumerate(main_notebook.tabs()):
+                     tab_info = main_notebook.tab(tab_id_widget)
+                     if tab_info and tab_info.get("text") == "Configuração":
+                          config_tab_index = i
+                          break
+                if config_tab_index != -1:
+                     main_notebook.select(config_tab_index) # Seleciona a aba
+                else: # Fallback
+                     messagebox.showinfo("Instruções Cookies", "Vá para a aba 'Configuração' para ver as instruções (não foi possível focar automaticamente).")
+            else: messagebox.showinfo("Instruções Cookies", "Vá para a aba 'Configuração' (erro ao encontrar notebook principal).")
+        except Exception as e:
+             if self.root.winfo_exists():
+                  messagebox.showinfo("Instruções Cookies", f"Vá para a aba 'Configuração'.\n(Erro ao focar: {e})")
+
+    def update_status(self, message):
+        """Atualiza a barra de status global."""
+        def _update():
+            try:
+                if hasattr(self, 'status_label') and self.status_label.winfo_exists():
+                    self.status_label.config(text=message)
+            except tk.TclError: pass
+            except AttributeError: pass
+        if hasattr(self, 'root') and self.root.winfo_exists():
+            self.root.after(0, _update)
+
+    def log_message(self, message, level="info", tab_id=None, use_global_log=False):
+        """Loga mensagem no painel de detalhes da aba ativa/especificada ou globalmente (console)."""
+        log_widget = None
+
+        # Determina onde logar
+        if use_global_log:
+            # Log global vai para o console
+            print(f"LOG GLOBAL ({level}): {message}")
+            return # Não tenta logar em widget de aba
+
+        # Se não for global, tenta logar na aba especificada ou ativa
+        target_tab_id = tab_id if tab_id else self.active_tab_id
+        if target_tab_id and target_tab_id in self.search_tabs_data:
+            tab_data = self.search_tabs_data[target_tab_id]
+            log_widget = tab_data.get('details_text')
+        else:
+            # Se não achou aba válida, loga no console com aviso
+            print(f"LOG ({level}) [Aba:{target_tab_id or 'N/A(Ativa?)'} - Inválida/Widget Nulo]: {message}")
+            return
+
+        # Se achou o widget da aba, loga nele
+        if not log_widget: # Double check (deve ter sido pego acima)
+            print(f"LOG ({level}) [Aba:{target_tab_id} - Widget Nulo 2]: {message}")
+            return
+
+        # Garante que a atualização da UI ocorra na thread principal (lógica igual)
+        def _log_to_widget():
+            if not log_widget or not log_widget.winfo_exists():
+                # Fallback se widget sumiu entre a chamada e a execução do after()
+                print(f"LOG UI ({level}) [Aba:{target_tab_id}] - Widget não existe mais: {message}")
+                return
+            try:
+                colors = DARK_COLORS if self.dark_mode_enabled.get() else LIGHT_COLORS
+                # Usa tag de nível ou fallback para 'info'
+                tag = level if f"tag_{level}" in colors else "info"
+                original_state = str(log_widget.cget('state'))
+                if original_state == tk.DISABLED:
+                    log_widget.config(state=tk.NORMAL)
+
+                now = datetime.now().strftime("%H:%M:%S")
+                log_widget.insert(tk.END, f"[{now}] ", ("debug",)) # Timestamp sempre debug
+                log_widget.insert(tk.END, f"{message}\n", (tag,)) # Mensagem com tag de nível
+
+                log_widget.see(tk.END) # Rola para o final
+                if original_state == tk.DISABLED:
+                    log_widget.config(state=tk.DISABLED)
+            except tk.TclError: # Ignora erro se janela fechada durante o processo
+                # print(f"LOG UI ({level}) [Aba:{target_tab_id}] - TclError: {message}") # Verboso demais
+                pass
+            except Exception as e:
+                print(f"Erro ao logar na UI [Aba:{target_tab_id}]: {e}\nMensagem ({level}): {message}")
+
+        if hasattr(self, 'root') and self.root.winfo_exists():
+            self.root.after(0, _log_to_widget)
+
+
+    def build_search_payload(self, tab_id):
+        """Constrói o payload da API usando os filtros da aba especificada."""
+        if tab_id not in self.search_tabs_data:
+             self.log_message(f"Erro: Tentando construir payload para aba inexistente ID {tab_id}", "error", use_global_log=True)
+             return None
+        tab_data = self.search_tabs_data[tab_id]
+        tab_name = tab_data['name'] # Para logs
+
+        payload = {
+            "query": {
+                "status": {"option": "online"},
+                "stats": [{"type": "and", "filters": []}],
+                "filters": {}
+            },
+            "sort": {"price": "asc"}
+        }
+        stat_filters_list = payload["query"]["stats"][0]["filters"]
+
+        # Filtro de Categoria
+        category_key = tab_data['selected_category'].get()
+        if category_key and category_key in ITEM_CATEGORIES:
+            category_value = ITEM_CATEGORIES[category_key]
+            if category_value != "any":
+                if "type_filters" not in payload["query"]["filters"]:
+                    payload["query"]["filters"]["type_filters"] = {"filters": {}}
+                payload["query"]["filters"]["type_filters"]["filters"]["category"] = {"option": category_value}
+        elif category_key:
+            messagebox.showwarning("Categoria Inválida", f"Categoria '{category_key}' não encontrada. Removendo filtro.")
+            payload["query"]["filters"].pop("type_filters", None)
+
+        # Filtro de Preço
+        price_filter = {"option": tab_data['selected_currency'].get()}
+        price_min_val, price_max_val = None, None
+        try:
+            if tab_data['price_min'].get():
+                price_min_val = float(tab_data['price_min'].get())
+                price_filter["min"] = price_min_val
+            if tab_data['price_max'].get():
+                price_max_val = float(tab_data['price_max'].get())
+                price_filter["max"] = price_max_val
+            if price_min_val is not None or price_max_val is not None:
+                if "trade_filters" not in payload["query"]["filters"]:
+                    payload["query"]["filters"]["trade_filters"] = {"filters": {}}
+                payload["query"]["filters"]["trade_filters"]["filters"]["price"] = price_filter
+        except ValueError:
+            messagebox.showerror("Erro de Valor", "Valor inválido para Preço Mínimo ou Máximo.")
+            self.log_message("Erro de valor em Preço.", "error", tab_id=tab_id)
+            return None
+
+        # Filtros DPS/PDPS
+        try:
+            dps_min_val = float(tab_data['dps_min'].get()) if tab_data['dps_min'].get() else None
+            pdps_min_val = float(tab_data['pdps_min'].get()) if tab_data['pdps_min'].get() else None
+            equipment_filters_dict = {}
+            if dps_min_val is not None:
+                equipment_filters_dict["dps"] = {"min": dps_min_val}
+                self.log_message(f"Filtro API: dps >= {dps_min_val}", "debug", tab_id=tab_id)
+            if pdps_min_val is not None:
+                equipment_filters_dict["pdps"] = {"min": pdps_min_val}
+                self.log_message(f"Filtro API: pdps >= {pdps_min_val}", "debug", tab_id=tab_id)
+            if equipment_filters_dict:
+                if "filters" not in payload["query"]: payload["query"]["filters"] = {}
+                if "equipment_filters" not in payload["query"]["filters"]:
+                    payload["query"]["filters"]["equipment_filters"] = {"filters": {}}
+                payload["query"]["filters"]["equipment_filters"]["filters"].update(equipment_filters_dict)
+        except ValueError:
+            messagebox.showerror("Erro de Valor", "Valor inválido para DPS Mínimo ou PDPS Mínimo.")
+            self.log_message("Erro de valor em DPS/PDPS.", "error", tab_id=tab_id)
+            return None
+
+        # Filtros de Stats Específicos
+        for stat_var, min_var, max_var in zip(tab_data['stat_entries'], tab_data['stat_min_values'], tab_data['stat_max_values']):
+            stat_name = stat_var.get()
+            min_str = min_var.get()
+            max_str = max_var.get()
+            if stat_name and (min_str or max_str):
+                stat_id = STAT_MAP.get(stat_name)
+                if stat_id:
+                    value_filter = {}
+                    try:
+                        if min_str: value_filter["min"] = float(min_str)
+                        if max_str: value_filter["max"] = float(max_str)
+                        if value_filter:
+                            stat_filters_list.append({"id": stat_id, "value": value_filter, "disabled": False})
+                            self.log_message(f"Filtro API: {stat_name} ({stat_id}) = {value_filter}", "debug", tab_id=tab_id)
+                    except ValueError:
+                        messagebox.showerror("Erro de Valor", f"Valor inválido para Mín/Máx de '{stat_name}'.")
+                        self.log_message(f"Erro de valor em Stat: {stat_name}", "error", tab_id=tab_id)
+                        return None
+                else:
+                    self.log_message(f"Aviso: ID da API não encontrado para stat '{stat_name}'. Filtro ignorado.", "warning", tab_id=tab_id)
+
+        # Remove a chave "stats" se nenhuma filtro de stat foi adicionado
+        if not stat_filters_list:
+            payload["query"].pop("stats", None)
+
+        self.log_message("Payload construído.", "debug", tab_id=tab_id)
+        # print(json.dumps(payload, indent=2)) # DEBUG: Imprime o payload
+        return payload
+
+    def search_items(self, tab_id):
+        """Executa a busca de itens para a aba especificada."""
+        if tab_id not in self.search_tabs_data:
+             self.log_message(f"Tentativa de busca em aba inválida: {tab_id}", "error", use_global_log=True)
+             return
+        tab_data = self.search_tabs_data[tab_id]
+        tab_name = tab_data['name']
+
+        # Verifica cookies globais
+        if not self.poesessid.get() or not self.cf_clearance.get():
+            messagebox.showerror("Erro de Autenticação", "POESESSID e/ou cf_clearance não configurados. Verifique a aba 'Configuração'.")
+            return
+
+        # Limpa a interface DA ABA antes da busca
+        self.update_status(f"[{tab_name}] Limpando resultados...") # Status global indica a aba
+        try:
+            results_tree = tab_data.get('results_tree')
+            if results_tree and results_tree.winfo_exists():
+                for item in results_tree.get_children():
+                    results_tree.delete(item)
+            tab_data['_item_details_cache'].clear() # Limpa cache da aba
+
+            colors = DARK_COLORS if self.dark_mode_enabled.get() else LIGHT_COLORS
+            for widget_key in ['details_text', 'analysis_text']:
+                widget = tab_data.get(widget_key)
+                if widget and widget.winfo_exists():
+                    try:
+                        widget.config(state=tk.NORMAL, bg=colors["log_bg"])
+                        widget.delete(1.0, tk.END)
+                        widget.config(state=tk.DISABLED)
+                    except Exception as e: print(f"Erro limpando {widget_key} na aba {tab_id}: {e}")
+        except Exception as e_clear:
+            self.log_message(f"Erro ao limpar UI da aba: {e_clear}", "error", tab_id=tab_id)
+
+        # Garante que a limpeza seja visível antes de construir o payload
+        if hasattr(self, 'root') and self.root.winfo_exists(): self.root.update_idletasks()
+
+        self.update_status(f"[{tab_name}] Construindo payload...")
+        payload = self.build_search_payload(tab_id) # Passa o ID da aba
+        if payload is None:
+            self.update_status(f"[{tab_name}] Pronto (Falha payload)")
+            return
+
+        headers = {
+            'Content-Type': 'application/json',
+            'User-Agent': self.useragent.get(), # Global
+            'Accept': 'application/json'
+        }
+        cookies = {
+            'POESESSID': self.poesessid.get(), # Global
+            'cf_clearance': self.cf_clearance.get() # Global
+        }
+        league = "Standard" # TODO: Tornar configurável (global ou por aba?)
+        search_url = f"https://www.pathofexile.com/api/trade2/search/poe2/{league}"
+
+        self.log_message(f"Enviando busca para: {search_url}", "info", tab_id=tab_id)
+        self.update_status(f"[{tab_name}] Enviando requisição...")
+        try:
+            # --- Requisição POST para obter IDs ---
+            search_response = requests.post(search_url, headers=headers, cookies=cookies, json=payload, timeout=45)
+            self.log_message(f"Resposta da busca recebida (Status: {search_response.status_code})", "info", tab_id=tab_id)
+
+            # Tratamento de Erros da Requisição de Busca
+            if search_response.status_code != 200:
+                error_msg = f"Erro API busca ({search_response.status_code})."
+                try:
+                    error_details = search_response.json()
+                    api_error_msg = error_details.get("error", {}).get("message", "")
+                    if api_error_msg: error_msg += f"\nAPI: {api_error_msg}"
+                    self.log_message(f"Detalhes erro API (busca): {json.dumps(error_details, indent=2)}", "error", tab_id=tab_id)
+                except json.JSONDecodeError:
+                    error_msg += f"\nResposta não JSON: {search_response.text[:200]}"
+                    self.log_message(f"Resposta não JSON (busca {search_response.status_code}): {search_response.text}", "error", tab_id=tab_id)
+                # Adiciona dicas baseadas no status code
+                if search_response.status_code == 400: error_msg += "\nVerifique os filtros (payload inválido?)."
+                elif search_response.status_code in [401, 403]: error_msg += "\nErro autenticação. Verifique os Cookies."
+                elif search_response.status_code == 429: error_msg += "\nLimite de requisições (Rate Limit). Aguarde."
+                elif search_response.status_code >= 500: error_msg += "\nErro no servidor da GGG."
+
+                self.update_status(f"[{tab_name}] Erro {search_response.status_code} busca")
+                messagebox.showerror(f"Erro {search_response.status_code} - Busca", error_msg)
+                return
+
+            # --- Processamento da Resposta da Busca ---
+            search_data = search_response.json()
+            query_id = search_data.get("id")
+            item_ids = search_data.get("result", [])
+            total_results = search_data.get("total", 0)
+
+            if not query_id:
+                self.log_message("Erro: Resposta da busca sem ID da query.", "error", tab_id=tab_id)
+                self.update_status(f"[{tab_name}] Erro: Resposta API inválida")
+                return
+
+            tab_data['query_id'] = query_id # GUARDA O ID DA BUSCA NA ABA
+            self.update_status(f"[{tab_name}] ID: {query_id[:8]}.. Total: {total_results}. Buscando detalhes...")
+            self.log_message(f"ID Query: {query_id}. Total API: {total_results}", "info", tab_id=tab_id)
+
+            if not item_ids:
+                self.update_status(f"[{tab_name}] Nenhum item encontrado.")
+                self.log_message("Nenhum resultado encontrado.", "info", tab_id=tab_id)
+                return
+
+            # --- Requisições GET para buscar detalhes em lotes ---
+            items_processed = 0
+            max_items_to_fetch = 100 # Limite (pode ser configurável)
+            fetch_delay = 1.1 # Aumentar ligeiramente o delay
+            item_ids_to_fetch = item_ids[:max_items_to_fetch]
+            if total_results > max_items_to_fetch:
+                self.log_message(f"Limitando detalhes aos primeiros {max_items_to_fetch} de {total_results} itens.", "warning", tab_id=tab_id)
+                self.update_status(f"[{tab_name}] ID: {query_id[:8]}.. Total: {total_results}. Buscando {max_items_to_fetch}...")
+
+            stop_flag = tab_data.get('stop_polling_flag', threading.Event()) # Pega a flag da aba
+
+            for i in range(0, len(item_ids_to_fetch), 10): # Lotes de 10
+                if stop_flag.is_set():
+                    self.log_message("Busca interrompida pelo usuário.", "info", tab_id=tab_id)
+                    break
+
+                batch = item_ids_to_fetch[i:i + 10]
+                batch_ids_str = ",".join(batch)
+                fetch_url = f"https://www.pathofexile.com/api/trade2/fetch/{batch_ids_str}?query={tab_data['query_id']}&realm=poe2" # Usa query_id da aba
+                self.update_status(f"[{tab_name}] Buscando detalhes {i + 1}-{min(i + 10, len(item_ids_to_fetch))}...")
+
+                if i > 0: time.sleep(fetch_delay) # Delay entre lotes
+
+                self.log_message(f"Enviando GET fetch: {fetch_url[:150]}...", "debug", tab_id=tab_id)
+                try:
+                    fetch_response = requests.get(fetch_url, headers=headers, cookies=cookies, timeout=30)
+                except requests.exceptions.Timeout:
+                    self.log_message(f"Timeout ao buscar detalhes lote {i // 10 + 1}.", "error", tab_id=tab_id)
+                    continue
+                except requests.exceptions.RequestException as fetch_req_err:
+                    self.log_message(f"Erro rede buscar detalhes lote {i // 10 + 1}: {fetch_req_err}.", "error", tab_id=tab_id)
+                    continue
+
+                self.log_message(f"Resposta fetch recebida ({fetch_response.status_code}) - Lote {i // 10 + 1}", "debug", tab_id=tab_id)
+
+                if fetch_response.status_code != 200:
+                    self.log_message(f"Erro {fetch_response.status_code} buscar detalhes lote {i // 10 + 1}.", "error", tab_id=tab_id)
+                    try:
+                        error_details = fetch_response.json()
+                        self.log_message(f"Detalhes erro fetch: {json.dumps(error_details)}", "error", tab_id=tab_id)
+                    except:
+                        self.log_message(f"Resposta erro fetch (não JSON): {fetch_response.text[:200]}", "error", tab_id=tab_id)
+
+                    # Erros críticos param a busca da aba
+                    if fetch_response.status_code in [401, 403, 429]:
+                        msg = f"Erro crítico {fetch_response.status_code} ao buscar detalhes. Verifique cookies ou aguarde (Rate Limit)."
+                        messagebox.showerror(f"Erro Crítico {fetch_response.status_code} - Fetch", msg)
+                        self.update_status(f"[{tab_name}] Erro {fetch_response.status_code} - Busca Abortada")
+                        # Se estiver no polling, para o polling da aba
+                        if tab_data.get('is_polling', False):
+                             self.stop_polling(tab_id)
+                        return # Para a busca atual
+                    continue # Continua para próximo lote se não for erro crítico
+
+                # --- Processamento dos Detalhes do Lote ---
+                try:
+                    fetch_data = fetch_response.json()
+                except json.JSONDecodeError:
+                    self.log_message(f"Erro decodificar JSON fetch lote {i // 10 + 1}.", "error", tab_id=tab_id)
+                    continue
+
+                items = fetch_data.get("result", [])
+                if not items:
+                    self.log_message(f"Lote {i // 10 + 1} não retornou itens nos detalhes.", "warning", tab_id=tab_id)
+                    continue
+
+                for item_detail in items:
+                     if stop_flag.is_set(): break
+                     if not item_detail:
+                          self.log_message(f"Item nulo/vazio no lote {i // 10 + 1}.", "warning", tab_id=tab_id)
+                          continue
+                     # Chama process_item PASSANDO O TAB_ID
+                     self.process_item(item_detail, tab_data['query_id'], tab_id)
+                     items_processed += 1
+                if stop_flag.is_set(): break # Sai do loop de lotes se interrompido
+
+            # --- Finalização da Busca ---
+            final_status_msg = f"Busca concluída. {items_processed} itens exibidos."
+            if items_processed < total_results:
+                 if items_processed >= max_items_to_fetch:
+                      final_status_msg += f" (Limite {max_items_to_fetch} de {total_results} totais)"
+                 else:
+                      final_status_msg += f" (de {total_results} totais)"
+            # Atualiza status apenas se o polling não estiver ativo (evita sobrescrever msg de espera)
+            if not tab_data.get('is_polling', False) or stop_flag.is_set():
+                self.update_status(f"[{tab_name}] {final_status_msg}")
+            self.log_message(final_status_msg, "info", tab_id=tab_id)
+
+            # Reordena o treeview DA ABA se uma coluna estava selecionada globalmente
+            if self.sort_column:
+                 # A função sort_treeview precisa saber qual treeview ordenar
+                 self.sort_treeview(self.sort_column, tab_id) # Passa tab_id
+                 
+            # Atualiza a exibição de DPS/PDPS
+            self.update_dps_display()
+
+        except requests.exceptions.RequestException as req_err:
+            self.update_status(f"[{tab_name}] Erro de Rede")
+            self.log_message(f"Erro de rede: {req_err}", "error", tab_id=tab_id)
+            messagebox.showerror("Erro de Rede", f"Falha na comunicação com a API:\n{req_err}")
+        except Exception as e:
+            self.update_status(f"[{tab_name}] Erro Inesperado na Busca")
+            self.log_message(f"Erro inesperado search_items: {e}\n{traceback.format_exc()}", "error", tab_id=tab_id)
+            messagebox.showerror("Erro Inesperado", f"Ocorreu um erro inesperado:\n{e}\nVerifique o log da aba para detalhes.")
+
+    # --- calculate_dps (Função global, sem mudanças) ---
     def calculate_dps(self, item_info):
-        """Calcula o DPS/PDPS usando informações da base da arma se disponível."""
-        # Verificar se temos o typeLine (base do item)
-        type_line = item_info.get("typeLine", "")
-        base_type = item_info.get("baseType", type_line)
-        
-        # Tenta encontrar a base da arma em nossa base de dados
-        base_data = self.find_weapon_base(base_type)
-        
-        # Valores padrão das propriedades da arma
         properties = item_info.get("properties", [])
         extended = item_info.get("extended", {})
-        
-        # Verificar se o extended.dps já contém o valor calculado da API
         dps_val = extended.get("dps")
         pdps_val = extended.get("pdps")
         edps_val = extended.get("edps")
-        
-        # Inicializar com valores da API se disponíveis
         dps_num = float(dps_val) if isinstance(dps_val, (int, float)) else None
         pdps_num = float(pdps_val) if isinstance(pdps_val, (int, float)) else None
         edps_num = float(edps_val) if isinstance(edps_val, (int, float)) else None
-        
-        # Se não tivermos o valor da API ou for uma arma com base conhecida, calculamos manualmente
-        if (pdps_num is None or dps_num is None) and base_data:
-            # Extrair modificadores do item
-            all_mods = item_info.get("explicitMods", []) + item_info.get("implicitMods", [])
-            
-            # Variáveis para os modificadores
-            inc_phys_dmg_pct = 0
-            added_phys_min = 0
-            added_phys_max = 0
-            added_ele_min = 0
-            added_ele_max = 0
-            inc_attack_speed_pct = 0
-            
-            # Processa cada modificador
-            for mod in all_mods:
-                # Increased Physical Damage
-                if "increased Physical Damage" in mod:
-                    match = re.search(r'(\d+)%', mod)
-                    if match:
-                        inc_phys_dmg_pct = int(match.group(1))
-                
-                # Added Physical Damage
-                if "Adds" in mod and "to" in mod and "Physical Damage" in mod:
-                    match = re.search(r'Adds (\d+) to (\d+) Physical Damage', mod)
-                    if match:
-                        added_phys_min = int(match.group(1))
-                        added_phys_max = int(match.group(2))
-                
-                # Added Elemental Damage (todos os tipos)
-                if "Adds" in mod and "to" in mod and any(dmg_type in mod for dmg_type in ["Fire Damage", "Cold Damage", "Lightning Damage", "Chaos Damage"]):
-                    match = re.search(r'Adds (\d+) to (\d+)', mod)
-                    if match:
-                        added_ele_min += int(match.group(1))
-                        added_ele_max += int(match.group(2))
-                
-                # Increased Attack Speed
-                if "increased Attack Speed" in mod:
-                    match = re.search(r'(\d+)%', mod)
-                    if match:
-                        inc_attack_speed_pct = int(match.group(1))
-            
-            # Cálculo de dano físico
-            base_phys_min = base_data.get("physDamageMin", 0)
-            base_phys_max = base_data.get("physDamageMax", 0)
-            phys_dmg_mult = 1 + (inc_phys_dmg_pct / 100)
-            
-            # Dano físico total
-            total_phys_min = (base_phys_min * phys_dmg_mult) + added_phys_min
-            total_phys_max = (base_phys_max * phys_dmg_mult) + added_phys_max
-            avg_phys_dmg = (total_phys_min + total_phys_max) / 2
-            
-            # Velocidade de ataque
-            base_aps = base_data.get("attacksPerSecond", 1.3)
-            total_aps = base_aps * (1 + (inc_attack_speed_pct / 100))
-            
-            # Dano elemental base + adicionado
-            base_ele_min = base_data.get("eleDamageMin", 0)
-            base_ele_max = base_data.get("eleDamageMax", 0)
-            total_ele_min = base_ele_min + added_ele_min
-            total_ele_max = base_ele_max + added_ele_max
-            avg_ele_dmg = (total_ele_min + total_ele_max) / 2
-            
-            # Cálculo dos DPS
-            if pdps_num is None:
-                pdps_num = avg_phys_dmg * total_aps
-            
-            ele_dps = avg_ele_dmg * total_aps
-            
-            if dps_num is None:
-                dps_num = pdps_num + ele_dps
-            
-            # Separar dps elemental
-            if edps_num is None and ele_dps > 0:
-                edps_num = ele_dps
-                
-        # Se ainda não temos um valor de DPS, fazemos o cálculo de fallback tradicional
+        # Fallback calculation if pdps is missing
         if pdps_num is None:
             phys_dmg_min, phys_dmg_max, atk_speed = None, None, None
             for prop in properties:
@@ -832,17 +1201,18 @@ IMPORTANTE:
                         except (ValueError, TypeError): pass
             if phys_dmg_min is not None and phys_dmg_max is not None and atk_speed is not None and atk_speed > 0:
                 pdps_num = round(((phys_dmg_min + phys_dmg_max) / 2) * atk_speed, 1)
-        
-        # Fallback para DPS total
+                # self.log_message(f"PDPS calculado manualmente: {pdps_num}", "debug", tab_id=?) # Precisa do tab_id aqui
+        # Fallback total DPS calculation
         if dps_num is None and pdps_num is not None and edps_num is not None:
              dps_num = round(pdps_num + edps_num, 1)
+             # self.log_message(f"DPS total calculado (PDPS+EDPS): {dps_num}", "debug", tab_id=?)
         elif dps_num is None and pdps_num is not None:
-             dps_num = pdps_num # Se só temos PDPS, usamos como DPS
-             
+             dps_num = pdps_num # If only PDPS is available, use it as DPS
         return dps_num, pdps_num, edps_num
 
+    # --- Versão melhorada de analyze_divine_worth ---
     def analyze_divine_worth(self, item_data):
-        """Análise de valor Divine com foco em mods que afetam o DPS."""
+        """Analisa o potencial de melhoria com Divine Orb, priorizando mods que afetam DPS."""
         item = item_data.get("item", {})
         explicit_mods_text = item.get("explicitMods", []) if isinstance(item.get("explicitMods"), list) else []
         implicit_mods_text = item.get("implicitMods", []) if isinstance(item.get("implicitMods"), list) else []
@@ -855,7 +1225,6 @@ IMPORTANTE:
         adds_value_regex = re.compile(r'[aA]dds\s+([-+]?\d+(?:.\d+)?)\s+to\s+([-+]?\d+(?:.\d+)?)')
 
         def format_range_display(min_vals, max_vals):
-            # ... (lógica igual) ...
             range_parts = []
             if not isinstance(min_vals, list) or not isinstance(max_vals, list) or len(min_vals) != len(max_vals):
                 return "[Erro Range]"
@@ -871,7 +1240,6 @@ IMPORTANTE:
             else: return "[N/A]"
 
         def format_current_display(values):
-            # ... (lógica igual) ...
             current_display_parts = []
             if not isinstance(values, list): return "?"
             for val in values:
@@ -881,6 +1249,13 @@ IMPORTANTE:
                 except: current_display_parts.append("?")
             return ", ".join(current_display_parts) if current_display_parts else "?"
 
+        # Verifica se a mod afeta dano
+        def is_damage_mod(mod_name):
+            for damage_mod in DAMAGE_MODS:
+                if damage_mod.lower() in mod_name.lower():
+                    return True
+            return False
+
         idx_to_details = {"explicit": {}, "implicit": {}}
         if extended_mods and isinstance(extended_mods, dict):
              for scope in ["explicit", "implicit"]:
@@ -889,10 +1264,6 @@ IMPORTANTE:
                        idx_to_details[scope] = {i: mod for i, mod in enumerate(scope_mods)}
 
         all_scopes = {"explicit": explicit_mods_text, "implicit": implicit_mods_text}
-        
-        # Lista para armazenar apenas as análises de stats que afetam DPS
-        dps_affecting_analyses = []
-        
         if extended_hashes and isinstance(extended_hashes, dict):
              for scope, text_list in all_scopes.items():
                   scope_hashes = extended_hashes.get(scope)
@@ -908,8 +1279,15 @@ IMPORTANTE:
                             if not stat_hash or not isinstance(component_indices, list) or not component_indices: continue
                             component_details = [idx_to_details[scope].get(idx) for idx in component_indices if idx_to_details[scope].get(idx)]
                             if not component_details:
-                                # self.log_message(f"Aviso: Nenhum detalhe mod para índices {component_indices} escopo {scope} (Hash: {stat_hash})", "debug", tab_id=?)
                                 continue
+
+                            # Verifica se este mod afeta dano
+                            affects_damage = False
+                            for detail in component_details:
+                                mod_name = detail.get("name", "")
+                                if is_damage_mod(mod_name):
+                                    affects_damage = True
+                                    break
 
                             first_comp_mags = None; is_first_comp = True; valid_range_sum = True
                             for detail_part in component_details:
@@ -989,7 +1367,9 @@ IMPORTANTE:
                                  status = 'no_text_match'
 
                             chance_str = "N/A"; current_display = "?"; range_display = "[N/A]"; tag = "divine_unknown"
-                            if range_found:
+                            
+                            # Só calcula o potencial se o mod afeta o dano
+                            if range_found and affects_damage:
                                 range_display = format_range_display(summed_min_vals, summed_max_vals)
                                 if text_found and current_values:
                                      current_display = format_current_display(current_values)
@@ -1022,28 +1402,24 @@ IMPORTANTE:
                                           if potential_pct >= 65: tag = "divine_good"
                                           elif potential_pct >= 35: tag = "divine_medium"
                                           else: tag = "divine_bad"
-                                else: # Range found, no text match
+                                else: 
                                      chance_str = "N/A"; tag = "divine_no_text"; status = 'no_text_match'; potential_pct = None; current_display = "?"
+                            elif range_found:
+                                range_display = format_range_display(summed_min_vals, summed_max_vals)
+                                current_display = "?" if not text_found else format_current_display(current_values) if current_values else "?"
+                                chance_str, tag = "Não DPS", "divine_unknown"
+                                status = 'non_dps' if affects_damage == False else 'no_text_match'
+                                potential_pct = None
                             else: # No range found
                                 chance_str, tag, status = "N/A", "divine_unknown", "no_range"; potential_pct = None; range_display = "[N/A]"; current_display = "?"
 
-                            # Verificar se este stat afeta o DPS
-                            affects_dps = stat_hash in DPS_AFFECTING_STATS
-                            
-                            analysis_result = {
+                            analysis_results.append({
                                 'scope': scope, 'text': mod_text_display, 'current_str': current_display,
                                 'range_str': range_display, 'tier_str': tier_str,
                                 'potential_str': chance_str, 'potential_pct': potential_pct,
                                 'tag': tag, 'status': status, 'hash': stat_hash,
-                                'affects_dps': affects_dps  # Adicionar flag para indicar se afeta DPS
-                            }
-                            
-                            analysis_results.append(analysis_result)
-                            
-                            # Se afetar DPS, adicionar à lista especial
-                            if affects_dps and status == 'ok' and potential_pct is not None:
-                                dps_affecting_analyses.append(analysis_result)
-                            
+                                'affects_damage': affects_damage
+                            })
                        except Exception as e_hash_proc:
                             stat_hash_err = hash_entry[0] if isinstance(hash_entry, (list, tuple)) and len(hash_entry)>0 else "Desconhecido"
                             print(f"Erro CRÍTICO processando hash {stat_hash_err}: {e_hash_proc}\n{traceback.format_exc()}")
@@ -1061,59 +1437,39 @@ IMPORTANTE:
                           elif current_matches_txt: numeric_values = [float(match.group(1)) for match in current_matches_txt]
                       except ValueError: pass
                       
-                      # Verificar se este é um mod de DPS por keywords
-                      affects_dps = (
-                          ("Physical Damage" in text and "taken" not in text) or
-                          "Attack Speed" in text or
-                          (("Critical" in text) and ("Chance" in text or "Multiplier" in text)) or
-                          (text.lower().startswith("adds") and
-                           any(x in text for x in ["Fire Damage", "Cold Damage", "Lightning Damage", "Chaos Damage"])) or
-                          "to Level of all" in text
-                      )
+                      # Verifica se o texto do mod pode afetar dano
+                      affects_damage = any(damage_mod.lower() in text.lower() for damage_mod in DAMAGE_MODS)
                       
-                      result = {
+                      analysis_results.append({
                            'scope': scope, 'text': text, 'current_str': format_current_display(numeric_values) if numeric_values else "?",
-                           'range_str': "[N/A]", 'tier_str': "", 'potential_str': "N/A", 'potential_pct': None,
-                           'tag': 'divine_unknown', 'status': 'unmatched_text', 'hash': None,
-                           'affects_dps': affects_dps
-                      }
-                      
-                      analysis_results.append(result)
+                           'range_str': "[N/A]", 'tier_str': "", 'potential_str': "Não Estimado" if affects_damage else "Não DPS",
+                           'potential_pct': None, 'tag': 'divine_unknown', 'status': 'unmatched_text', 'hash': None,
+                           'affects_damage': affects_damage
+                      })
 
-        # Calculate Overall Worth & Sort
-        worth_divining = False
-        max_overall_chance = 0.0
-        max_dps_chance = 0.0
-        valid_chances = []
-        valid_dps_chances = []
-        
+        # Calculate Overall Worth & Sort (Apenas com base em mods que afetam danos)
+        worth_divining = False; max_overall_chance = 0.0; dps_valid_chances = []
         for res in analysis_results:
-            potential = res.get('potential_pct')
-            if isinstance(potential, (int, float)) and res.get('status') == 'ok':
-                valid_chances.append(potential)
-                if res.get('affects_dps', False):
-                    valid_dps_chances.append(potential)
-                    if potential > 0.1:
-                        worth_divining = True  # Só vale a pena com Divine se tiver um mod DPS que melhora
-        
-        if valid_chances:
-            max_overall_chance = max(valid_chances)
-        
-        if valid_dps_chances:
-            max_dps_chance = max(valid_dps_chances)
+             potential = res.get('potential_pct')
+             affects_damage = res.get('affects_damage', False)
+             if isinstance(potential, (int, float)) and res.get('status') == 'ok' and affects_damage:
+                  dps_valid_chances.append(potential)
+                  if potential > 15.0: worth_divining = True
+        if dps_valid_chances: max_overall_chance = max(dps_valid_chances)
 
         def sort_key(res):
-            # Ordenação: primeiro os mods que afetam DPS
-            dps_affecting = 0 if res.get('affects_dps', False) else 1
+            # Ordem de prioridade: affeta_dano -> escopo -> status -> potencial
+            affects_damage = 0 if res.get('affects_damage', False) else 1
             scope_order = 0 if res.get('scope') == 'implicit' else (1 if res.get('scope') == 'explicit' else 2)
             status_prio = 0 if res.get('status') == 'ok' else (1 if res.get('status') == 'no_text_match' else (2 if res.get('status') == 'unmatched_text' else ( 3 if res.get('status') != 'error' else 4)))
             potential = res.get('potential_pct', -1)
             if potential is None: potential = -2
-            return (dps_affecting, scope_order, status_prio, -potential) # Sort DPS first, then scope, status, then descending potential
+            return (affects_damage, scope_order, status_prio, -potential) # Sort afeta_dano, scope, status, potencial (desc)
             
         analysis_results.sort(key=sort_key)
 
-        return worth_divining, max_dps_chance, analysis_results, dps_affecting_analyses
+        return worth_divining, max_overall_chance, analysis_results
+
 
     def process_item(self, item_data, query_id, tab_id):
         """Processa um item e o adiciona ao Treeview da aba correta."""
@@ -1175,42 +1531,36 @@ IMPORTANTE:
             whisper = listing_info.get("whisper", "N/A")
 
             # Calcula DPS e Divine Worth (funções globais)
-            dps_num, pdps_num, edps_num = self.calculate_dps(item_info)
-            worth_divining, max_chance, divine_analysis_results, dps_affecting_analyses = self.analyze_divine_worth(item_data)
-
-            # Calcula potencial máximo de ganho para DPS/PDPS
-            dps_gain_pct = 0
-            pdps_gain_pct = 0
-            
-            # Calcular o potencial máximo de DPS com Divine
-            # Só considera os mods que realmente afetam o DPS
-            if dps_num and worth_divining and dps_affecting_analyses:
-                # Estimamos que cada 10% de melhoria em mods que afetam dano = ~3% de ganho total
-                # É uma aproximação, mas dá uma ideia do potencial
-                max_mod_potential = max([a.get('potential_pct', 0) for a in dps_affecting_analyses if a.get('status') == 'ok']) if dps_affecting_analyses else 0
-                dps_gain_pct = max_mod_potential * 0.3  # Aproximação
-                pdps_gain_pct = dps_gain_pct  # Simplificação, pode ser refinada
+            dps_num, pdps_num, _ = self.calculate_dps(item_info)
+            worth_divining, max_chance, divine_analysis_results = self.analyze_divine_worth(item_data)
 
             # Monta link e valores para o Treeview
             league_url_part = "poe2/Standard" # Pode ser configurável
             item_link = f"https://www.pathofexile.com/trade/search/{league_url_part}/{query_id}/{item_id}" # Usa query_id da aba
             
-            # Formatação dos valores de DPS/PDPS - Agora separados
-            dps_display = f"{dps_num:.1f}" if dps_num is not None else "-"
-            pdps_display = f"{pdps_num:.1f}" if pdps_num is not None else "-"
+            # Display de DPS de acordo com o modo selecionado
+            dps_mode = self.dps_display_mode.get()
+            if dps_mode == "DPS":
+                dps_display = f"{dps_num:.1f}" if dps_num is not None else "-"
+                dps_pdps_str = dps_display
+            elif dps_mode == "PDPS":
+                pdps_display = f"{pdps_num:.1f}" if pdps_num is not None else "-"
+                dps_pdps_str = pdps_display
+            else: # "Both"
+                dps_display = f"{dps_num:.1f}" if dps_num is not None else "-"
+                pdps_display = f"{pdps_num:.1f}" if pdps_num is not None else "-"
+                dps_pdps_str = f"{dps_display}"
+                if pdps_display != "-" and pdps_display != dps_display:
+                    dps_pdps_str += f" / {pdps_display}"
             
-            # Modo de exibição (esconde colunas se necessário)
-            display_mode = self.dps_display_mode.get()
-            
-            # Define os valores para o Treeview (separados DPS e PDPS)
-            tree_values = (full_name, price_text, dps_display, pdps_display, seller, listing_date_display, "Copiar" if whisper != "N/A" else "-")
-            
-            # Define a tag da linha baseado no divine worth (agora só considera mods DPS)
+            tree_values = (full_name, price_text, dps_pdps_str, seller, listing_date_display, "Copiar" if whisper != "N/A" else "-")
+
+            # Define a tag da linha baseado no divine worth
             row_tag = 'not_worth'
             if worth_divining:
-                if max_chance >= 65: row_tag = 'worth_good'
-                elif max_chance >= 35: row_tag = 'worth_medium'
-                else: row_tag = 'worth_bad'
+                 if max_chance >= 65: row_tag = 'worth_good'
+                 elif max_chance >= 35: row_tag = 'worth_medium'
+                 else: row_tag = 'worth_bad'
 
             # Função para atualizar o Treeview DA ABA CORRETA na thread principal
             def _update_treeview():
@@ -1247,13 +1597,10 @@ IMPORTANTE:
                 "item_level": item_info.get("ilvl", "?"),
                 "rarity": item_info.get("rarity", "normal").capitalize(),
                 "frameType": item_info.get("frameType", 0),
-                "dps": dps_num, "pdps": pdps_num, "edps": edps_num,
+                "dps": dps_num, "pdps": pdps_num,
                 "worth_divining": worth_divining,
                 "max_divine_chance": max_chance,
-                "dps_gain_pct": dps_gain_pct,
-                "pdps_gain_pct": pdps_gain_pct,
                 "divine_analysis": divine_analysis_results,
-                "dps_affecting_analyses": dps_affecting_analyses,
                 "raw_data": item_data # Guarda dados brutos se necessário
             }
             item_cache[item_id] = item_details
@@ -1263,7 +1610,7 @@ IMPORTANTE:
              self.log_message(f"Erro crítico processando item {item_id_err}: {e_process}\n{traceback.format_exc()}", "error", tab_id=tab_id)
 
     def sort_treeview(self, column, tab_id=None):
-         """Ordena o treeview da aba especificada ou da ativa."""
+         """ Ordena o treeview da aba especificada ou da ativa. """
          if not tab_id: tab_id = self.active_tab_id
          if not tab_id or tab_id not in self.search_tabs_data:
               # self.log_message("Tentativa de ordenar aba inválida.", "warning", use_global_log=True)
@@ -1305,22 +1652,10 @@ IMPORTANTE:
                  order = currency_order.get(currency, 999)
                  return (order, amount)
              sort_key_func = price_sort_key
-         elif column == 'dps' or column == 'pdps':
+         elif column == 'dps':
              def dps_sort_key(item_tuple):
-                 dps_str = item_tuple[0]
-                 # Verificar o modo de visualização
-                 display_mode = self.dps_display_mode.get()
-                 if display_mode != 'both':
-                     # Se estamos priorizando um tipo específico de DPS, consideramos o potencial de melhoria
-                     item_details = item_cache.get(item_tuple[1])
-                     if item_details:
-                         # Ordena por potencial de ganho se estiver em um modo DPS específico
-                         if column == 'dps' and display_mode == 'dps' and 'dps_gain_pct' in item_details:
-                             return (float(item_details.get('dps_gain_pct', 0)), float(dps_str if dps_str != '-' else '-inf'))
-                         elif column == 'pdps' and display_mode == 'pdps' and 'pdps_gain_pct' in item_details:
-                             return (float(item_details.get('pdps_gain_pct', 0)), float(dps_str if dps_str != '-' else '-inf'))
-                 # Fallback: ordenar pelo valor numérico
-                 try: return float(dps_str if dps_str != '-' else '-inf')
+                 dps_pdps_str = item_tuple[0]; parts = dps_pdps_str.split('/'); dps_str = parts[0].strip()
+                 try: return float(dps_str)
                  except ValueError: return float('-inf')
              sort_key_func = dps_sort_key
          elif column == 'data_listagem':
@@ -1375,6 +1710,52 @@ IMPORTANTE:
          self.sort_column = column
          self.sort_reverse = reverse
 
+
+    def on_item_double_click(self, event, tab_id):
+         """Callback para duplo clique no Treeview da aba especificada."""
+         if tab_id not in self.search_tabs_data: return
+         tab_data = self.search_tabs_data[tab_id]
+         tree = tab_data.get('results_tree')
+         item_cache = tab_data.get('_item_details_cache')
+         if not tree or not item_cache or not tree.winfo_exists(): return
+
+         selected_item_iid = tree.focus() # Pega o item selecionado (foco)
+         if not selected_item_iid: return
+
+         # Mostra detalhes na aba correta
+         self.show_item_details(selected_item_iid, tab_id)
+
+         # Verifica se o clique foi na coluna 'whisper' (índice 5) para copiar
+         column_id = tree.identify_column(event.x)
+         column_index = -1
+         try: column_index = int(column_id.replace('#','')) - 1
+         except ValueError: pass # Click fora de uma coluna válida
+
+         if column_index == 5: # Coluna 'whisper'
+             item_details = item_cache.get(selected_item_iid)
+             if item_details:
+                  whisper_text = item_details.get("whisper", "N/A")
+                  if whisper_text != "N/A" and whisper_text:
+                       try:
+                            self.root.clipboard_clear()
+                            self.root.clipboard_append(whisper_text)
+                            original_status = self.status_label.cget("text") # Salva status atual
+                            status_msg = f"[{tab_data['name']}] Whisper copiado!"
+                            self.update_status(status_msg)
+                            # Restaura status após 2 segundos SE A MENSAGEM AINDA FOR A MESMA
+                            self.root.after(2000, lambda current_msg=status_msg, prev_status=original_status: self.update_status(prev_status) if self.status_label.cget("text") == current_msg else None)
+                       except tk.TclError as e_clip:
+                            messagebox.showerror("Erro Clipboard", f"Não foi possível acessar área de transferência:\n{e_clip}")
+                            self.log_message(f"Erro clipboard: {e_clip}", "error", tab_id=tab_id)
+                       except Exception as e_copy:
+                            messagebox.showerror("Erro", f"Falha ao copiar whisper:\n{e_copy}")
+                            self.log_message(f"Erro ao copiar whisper: {e_copy}", "error", tab_id=tab_id)
+                  else:
+                       messagebox.showwarning("Whisper Indisponível", "Não há mensagem de whisper para este item.")
+             else:
+                  messagebox.showerror("Erro Interno", "Detalhes do item não encontrados no cache desta aba.")
+                  self.log_message(f"Cache miss em on_item_double_click para {selected_item_iid}", "warning", tab_id=tab_id)
+
     def show_item_details(self, item_id, tab_id):
         """Mostra os detalhes do item nos painéis da aba especificada."""
         if tab_id not in self.search_tabs_data:
@@ -1404,108 +1785,112 @@ IMPORTANTE:
                       except Exception: pass
             return
 
-        # --- Painel Direito (Análise Divine) - REDESENHADO para foco em DPS ---
+        # --- Painel Direito (Análise Divine) ---
         if analysis_widget.winfo_exists():
              try:
                   analysis_widget.config(state=tk.NORMAL, bg=colors["log_bg"])
                   analysis_widget.delete(1.0, tk.END)
                   
-                  # Mostrar título com resumo geral do item
-                  analysis_widget.insert(tk.END, "=== Análise de Divine Orb ===\n", ("title",))
+                  # Extrai DPS/PDPS e potencial máximo
+                  dps_num = item_details.get('dps')
+                  pdps_num = item_details.get('pdps')
+                  worth_divining = item_details.get('worth_divining', False)
+                  max_divine_chance = item_details.get('max_divine_chance', 0)
                   
-                  # Resumo do DPS
-                  dps = item_details.get('dps')
-                  pdps = item_details.get('pdps')
-                  edps = item_details.get('edps')
-                  dps_gain = item_details.get('dps_gain_pct', 0)
-                  pdps_gain = item_details.get('pdps_gain_pct', 0)
+                  # --- Resumo Visual no Topo ---
+                  analysis_widget.insert(tk.END, "=== Resumo da Análise ===\n", ("title",))
                   
-                  if dps or pdps:
-                      analysis_widget.insert(tk.END, "\n=== Resumo do DPS ===\n", ("header",))
+                  # Valores de DPS Atual/Máximo
+                  if dps_num is not None or pdps_num is not None:
+                      analysis_widget.insert(tk.END, "• Atual:", ("header",))
+                      if dps_num is not None:
+                          dps_str = f"{dps_num:.1f}"
+                          analysis_widget.insert(tk.END, f" DPS: {dps_str}", ("divine_max" if max_divine_chance < 10 else "divine_bad"))
+                      if pdps_num is not None and pdps_num != dps_num:
+                          pdps_str = f"{pdps_num:.1f}"
+                          analysis_widget.insert(tk.END, f" PDPS: {pdps_str}", ("divine_max" if max_divine_chance < 10 else "divine_bad"))
+                      analysis_widget.insert(tk.END, "\n")
                       
-                      # DPS Total
-                      if dps:
-                          # Estimativa de DPS máximo possível
-                          max_dps = dps * (1 + dps_gain/100) if dps_gain else dps
-                          analysis_widget.insert(tk.END, f"• DPS Total: {dps:.1f}", ("tag_mod_explicit", "tag_divine_unknown"))
+                      # Valor máximo DPS estimado
+                      if max_divine_chance > 0 and dps_num is not None:
+                          # Estimativa simples - aumenta o DPS pela proporção máxima
+                          max_dps_est = dps_num * (1 + (max_divine_chance / 100))
+                          analysis_widget.insert(tk.END, "• Máximo estimado:", ("header",))
+                          analysis_widget.insert(tk.END, f" {max_dps_est:.1f}", ("divine_good" if max_divine_chance >= 50 else "divine_medium"))
+                          analysis_widget.insert(tk.END, "\n")
                           
-                          if dps_gain > 0:
-                              gain_tag = "tag_divine_good" if dps_gain >= 20 else ("tag_divine_medium" if dps_gain >= 10 else "tag_divine_bad")
-                              analysis_widget.insert(tk.END, f" → Máximo: {max_dps:.1f} (+{dps_gain:.1f}%)\n", (gain_tag,))
-                          else:
-                              analysis_widget.insert(tk.END, "\n")
+                          # Ganho máximo
+                          analysis_widget.insert(tk.END, "• Ganho de DPS Máximo:", ("header",))
+                          tag = "divine_good" if max_divine_chance >= 50 else ("divine_medium" if max_divine_chance >= 30 else "divine_bad")
+                          analysis_widget.insert(tk.END, f" +{max_divine_chance:.1f}%", (tag,))
+                          analysis_widget.insert(tk.END, "\n")
                       
-                      # PDPS (Dano Físico)
-                      if pdps:
-                          # Estimativa de PDPS máximo possível
-                          max_pdps = pdps * (1 + pdps_gain/100) if pdps_gain else pdps
-                          analysis_widget.insert(tk.END, f"• PDPS (Físico): {pdps:.1f}", ("tag_mod_explicit", "tag_divine_unknown"))
-                          
-                          if pdps_gain > 0:
-                              gain_tag = "tag_divine_good" if pdps_gain >= 20 else ("tag_divine_medium" if pdps_gain >= 10 else "tag_divine_bad")
-                              analysis_widget.insert(tk.END, f" → Máximo: {max_pdps:.1f} (+{pdps_gain:.1f}%)\n", (gain_tag,))
-                          else:
-                              analysis_widget.insert(tk.END, "\n")
-                      
-                      # EDPS (Dano Elemental) se existir
-                      if edps and edps > 0:
-                          analysis_widget.insert(tk.END, f"• EDPS (Elemental): {edps:.1f}\n", ("tag_mod_explicit",))
+                  # Valor do Item (atual/estimado)
+                  price_text = item_details.get('price', 'Sem preço')
+                  analysis_widget.insert(tk.END, "\n=== Análise de Preço ===\n", ("title",))
+                  analysis_widget.insert(tk.END, f"Preço Atual: {price_text}\n", ("header",))
                   
-                  # Recomendação de Divine baseada apenas em mods que afetam DPS
-                  dps_affecting_analyses = item_details.get("dps_affecting_analyses", [])
-                  
-                  # Se o item tem mods que afetam DPS com potencial de melhoria
-                  if dps_affecting_analyses and any(a.get('potential_pct', 0) > 0 for a in dps_affecting_analyses):
-                      max_potential = max([a.get('potential_pct', 0) for a in dps_affecting_analyses if a.get('status') == 'ok'])
-                      
-                      analysis_widget.insert(tk.END, "\n=== Recomendação de Divine ===\n", ("header",))
-                      
-                      # Formatação da recomendação baseada no potencial
-                      if max_potential >= 40:
-                          analysis_widget.insert(tk.END, f"RECOMENDADO! Potencial de {max_potential:.1f}% em mods DPS\n", ("tag_divine_good",))
-                          if dps_gain >= 10:
-                              analysis_widget.insert(tk.END, f"Ganho estimado: +{dps_gain:.1f}% DPS Total\n", ("tag_divine_good",))
-                      elif max_potential >= 20:
-                          analysis_widget.insert(tk.END, f"Considere usar Divine. Potencial de {max_potential:.1f}% em mods DPS\n", ("tag_divine_medium",))
-                          if dps_gain >= 5:
-                              analysis_widget.insert(tk.END, f"Ganho estimado: +{dps_gain:.1f}% DPS Total\n", ("tag_divine_medium",))
-                      else:
-                          analysis_widget.insert(tk.END, f"Não recomendado. Potencial baixo de {max_potential:.1f}%\n", ("tag_divine_bad",))
+                  if worth_divining:
+                      est_price = "Valor Aumentado" if max_divine_chance >= 50 else price_text
+                      analysis_widget.insert(tk.END, f"Preço Estimado Após Divine: {est_price}\n", 
+                                           ("divine_good" if max_divine_chance >= 50 else "divine_medium"))
                   else:
-                      analysis_widget.insert(tk.END, "\nDivine não recomendado para este item.\n", ("tag_divine_bad",))
+                      analysis_widget.insert(tk.END, f"Preço Estimado Após Divine: {price_text}\n", ("divine_unknown"))
                   
-                  # Destaca apenas os modificadores que afetam o DPS
-                  if dps_affecting_analyses:
-                      analysis_widget.insert(tk.END, "\n=== Mods que Afetam DPS ===\n", ("header",))
-                      
-                      # Ordenar por potencial de melhoria
-                      dps_mods_sorted = sorted(dps_affecting_analyses, 
-                                             key=lambda x: (x.get('potential_pct', 0) or 0), 
-                                             reverse=True)
-                      
-                      for mod in dps_mods_sorted:
-                          text = mod.get('text', 'Desconhecido')
-                          current = mod.get('current_str', '?')
-                          range_str = mod.get('range_str', '[N/A]')
-                          potential = mod.get('potential_pct')
-                          potential_str = mod.get('potential_str', 'N/A')
-                          
-                          # Definir a tag baseada no potencial
-                          if potential is None or mod.get('status') != 'ok':
-                              tag = "tag_divine_unknown"
-                          elif potential >= 40:
-                              tag = "tag_divine_good"
-                          elif potential >= 20:
-                              tag = "tag_divine_medium"
-                          elif potential > 0:
-                              tag = "tag_divine_bad"
-                          else:
-                              tag = "tag_divine_max"
-                          
-                          # Mostrar o modificador com seu potencial
-                          analysis_widget.insert(tk.END, f"{text}\n", ("tag_mod_explicit",))
-                          analysis_widget.insert(tk.END, f"   Atual: {current}   Range: {range_str}\n", ("tag_divine_unknown",))
-                          analysis_widget.insert(tk.END, f"   Potencial: {potential_str}\n\n", (tag,))
+                  # --- Detalhes dos Modificadores ---
+                  analysis_widget.insert(tk.END, "\n=== Detalhes dos Modificadores ===\n", ("title",))
+                  analysis_results = item_details.get("divine_analysis", [])
+                  if not analysis_results:
+                       analysis_widget.insert(tk.END, "Nenhuma análise disponível.\n", ("divine_unknown",))
+                  else:
+                       mod_w = 36; cur_w = 10; range_w = 22; pot_w = 10
+                       header_line = f"{'Modificador'.ljust(mod_w)} {'Atual'.ljust(cur_w)} {'Range'.ljust(range_w)} {'Potencial'.rjust(pot_w)}\n"
+                       analysis_widget.insert(tk.END, header_line, ("header",))
+                       separator = "-" * (mod_w + cur_w + range_w + pot_w + 3) + "\n"
+                       analysis_widget.insert(tk.END, separator, ("debug",))
+                       
+                       # Filtra para mostrar primeiro os mods que afetam dano
+                       dps_mods = [res for res in analysis_results if res.get('affects_damage', False)]
+                       other_mods = [res for res in analysis_results if not res.get('affects_damage', False)]
+                       
+                       # Primeiro os mods que afetam DPS
+                       current_scope_disp = None
+                       if dps_mods:
+                           for res in dps_mods:
+                                scope = res.get('scope', '')
+                                display_scope = "Implícitos" if scope == "implicit" else ("Explícitos" if scope == "explicit" else "Outros")
+                                if display_scope != current_scope_disp:
+                                     if current_scope_disp is not None: analysis_widget.insert(tk.END, "\n")
+                                     analysis_widget.insert(tk.END, f"--- {display_scope} ---\n", ("header",))
+                                     current_scope_disp = display_scope
+    
+                                mod_text_base = res.get('text', 'Erro Análise'); tier = res.get('tier_str', '')
+                                full_mod_text = (mod_text_base + tier).strip()
+                                display_mod_text = (full_mod_text[:mod_w-3] + '...') if len(full_mod_text) > mod_w else full_mod_text
+                                display_mod_text = display_mod_text.ljust(mod_w)
+                                current_val = res.get('current_str', '?')[:cur_w].ljust(cur_w)
+                                range_val = res.get('range_str', 'N/A')[:rng_w].ljust(rng_w)
+                                potential_val = res.get('potential_str', 'N/A')[:pot_w].rjust(pot_w)
+                                tag = res.get('tag', 'divine_unknown')
+                                if res.get('status') == 'unmatched_text': tag = 'divine_unknown'
+    
+                                # Verifica se a tag existe antes de usar
+                                if not analysis_widget.tag_cget(tag, "foreground"):
+                                     tag = "divine_unknown" # Fallback se tag não configurada
+    
+                                line = f"{display_mod_text} {current_val} {range_val} {potential_val}\n"
+                                analysis_widget.insert(tk.END, line, (tag,))
+                       
+                       # Em seguida os outros mods (opcional - pode ser omitido)
+                       if other_mods:
+                           current_scope_disp = None
+                           analysis_widget.insert(tk.END, "\n--- Outros Modificadores ---\n", ("header",))
+                           # Opcional: mostrar alguns outros mods relevantes como resistências
+                           for res in other_mods[:5]:  # Limita a 5 outros mods para economizar espaço
+                                scope = res.get('scope', '')
+                                mod_text = res.get('text', 'Mod Desconhecido')
+                                tag = "tag_mod_implicit" if scope == "implicit" else "tag_mod_explicit"
+                                analysis_widget.insert(tk.END, f"{mod_text}\n", (tag,))
                   
                   analysis_widget.config(state=tk.DISABLED)
              except tk.TclError: pass
@@ -1539,21 +1924,11 @@ IMPORTANTE:
                 details_widget.insert(tk.END, f"Vendedor: {item_details['seller']}\n")
                 details_widget.insert(tk.END, f"Listado: {item_details['listing_date']}\n")
                 details_widget.insert(tk.END, f"iLvl: {item_details['item_level']}\n")
-                
-                # DPS details - formato melhorado
-                dps = item_details.get('dps')
-                pdps = item_details.get('pdps')
-                edps = item_details.get('edps')
-                
-                if dps is not None or pdps is not None or edps is not None:
-                    details_widget.insert(tk.END, "\n--- Valores de DPS ---\n", ("header",))
-                    if dps is not None:
-                        details_widget.insert(tk.END, f"DPS Total: {dps:.1f}\n")
-                    if pdps is not None:
-                        details_widget.insert(tk.END, f"DPS Físico: {pdps:.1f}\n")
-                    if edps is not None and edps > 0:
-                        details_widget.insert(tk.END, f"DPS Elemental: {edps:.1f}\n")
-                
+                dps_str = f"{item_details['dps']:.1f}" if item_details.get('dps') is not None else "-"
+                pdps_str = f"{item_details['pdps']:.1f}" if item_details.get('pdps') is not None else "-"
+                if dps_str != "-" or pdps_str != "-":
+                     dps_line = f"DPS: {dps_str}" + (f" / PDPS: {pdps_str}" if pdps_str != "-" and pdps_str != dps_str else "")
+                     details_widget.insert(tk.END, dps_line + "\n")
                 if item_details['whisper'] != "N/A":
                      details_widget.insert(tk.END, f"Whisper: {item_details['whisper']}\n")
 
@@ -1598,7 +1973,285 @@ IMPORTANTE:
                           details_widget.config(state=tk.DISABLED)
                 except Exception: pass
 
-# ... keep existing code (o restante das funções da classe PoeTracker)
+    def start_polling(self, tab_id=None):
+         """Inicia o monitoramento para a aba especificada ou ativa."""
+         if not tab_id: tab_id = self.active_tab_id
+         if not tab_id or tab_id not in self.search_tabs_data:
+              self.log_message("Tentativa de iniciar polling em aba inválida.", "warning", use_global_log=True)
+              return
+         tab_data = self.search_tabs_data[tab_id]
+         tab_name = tab_data['name']
+
+         if tab_data.get('is_polling', False):
+             self.log_message("Monitoramento já ativo para esta aba.", "info", tab_id=tab_id)
+             return
+
+         # Valida intervalo
+         interval = 5
+         try:
+             interval_input = int(tab_data['polling_interval'].get())
+             if interval_input < 5:
+                  messagebox.showwarning("Intervalo Baixo", "Intervalo mínimo 5s recomendado.")
+                  interval = 5; tab_data['polling_interval'].set("5")
+             else: interval = interval_input
+         except ValueError:
+             messagebox.showerror("Erro", "Intervalo inválido! Usando 5s.")
+             tab_data['polling_interval'].set("5"); interval = 5
+
+         # Valida cookies globais
+         if not self.poesessid.get() or not self.cf_clearance.get():
+              messagebox.showerror("Erro Autenticação", "Cookies POESESSID/cf_clearance não configurados.")
+              return
+
+         tab_data['is_polling'] = True
+         tab_data['stop_polling_flag'].clear() # Reseta a flag DA ABA
+
+         # Atualiza botões DA ABA
+         try:
+             start_btn = tab_data.get('start_polling_button')
+             stop_btn = tab_data.get('stop_polling_button')
+             if start_btn and start_btn.winfo_exists(): start_btn.config(state=tk.DISABLED)
+             if stop_btn and stop_btn.winfo_exists(): stop_btn.config(state=tk.NORMAL)
+         except tk.TclError: pass
+
+         self.log_message(f"Iniciando monitoramento a cada {interval}s.", "info", tab_id=tab_id)
+         self.update_status(f"[{tab_name}] Monitorando (Intervalo: {interval}s)...") # Status global
+
+         # Inicia a thread de polling DA ABA
+         tab_data['polling_thread'] = threading.Thread(target=self.polling_worker, args=(tab_id, interval,), daemon=True)
+         tab_data['polling_thread'].start()
+
+
+    def stop_polling(self, tab_id=None, join_thread=False):
+        """Para o monitoramento da aba especificada ou ativa."""
+        if not tab_id: tab_id = self.active_tab_id
+        if not tab_id or tab_id not in self.search_tabs_data:
+             # self.log_message("Tentativa de parar polling em aba inválida.", "warning", use_global_log=True)
+             return
+        tab_data = self.search_tabs_data[tab_id]
+        tab_name = tab_data['name']
+
+        if not tab_data.get('is_polling', False):
+            # self.log_message("Monitoramento não estava ativo para esta aba.", "info", tab_id=tab_id)
+            return
+
+        # Sinaliza para a thread DA ABA parar
+        stop_flag = tab_data.get('stop_polling_flag')
+        if stop_flag: stop_flag.set()
+        tab_data['is_polling'] = False # Seta imediatamente para UI refletir
+
+        self.log_message("Sinal de parada enviado.", "info", tab_id=tab_id)
+        self.update_status(f"[{tab_name}] Parando monitoramento...")
+
+        # Opcional: Aguardar a thread finalizar (útil ao remover aba)
+        thread_to_join = tab_data.get('polling_thread')
+        if join_thread and thread_to_join and thread_to_join.is_alive():
+            try:
+                thread_to_join.join(timeout=2.0) # Espera até 2s
+                if thread_to_join.is_alive():
+                    self.log_message("Aviso: Thread de polling da aba não finalizou no tempo.", "warning", tab_id=tab_id)
+            except Exception as e_join:
+                self.log_message(f"Erro ao aguardar thread da aba: {e_join}", "error", tab_id=tab_id)
+
+        # --- Atualiza botões e status via `after` para thread safety ---
+        # É importante verificar se a aba ainda existe no momento da execução do after()
+        def _update_ui_after_stop():
+            if tab_id in self.search_tabs_data: # Verifica se aba ainda existe
+                 current_tab_data = self.search_tabs_data[tab_id]
+                 # Atualiza Status Global se esta aba era a ativa E o polling realmente parou
+                 if self.active_tab_id == tab_id and not current_tab_data.get('is_polling', True): # Re-verifica is_polling
+                      self.update_status(f"[{current_tab_data['name']}] Monitoramento parado.")
+                 # Atualiza Botões da Aba
+                 try:
+                     start_btn = current_tab_data.get('start_polling_button')
+                     stop_btn = current_tab_data.get('stop_polling_button')
+                     if start_btn and start_btn.winfo_exists(): start_btn.config(state=tk.NORMAL)
+                     if stop_btn and stop_btn.winfo_exists(): stop_btn.config(state=tk.DISABLED)
+                 except tk.TclError: pass # Ignora erro se widget destruído
+                 except AttributeError: pass # Ignora erro se widget não encontrado
+            # else: Aba foi removida, não faz nada na UI
+
+        if hasattr(self, 'root') and self.root.winfo_exists():
+            self.root.after(50, _update_ui_after_stop) # Delay pequeno
+
+    def polling_worker(self, tab_id, interval):
+        """Worker da thread de polling para uma aba específica."""
+        # Verifica se a aba existe no início
+        if tab_id not in self.search_tabs_data:
+             print(f"ERRO FATAL: polling_worker iniciado para tab_id inexistente {tab_id}")
+             return
+        tab_data = self.search_tabs_data[tab_id]
+        tab_name = tab_data['name']
+        stop_flag = tab_data['stop_polling_flag']
+
+        self.log_message("Thread de monitoramento iniciada.", "debug", tab_id=tab_id)
+
+        while not stop_flag.is_set():
+            # Re-verifica a existência da aba a cada iteração
+            if tab_id not in self.search_tabs_data:
+                 self.log_message(f"Aba {tab_name} removida, finalizando thread.", "info", use_global_log=True)
+                 break
+
+            self.update_status(f"[{tab_name}] Monitorando: Buscando...")
+            self.log_message("Iniciando busca.", "debug", tab_id=tab_id)
+            try:
+                 # Chama search_items para ESTA aba
+                 self.search_items(tab_id)
+            except Exception as search_err:
+                 self.log_message(f"Erro durante busca no polling: {search_err}", "error", tab_id=tab_id)
+                 if not stop_flag.is_set(): # Evita sleep se já pediu pra parar
+                      time.sleep(min(interval, 5)) # Pequeno delay em caso de erro
+
+            # Verifica parada logo após a busca
+            if stop_flag.is_set():
+                 self.log_message("Parada detectada após busca.", "debug", tab_id=tab_id)
+                 break
+
+            # Verifica novamente existência da aba antes de esperar
+            if tab_id not in self.search_tabs_data:
+                 self.log_message(f"Aba {tab_name} removida durante busca, finalizando thread.", "info", use_global_log=True)
+                 break
+
+            self.update_status(f"[{tab_name}] Monitorando: Aguardando {interval}s...")
+            self.log_message(f"Aguardando {interval}s...", "debug", tab_id=tab_id)
+
+            # Espera pelo intervalo ou pelo sinal de parada DA ABA
+            stopped_during_wait = stop_flag.wait(timeout=interval)
+
+            if stopped_during_wait:
+                 self.log_message("Parada detectada durante espera.", "debug", tab_id=tab_id)
+                 break
+
+        # --- Finalização da Thread ---
+        self.log_message("Thread de monitoramento finalizada.", "debug", tab_id=tab_id)
+        # A função stop_polling agora é responsável por atualizar a UI via `after`
+        # Não precisamos chamar `finalize_polling_state_tab` daqui explicitamente
+        # A chamada a `stop_polling` (seja pelo botão ou no fechamento) cuidará disso.
+
+    def apply_theme(self):
+        """Aplica o tema a todos os widgets, incluindo os das abas."""
+        colors = DARK_COLORS if self.dark_mode_enabled.get() else LIGHT_COLORS
+        # --- Configure Root Window ---
+        self.root.config(bg=colors["bg"])
+
+        # --- Configure ttk Styles (global) ---
+        self.style.configure('.', background=colors["bg"], foreground=colors["fg"], font=("Segoe UI", 9))
+        self.style.configure('TFrame', background=colors["bg"])
+        self.style.configure('TLabel', background=colors["bg"], foreground=colors["fg"])
+        self.style.configure('TLabelframe', background=colors["bg"], bordercolor=colors.get("labelframe_fg", colors["fg"]))
+        self.style.configure('TLabelframe.Label', background=colors["bg"], foreground=colors.get("labelframe_fg", colors["fg"]))
+        self.style.configure('TButton', background=colors["button_bg"], foreground=colors["button_fg"], font=("Segoe UI", 9))
+        self.style.map('TButton', background=[('active', colors["widget_bg"]), ('disabled', colors["button_bg"])]) # Handle disabled state
+        self.style.configure('Toolbutton', background=colors["status_bg"], foreground=colors["fg"])
+        self.style.map('Toolbutton', background=[('active', colors["widget_bg"])])
+        self.style.configure('TEntry', fieldbackground=colors["widget_bg"], foreground=colors["widget_fg"], insertcolor=colors["fg"])
+        self.style.configure('TCombobox', fieldbackground=colors["widget_bg"], foreground=colors["widget_fg"], selectbackground=colors["widget_bg"], selectforeground=colors["widget_fg"], insertcolor=colors["fg"])
+        self.root.option_add('*TCombobox*List.background', colors["widget_bg"])
+        self.root.option_add('*TCombobox*List.foreground', colors["widget_fg"])
+        self.root.option_add('*TCombobox*List.selectBackground', colors["tree_selected_bg"])
+        self.root.option_add('*TCombobox*List.selectForeground', colors["tree_selected_fg"])
+        self.style.configure('TNotebook', background=colors["bg"], borderwidth=1)
+        self.style.configure('TNotebook.Tab', background=colors["button_bg"], foreground=colors["button_fg"], padding=[5, 2])
+        self.style.map('TNotebook.Tab', background=[('selected', colors["widget_bg"])], foreground=[('selected', colors["widget_fg"])])
+        self.style.configure('Treeview', background=colors["tree_bg"], foreground=colors["tree_fg"], fieldbackground=colors["tree_bg"], rowheight=22)
+        self.style.map('Treeview', background=[('selected', colors["tree_selected_bg"])], foreground=[('selected', colors["tree_selected_fg"])])
+        self.style.configure('Treeview.Heading', background=colors["tree_heading_bg"], foreground=colors["tree_heading_fg"], font=("Segoe UI", 9, "bold"))
+        self.style.configure('Vertical.TScrollbar', background=colors["button_bg"], troughcolor=colors["bg"])
+        self.style.configure('Horizontal.TScrollbar', background=colors["button_bg"], troughcolor=colors["bg"])
+        self.style.configure('Status.TFrame', background=colors["status_bg"])
+        self.style.configure('Status.TLabel', background=colors["status_bg"], foreground=colors["status_fg"])
+
+        # --- Configure Widgets Globais Específicos ---
+        if hasattr(self, 'instructions_widget') and self.instructions_widget and self.instructions_widget.winfo_exists():
+             self.instructions_widget.config(background=colors["log_bg"], foreground=colors["log_fg"], insertbackground=colors["log_fg"])
+
+        # --- Itera sobre as abas de busca e aplica tema aos widgets ---
+        for tab_id, tab_data in self.search_tabs_data.items():
+             # Aplica a ScrolledText (Log, Análise)
+             for widget_key in ['details_text', 'analysis_text']:
+                  widget = tab_data.get(widget_key)
+                  if widget and widget.winfo_exists():
+                       widget.config(background=colors["log_bg"], foreground=colors["log_fg"], insertbackground=colors["log_fg"])
+                       # Reconfigura tags de texto para estes widgets
+                       for tag_name, tag_config in colors.items():
+                            if tag_name.startswith("tag_"):
+                                 clean_tag_name = tag_name.replace("tag_", "")
+                                 try: # Tenta configurar, ignora se falhar (widget pode estar sendo destruído)
+                                     widget.tag_configure(clean_tag_name, **tag_config)
+                                 except tk.TclError: pass
+
+             # Aplica a Treeview
+             tree = tab_data.get('results_tree')
+             if tree and tree.winfo_exists():
+                  # Reconfigura tags de linha (importante!)
+                  tree.tag_configure('worth_good', background=colors["tree_worth_good_bg"], foreground=colors["tree_fg"]) # Define foreground tbm
+                  tree.tag_configure('worth_medium', background=colors["tree_worth_medium_bg"], foreground=colors["tree_fg"])
+                  tree.tag_configure('worth_bad', background=colors["tree_worth_bad_bg"], foreground=colors["tree_fg"])
+                  tree.tag_configure('not_worth', background=colors["tree_not_worth_bg"], foreground=colors["tree_fg"])
+                  # Tenta forçar atualização visual (pode não ser necessário com styles)
+                  # try: tree.update_idletasks()
+                  # except tk.TclError: pass
+
+        # Força atualização geral da UI para refletir mudanças de estilo
+        if hasattr(self, 'root') and self.root.winfo_exists():
+             self.root.update_idletasks()
+
+
+    def toggle_dark_mode(self):
+        """Alterna entre tema claro e escuro."""
+        self.apply_theme()
+        # Opcional: Salvar a preferência imediatamente
+        # self.save_config()
+
+
+    def on_closing(self):
+         """Handler para fechar a janela, verifica polling em TODAS as abas."""
+         active_polling_tabs = []
+         for tab_id, tab_data in self.search_tabs_data.items():
+              if tab_data.get('is_polling', False):
+                   active_polling_tabs.append(tab_data.get('name', f'Aba {tab_id[:4]}'))
+
+         do_exit = True
+         if active_polling_tabs:
+              tab_names = "\n - ".join(active_polling_tabs)
+              if not messagebox.askokcancel("Sair?", f"Os seguintes monitoramentos estão ativos:\n - {tab_names}\n\nDeseja parar todos e sair?"):
+                   do_exit = False # User cancelled exit
+
+         if do_exit:
+              self.update_status("Fechando aplicação...")
+              # Para todos os pollings ativos
+              threads_to_join = []
+              tab_ids_to_stop = list(self.search_tabs_data.keys()) # Cria cópia das chaves
+              for tab_id in tab_ids_to_stop:
+                   if tab_id in self.search_tabs_data and self.search_tabs_data[tab_id].get('is_polling', False):
+                        self.log_message(f"Parando polling da aba '{self.search_tabs_data[tab_id]['name']}' para sair.", "info", tab_id=tab_id)
+                        self.stop_polling(tab_id) # Envia sinal de parada
+                        thread = self.search_tabs_data[tab_id].get('polling_thread')
+                        if thread and thread.is_alive():
+                             threads_to_join.append((self.search_tabs_data[tab_id]['name'], thread))
+
+              # Espera um pouco pelas threads finalizarem
+              if threads_to_join:
+                  self.update_status(f"Aguardando {len(threads_to_join)} monitoramentos finalizarem...")
+                  join_timeout = 2.0 # Tempo máximo de espera total
+                  start_join = time.time()
+                  for tab_name, thread in threads_to_join:
+                        remaining_time = max(0.1, join_timeout - (time.time() - start_join)) # Pelo menos 0.1s por thread
+                        try:
+                             # self.log_message(f"Aguardando thread da aba '{tab_name}'...", "debug", use_global_log=True)
+                             thread.join(timeout=remaining_time)
+                        except Exception as e_join:
+                             self.log_message(f"Erro ao aguardar thread '{tab_name}': {e_join}", "error", use_global_log=True)
+
+                  # Verifica se alguma ainda está viva
+                  still_alive = [name for name, thread in threads_to_join if thread.is_alive()]
+                  if still_alive:
+                      self.log_message(f"Aviso: Threads das abas {', '.join(still_alive)} não finalizaram.", "warning", use_global_log=True)
+
+              # Salva config e destrói a janela
+              self.save_config()
+              self.root.destroy()
+
 
 # --- Bloco Principal de Execução ---
 if __name__ == "__main__":

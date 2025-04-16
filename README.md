@@ -20,12 +20,11 @@ Um rastreador de itens para Path of Exile 2 com interface gráfica moderna que p
   - Alterne entre modo DPS total, PDPS ou ambos
   - Ordenação automática de itens conforme o modo selecionado
   - Destaque de itens com alto potencial de ganho de DPS/PDPS
-- **Cálculo preciso de DPS/PDPS**:
-  - Banco de dados integrado com todas as bases de armas disponíveis do Path of Exile 2
-  - Base detalhada de quarterstaffs, maces, crossbows, bows e outras armas
-  - Cálculo preciso de DPS físico (PDPS) e DPS total
-  - Previsão de DPS mínimo e máximo baseado nos modificadores
-  - Destaque de modificadores que impactam DPS
+- **Resumo Visual de Potencial**:
+  - Exibição compacta dos valores atuais e máximos
+  - Cálculo de ganho percentual de DPS
+  - Análise se vale a pena usar Divine Orb
+  - Destaque dos modificadores mais importantes para o dano
 - Contorna as proteções do Cloudflare usando cookies de autenticação
 - Links diretos para o site de comércio oficial do PoE2
 
@@ -92,25 +91,13 @@ O aplicativo agora foca apenas nos modificadores que realmente afetam o DPS das 
    - Não considera modificadores irrelevantes para o cálculo de ganho (resistências, vida, etc.)
    - Analisa separadamente cada componente DPS (físico vs total)
 
-3. **Apresentação Visual:**
+3. **Apresentação Visual Aprimorada:**
    - Os itens são coloridos na lista de acordo com seu potencial:
-     - **Verde**: Alto potencial (>50% de melhoria possível)
-     - **Amarelo**: Médio potencial (30-50% de melhoria)
-     - **Vermelho**: Baixo potencial (15-30% de melhoria)
-   - Mostra valores atuais e máximos possíveis para PDPS e DPS total
-
-## Banco de Dados de Armas
-
-O aplicativo contém um extenso banco de dados com as especificações das bases de armas do PoE2:
-
-- Quarterstaffs (Sinister, Lunar, Striking, Bolting, Aegis, Razor)
-- Maças de Duas Mãos (Anvil Maul, Sacred Maul, Ironwood Greathammer, etc.)
-- Bestas (Stout Crossbow, Engraved Crossbow, Flexed Crossbow, etc.)
-- Arcos (Ironwood Shortbow, Cavalry Bow, Guardian Bow, etc.)
-- Lanças (Orichalcum Spear, Pronged Spear, Stalking Spear, etc.)
-- Maças de Uma Mão (Flanged Mace, Crown Mace, Molten Hammer, etc.)
-
-Cada base de arma é registrada com seus valores corretos de dano físico, chance crítica e velocidade de ataque, permitindo cálculos precisos e recomendações confiáveis.
+     - **Verde**: Alto potencial (>65% de melhoria possível)
+     - **Amarelo**: Médio potencial (35-65% de melhoria)
+     - **Vermelho**: Baixo potencial (15-35% de melhoria)
+   - **Novo!** Resumo visual compacto com valores atuais, máximos e ganho percentual
+   - **Novo!** Mostra apenas os mods relevantes para dano no topo da análise
 
 ## Solução de Problemas
 
