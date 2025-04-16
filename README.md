@@ -11,21 +11,21 @@ Um rastreador de itens para Path of Exile 2 com interface gráfica moderna que p
 - Monitoramento automático em intervalos configuráveis
 - Exibição detalhada de propriedades e modificadores dos itens
 - **Análise avançada de Divine Orb**:
-  - Foco em modificadores que aumentam o DPS (dano físico, velocidade de ataque, critical)
+  - Foco exclusivo em modificadores que aumentam o DPS (dano físico, velocidade de ataque, critical)
   - Ignora modificadores que não afetam o dano para recomendações de Divine
   - Calcula o percentual de melhoria possível para cada modificador relevante
   - Estima o valor potencial do item após usar Divine Orbs
   - Destaca itens com alto potencial para lucro
+- **Visualização separada de DPS e PDPS**:
+  - Alterne entre modo DPS total, PDPS ou ambos
+  - Ordenação automática de itens conforme o modo selecionado
+  - Destaque de itens com alto potencial de ganho de DPS/PDPS
 - **Cálculo preciso de DPS/PDPS**:
   - Banco de dados integrado com todas as bases de armas disponíveis do Path of Exile 2
   - Base detalhada de quarterstaffs, maces, crossbows, bows e outras armas
   - Cálculo preciso de DPS físico (PDPS) e DPS total
   - Previsão de DPS mínimo e máximo baseado nos modificadores
   - Destaque de modificadores que impactam DPS
-- **Visualização separada de DPS e PDPS**:
-  - Alterne entre modo DPS total, PDPS ou ambos
-  - Ordenação automática de itens conforme o modo selecionado
-  - Destaque de itens com alto potencial de ganho de DPS/PDPS
 - Contorna as proteções do Cloudflare usando cookies de autenticação
 - Links diretos para o site de comércio oficial do PoE2
 
@@ -72,6 +72,7 @@ python poe2_item_tracker.py
    - Adicione filtros específicos para estatísticas (vida, resistências, etc.)
    - Configure valores mínimos para DPS/PDPS se desejado
 7. Clique em "Buscar Itens" para uma pesquisa única ou "Monitorar" para pesquisas periódicas
+8. Use o seletor "Modo de DPS" para escolher visualização de DPS, PDPS ou ambos
 
 ## Entendendo a Análise de Divine Orb
 
@@ -95,16 +96,8 @@ O aplicativo agora foca apenas nos modificadores que realmente afetam o DPS das 
    - Os itens são coloridos na lista de acordo com seu potencial:
      - **Verde**: Alto potencial (>50% de melhoria possível)
      - **Amarelo**: Médio potencial (30-50% de melhoria)
-     - **Azul**: Baixo potencial (15-30% de melhoria)
+     - **Vermelho**: Baixo potencial (15-30% de melhoria)
    - Mostra valores atuais e máximos possíveis para PDPS e DPS total
-
-## Modos de Visualização
-
-O aplicativo oferece três modos de visualização que podem ser alternados na interface:
-
-1. **Modo DPS Total**: Ordena e destaca itens baseados no potencial de ganho de DPS total
-2. **Modo PDPS**: Foca apenas no dano físico, ideal para builds baseadas em dano físico
-3. **Modo Misto**: Mostra ambas informações para uma análise completa
 
 ## Banco de Dados de Armas
 
