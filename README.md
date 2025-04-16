@@ -7,11 +7,12 @@ Um rastreador de itens para Path of Exile 2 com interface gráfica moderna que p
 
 - Interface gráfica moderna e intuitiva com suporte a temas claro/escuro
 - Sistema de abas para gerenciar múltiplas buscas simultaneamente
+- Modos de visualização separados para DPS e PDPS
 - Busca de itens por categoria, estatísticas e preço
 - Monitoramento automático em intervalos configuráveis
 - Exibição detalhada de propriedades e modificadores dos itens
 - **Análise avançada de Divine Orb**:
-  - Foco exclusivo em modificadores que aumentam o DPS (dano físico, velocidade de ataque, critical)
+  - Análise focada em modificadores que aumentam o DPS (dano físico, velocidade de ataque, crítico)
   - Ignora modificadores que não afetam o dano para recomendações de Divine
   - Calcula o percentual de melhoria possível para cada modificador relevante
   - Estima o valor potencial do item após usar Divine Orbs

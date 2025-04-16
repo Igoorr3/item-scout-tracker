@@ -60,24 +60,6 @@ CURRENCIES = [
     "divine", "exalted", "chaos", "alchemy", "annulment", "regal", "vaal",
     "augmentation", "transmutation", "mirror", "gold"
 ]
-
-# --- Novos Mapeamentos de DPS para Divine ---
-# Mods que realmente afetam o DPS para armas
-DAMAGE_MODS = [
-    "Increased Physical Damage",
-    "Adds # to # Physical Damage",
-    "Attack Speed",
-    "Critical Strike Chance",
-    "+#% Critical Strike Chance",
-    "Critical Strike Multiplier",
-    "+#% Critical Strike Multiplier",
-    "Critical Damage Bonus",
-    "Adds # to # Fire Damage",
-    "Adds # to # Cold Damage",
-    "Adds # to # Lightning Damage",
-    "+# to Level of all Projectile Skills"
-]
-
 # --- Definições de Cores (LIGHT_COLORS, DARK_COLORS) (Mantidas Iguais) ---
 LIGHT_COLORS = {
     "bg": "#F0F0F0",  # Default light background
@@ -174,6 +156,24 @@ DARK_COLORS = {
     "tree_not_worth_bg": "#3B4252", # Same as tree background
 }
 
+# Lista de mods que afetam o dano (para análise focada no DPS)
+DPS_AFFECTING_MODS = [
+    "Increased Physical Damage", 
+    "Attack Speed", 
+    "Critical Strike Chance", 
+    "+#% Critical Strike Chance",
+    "Critical Strike Multiplier", 
+    "+#% Critical Strike Multiplier",
+    "Critical Damage Bonus",
+    "Adds # to # Physical Damage",
+    "Adds # to # Fire Damage",
+    "Adds # to # Cold Damage",
+    "Adds # to # Lightning Damage",
+    "Adds # to # Chaos Damage",
+    "Increased Elemental Damage",
+    "+# to Level of all Projectile Skills"
+]
+
 class PoeTracker:
     def __init__(self, root):
         self.root = root
@@ -185,9 +185,7 @@ class PoeTracker:
         self.style = ttk.Style(root)
         self.sort_column = None # Coluna de ordenação ativa (global)
         self.sort_reverse = False # Direção da ordenação (global)
-        
-        # --- Nova variável para controlar o modo de visualização de DPS ---
-        self.dps_display_mode = tk.StringVar(value="Both") # "DPS", "PDPS", ou "Both"
+        self.display_mode = tk.StringVar(value="both") # Modo de exibição: "dps", "pdps" ou "both"
 
         # --- Gerenciamento de Abas de Busca ---
         self.search_tabs_data = {} # Dicionário principal: {tab_id: {data...}, ...}
@@ -195,7 +193,7 @@ class PoeTracker:
         self.active_tab_id = None # ID da aba atualmente visível
 
         # --- Título e Geometria ---
-        self.root.title("Path of Exile 2 - Item Tracker (v41.0 - Abas Múltiplas)") # Título Atualizado
+        self.root.title("Path of Exile 2 - Item Tracker (v42.0 - Abas Múltiplas)") # Título Atualizado
         self.root.geometry("1550x850") # Aumentado para acomodar melhor
 
         self.create_ui()
@@ -274,16 +272,12 @@ IMPORTANTE:
         rename_tab_button = ttk.Button(tab_control_frame, text="Renomear Busca", command=self.rename_search_tab, style='TButton')
         rename_tab_button.pack(side=tk.LEFT, padx=5)
 
-        # --- Controles para Modo de DPS ---
-        dps_mode_frame = ttk.Frame(tab_control_frame, style='TFrame')
-        dps_mode_frame.pack(side=tk.RIGHT, padx=10)
-        ttk.Label(dps_mode_frame, text="Modo DPS:", style='TLabel').pack(side=tk.LEFT, padx=(0, 5))
-        ttk.Radiobutton(dps_mode_frame, text="DPS", variable=self.dps_display_mode, value="DPS", 
-                     command=self.update_dps_display).pack(side=tk.LEFT)
-        ttk.Radiobutton(dps_mode_frame, text="PDPS", variable=self.dps_display_mode, value="PDPS", 
-                     command=self.update_dps_display).pack(side=tk.LEFT)
-        ttk.Radiobutton(dps_mode_frame, text="Ambos", variable=self.dps_display_mode, value="Both", 
-                     command=self.update_dps_display).pack(side=tk.LEFT)
+        # Adicionando seletor de modo de visualização DPS/PDPS
+        ttk.Label(tab_control_frame, text="Modo DPS:", style='TLabel').pack(side=tk.LEFT, padx=(15, 5))
+        dps_modes = [("Ambos", "both"), ("DPS Total", "dps"), ("Físico (PDPS)", "pdps")]
+        for label, mode in dps_modes:
+            ttk.Radiobutton(tab_control_frame, text=label, variable=self.display_mode, value=mode, 
+                           command=self.update_dps_display_mode, style='TRadiobutton').pack(side=tk.LEFT, padx=2)
 
         # Notebook interno para as abas de busca
         self.search_notebook = ttk.Notebook(tracker_base_frame, style='TNotebook')
@@ -301,6 +295,83 @@ IMPORTANTE:
         # Adiciona a primeira aba de busca ao iniciar
         if not self.search_tabs_data:
              self.add_search_tab() # Nome padrão será gerado
+
+    def update_dps_display_mode(self):
+        """Atualiza o modo de exibição de DPS (dps, pdps ou ambos)."""
+        mode = self.display_mode.get()
+        # Atualiza a exibição para todos os itens já presentes
+        if self.active_tab_id and self.active_tab_id in self.search_tabs_data:
+            tab_data = self.search_tabs_data[self.active_tab_id]
+            tree = tab_data.get('results_tree')
+            if tree and tree.winfo_exists():
+                # Reordena respeitando o modo atual
+                self._update_tree_headers_for_dps_mode(tree, mode)
+                # Se alguma coluna já estava ordenada, reordena
+                if self.sort_column:
+                    self.sort_treeview(self.sort_column, self.active_tab_id)
+                self.log_message(f"Modo de visualização alterado para: {mode}", "info", tab_id=self.active_tab_id)
+
+    def _update_tree_headers_for_dps_mode(self, tree, mode="both"):
+        """Atualiza os cabeçalhos do Treeview para refletir o modo de DPS selecionado."""
+        if not tree or not tree.winfo_exists():
+            return
+
+        # Ajusta o texto do cabeçalho DPS
+        dps_header = "DPS/PDPS"  # Padrão para modo 'both'
+        if mode == "dps":
+            dps_header = "DPS Total"
+        elif mode == "pdps":
+            dps_header = "PDPS (Físico)"
+        
+        # Atualiza o cabeçalho preservando possíveis indicadores de ordenação
+        current_heading = tree.heading('dps')
+        current_text = current_heading.get('text', '')
+        # Remove possíveis indicadores de ordenação (▲ ou ▼)
+        cleaned_text = current_text.replace(' ▼', '').replace(' ▲', '')
+        # Se havia indicador, preserva
+        if cleaned_text != current_text:
+            suffix = ' ▼' if ' ▼' in current_text else ' ▲'
+            tree.heading('dps', text=f"{dps_header}{suffix}")
+        else:
+            tree.heading('dps', text=dps_header)
+
+    def _add_stat_filter_widget(self, tab_id, row_index):
+        """Adiciona os widgets para uma linha de filtro de stat na UI da aba especificada."""
+        if tab_id not in self.search_tabs_data: return
+        tab_data = self.search_tabs_data[tab_id]
+        parent_frame = tab_data.get('stats_frame_container_widget')
+        if not parent_frame: return # Segurança
+
+        stat_var = tk.StringVar()
+        min_value_var = tk.StringVar()
+        max_value_var = tk.StringVar()
+
+        # Adiciona as variáveis às listas da aba
+        tab_data['stat_entries'].append(stat_var)
+        tab_data['stat_min_values'].append(min_value_var)
+        tab_data['stat_max_values'].append(max_value_var)
+
+        # Cria os widgets
+        ttk.Label(parent_frame, text=f"Stat {row_index+1}:", style='TLabel').grid(row=row_index, column=0, sticky=tk.W, padx=5, pady=2)
+        stat_combo = ttk.Combobox(parent_frame, textvariable=stat_var, width=25, style='TCombobox', values=[""] + sorted(list(STAT_MAP.keys())))
+        stat_combo.grid(row=row_index, column=1, columnspan=2, sticky=tk.EW, padx=5, pady=2)
+        ttk.Label(parent_frame, text="Min:", style='TLabel').grid(row=row_index, column=3, sticky=tk.W, padx=(10,2))
+        ttk.Entry(parent_frame, textvariable=min_value_var, width=6, style='TEntry').grid(row=row_index, column=4, sticky=tk.W, padx=2)
+        ttk.Label(parent_frame, text="Max:", style='TLabel').grid(row=row_index, column=5, sticky=tk.W, padx=2)
+        ttk.Entry(parent_frame, textvariable=max_value_var, width=6, style='TEntry').grid(row=row_index, column=6, sticky=tk.W, padx=(2,5))
+        parent_frame.columnconfigure(1, weight=1)
+
+    def _handle_add_stat_click_tab(self, tab_id):
+        """Adiciona uma nova linha de filtro de stat na aba especificada."""
+        if tab_id not in self.search_tabs_data: return
+        tab_data = self.search_tabs_data[tab_id]
+        add_button = tab_data.get('add_stat_button')
+        if not add_button: return # Segurança
+
+        current_row_count = len(tab_data['stat_entries'])
+        self._add_stat_filter_widget(tab_id, current_row_count)
+        # Move o botão '+ Stat' para baixo
+        add_button.grid(row=current_row_count + 1, column=0, columnspan=7, padx=5, pady=(5,0), sticky="ew")
 
     def add_search_tab(self, tab_name=None):
         """Adiciona uma nova aba de busca ao notebook."""
@@ -464,190 +535,9 @@ IMPORTANTE:
         tab_data['analysis_text'] = analysis_text # Armazena referência
         analysis_text.config(state=tk.DISABLED)
 
-    def _add_stat_filter_widget(self, tab_id, row_index):
-        """Adiciona os widgets para uma linha de filtro de stat na UI da aba especificada."""
-        if tab_id not in self.search_tabs_data: return
-        tab_data = self.search_tabs_data[tab_id]
-        parent_frame = tab_data.get('stats_frame_container_widget')
-        if not parent_frame: return # Segurança
+        # Aplica o modo de visualização de DPS atual
+        self._update_tree_headers_for_dps_mode(results_tree, self.display_mode.get())
 
-        stat_var = tk.StringVar()
-        min_value_var = tk.StringVar()
-        max_value_var = tk.StringVar()
-
-        # Adiciona as variáveis às listas da aba
-        tab_data['stat_entries'].append(stat_var)
-        tab_data['stat_min_values'].append(min_value_var)
-        tab_data['stat_max_values'].append(max_value_var)
-
-        # Cria os widgets
-        ttk.Label(parent_frame, text=f"Stat {row_index+1}:", style='TLabel').grid(row=row_index, column=0, sticky=tk.W, padx=5, pady=2)
-        stat_combo = ttk.Combobox(parent_frame, textvariable=stat_var, width=25, style='TCombobox', values=[""] + sorted(list(STAT_MAP.keys())))
-        stat_combo.grid(row=row_index, column=1, columnspan=2, sticky=tk.EW, padx=5, pady=2)
-        ttk.Label(parent_frame, text="Min:", style='TLabel').grid(row=row_index, column=3, sticky=tk.W, padx=(10,2))
-        ttk.Entry(parent_frame, textvariable=min_value_var, width=6, style='TEntry').grid(row=row_index, column=4, sticky=tk.W, padx=2)
-        ttk.Label(parent_frame, text="Max:", style='TLabel').grid(row=row_index, column=5, sticky=tk.W, padx=2)
-        ttk.Entry(parent_frame, textvariable=max_value_var, width=6, style='TEntry').grid(row=row_index, column=6, sticky=tk.W, padx=(2,5))
-        parent_frame.columnconfigure(1, weight=1)
-
-    def _handle_add_stat_click_tab(self, tab_id):
-        """Adiciona uma nova linha de filtro de stat na aba especificada."""
-        if tab_id not in self.search_tabs_data: return
-        tab_data = self.search_tabs_data[tab_id]
-        add_button = tab_data.get('add_stat_button')
-        if not add_button: return # Segurança
-
-        current_row_count = len(tab_data['stat_entries'])
-        self._add_stat_filter_widget(tab_id, current_row_count)
-        # Move o botão '+ Stat' para baixo
-        add_button.grid(row=current_row_count + 1, column=0, columnspan=7, padx=5, pady=(5,0), sticky="ew")
-
-    def remove_search_tab(self):
-        """Remove a aba de busca atualmente ativa."""
-        if not self.active_tab_id:
-            messagebox.showinfo("Info", "Nenhuma aba de busca selecionada.")
-            return
-
-        if len(self.search_tabs_data) <= 1:
-            messagebox.showwarning("Aviso", "Não é possível fechar a última aba de busca.")
-            return
-
-        tab_to_remove_id = self.active_tab_id
-        tab_data = self.search_tabs_data[tab_to_remove_id]
-        tab_name = tab_data['name']
-
-        # Verifica se está monitorando
-        is_polling_active = tab_data.get('is_polling', False)
-        if is_polling_active:
-            if messagebox.askyesno("Parar Monitoramento?", f"A busca '{tab_name}' está sendo monitorada.\nDeseja parar o monitoramento e fechar a aba?"):
-                self.stop_polling(tab_to_remove_id, join_thread=True) # Tenta parar e aguardar thread
-                # Re-verifica se parou (pode ter sido cancelado pelo usuário no join implícito)
-                if self.search_tabs_data[tab_to_remove_id].get('is_polling', False):
-                     return # Não parou, não remove
-            else:
-                return # Usuário cancelou
-
-        # Procede com a remoção
-        try:
-             # Para o notebook esquecer o frame da aba
-             self.search_notebook.forget(tab_data['tab_frame'])
-             # Remove os dados da aba do dicionário
-             del self.search_tabs_data[tab_to_remove_id]
-             self.log_message(f"Aba de busca '{tab_name}' removida.", "info", use_global_log=True)
-             # O evento <<NotebookTabChanged>> deve atualizar o active_tab_id,
-             # mas podemos forçar a seleção da primeira aba restante se necessário.
-             if self.search_tabs_data:
-                 # Seleciona a primeira aba restante (índice 0)
-                 first_remaining_tab_id = list(self.search_tabs_data.keys())[0]
-                 self.search_notebook.select(self.search_tabs_data[first_remaining_tab_id]['tab_frame'])
-             else:
-                 self.active_tab_id = None # Nenhuma aba restante
-
-        except Exception as e:
-             self.log_message(f"Erro ao remover aba '{tab_name}': {e}", "error", use_global_log=True)
-             messagebox.showerror("Erro", f"Não foi possível remover a aba:\n{e}")
-
-    def rename_search_tab(self):
-         """ Permite renomear a aba ativa """
-         if not self.active_tab_id:
-             messagebox.showinfo("Info", "Nenhuma aba selecionada para renomear.")
-             return
-
-         tab_data = self.search_tabs_data[self.active_tab_id]
-         old_name = tab_data['name']
-
-         new_name = simpledialog.askstring("Renomear Aba", f"Digite o novo nome para '{old_name}':", parent=self.root)
-
-         if new_name and new_name.strip():
-             new_name = new_name.strip()
-             tab_data['name'] = new_name
-             self.search_notebook.tab(tab_data['tab_frame'], text=new_name) # Atualiza texto da aba no notebook
-             self.log_message(f"Aba '{old_name}' renomeada para '{new_name}'.", "info", use_global_log=True)
-         elif new_name is not None: # Se clicou OK mas deixou vazio
-             messagebox.showwarning("Nome Inválido", "O nome da aba não pode ser vazio.")
-
-    def on_tab_change(self, event):
-        """Callback quando a aba ativa do notebook de buscas muda."""
-        try:
-            # `select()` retorna o path do widget do frame da aba selecionada
-            selected_widget_path = self.search_notebook.select()
-            if not selected_widget_path: # Pode acontecer durante a remoção
-                 self.active_tab_id = None
-                 return
-
-            # Encontra o tab_id cujo frame corresponde ao path selecionado
-            new_active_id = None
-            for tid, tdata in self.search_tabs_data.items():
-                # Compara o path string do widget frame da aba
-                if str(tdata.get('tab_frame')) == selected_widget_path:
-                    new_active_id = tid
-                    break
-
-            if new_active_id:
-                self.active_tab_id = new_active_id
-                # Opcional: Atualizar status global
-                # active_tab_name = self.search_tabs_data[self.active_tab_id]['name']
-                # self.update_status(f"Aba ativa: {active_tab_name}")
-            else:
-                # Isso não deveria acontecer em operação normal
-                # self.log_message("Não foi possível identificar a aba ativa após mudança.", "warning", use_global_log=True)
-                self.active_tab_id = None # Garante que não fique com ID inválido
-
-        except Exception as e:
-            # Pode dar erro tk.TclError: invalid command name ".!notebook.!frame2.!notebook.!frame..." se a aba for destruída rapidamente
-            # É geralmente seguro ignorar aqui.
-            # self.log_message(f"Erro ao processar mudança de aba: {e}", "warning", use_global_log=True)
-            self.active_tab_id = None # Reseta em caso de erro
-            pass
-
-    # --- Nova Função para Atualizar o Display de DPS/PDPS ---
-    def update_dps_display(self):
-        """Atualiza a exibição de DPS/PDPS em todas as abas com base no modo selecionado."""
-        mode = self.dps_display_mode.get()
-        
-        # Itera por todas as abas e atualiza o display do DPS/PDPS
-        for tab_id, tab_data in self.search_tabs_data.items():
-            tree = tab_data.get('results_tree')
-            if not tree or not tree.winfo_exists():
-                continue
-                
-            # Atualiza o cabeçalho da coluna
-            if mode == "DPS":
-                tree.heading('dps', text='DPS')
-            elif mode == "PDPS":
-                tree.heading('dps', text='PDPS')
-            else: # Both
-                tree.heading('dps', text='DPS/PDPS')
-                
-            # Atualiza os valores nas linhas
-            for item_id in tree.get_children():
-                item_details = tab_data['_item_details_cache'].get(item_id)
-                if not item_details:
-                    continue
-                    
-                dps_num = item_details.get('dps')
-                pdps_num = item_details.get('pdps')
-                
-                # Define o texto baseado no modo
-                if mode == "DPS":
-                    dps_display = f"{dps_num:.1f}" if dps_num is not None else "-"
-                    tree.set(item_id, 'dps', dps_display)
-                elif mode == "PDPS":
-                    pdps_display = f"{pdps_num:.1f}" if pdps_num is not None else "-"
-                    tree.set(item_id, 'dps', pdps_display)
-                else: # Both
-                    dps_display = f"{dps_num:.1f}" if dps_num is not None else "-"
-                    pdps_display = f"{pdps_num:.1f}" if pdps_num is not None else "-"
-                    dps_pdps_str = f"{dps_display}"
-                    if pdps_display != "-" and pdps_display != dps_display:
-                        dps_pdps_str += f" / {pdps_display}"
-                    tree.set(item_id, 'dps', dps_pdps_str)
-        
-        # Opcional: Reordenar a lista se estiver ordenando por DPS
-        if self.sort_column == 'dps' and self.active_tab_id:
-            self.sort_treeview('dps', self.active_tab_id)
-
-    # --- Funções de Autocomplete Adaptadas para Abas ---
     def _update_category_list_for_tab(self, tab_id, filter_text=""):
         """Atualiza a lista de valores do combobox de categoria da aba especificada."""
         if tab_id not in self.search_tabs_data: return
@@ -726,7 +616,11 @@ IMPORTANTE:
                 if 'Preferences' in config:
                     dark_mode_pref = config['Preferences'].getboolean('DarkMode', False)
                     self.dark_mode_enabled.set(dark_mode_pref)
-                    self.log_message(f"Preferência de tema carregada (Modo Escuro: {dark_mode_pref}).", "info", use_global_log=True)
+                    # Carrega preferência de modo DPS
+                    dps_mode = config['Preferences'].get('DpsMode', 'both')
+                    if dps_mode in ['both', 'dps', 'pdps']:
+                        self.display_mode.set(dps_mode)
+                    self.log_message(f"Preferências carregadas (Modo Escuro: {dark_mode_pref}, Modo DPS: {dps_mode}).", "info", use_global_log=True)
 
                 # Opcional: Carregar estado das abas (mais complexo, não implementado aqui)
                 # Ex: Ler seções [Busca1], [Busca2] e recriar as abas com seus filtros
@@ -752,6 +646,8 @@ IMPORTANTE:
 
         if 'Preferences' not in config: config['Preferences'] = {}
         config['Preferences']['DarkMode'] = str(self.dark_mode_enabled.get())
+        # Salva preferência de modo de DPS
+        config['Preferences']['DpsMode'] = self.display_mode.get()
 
         # Opcional: Salvar estado das abas (filtros, nomes)
         # Ex: Iterar por self.search_tabs_data e criar seções [Busca_ID] ou [Busca_Nome]
@@ -759,7 +655,7 @@ IMPORTANTE:
         try:
             with open(CONFIG_FILE, 'w') as configfile:
                 config.write(configfile)
-            # Não mostra messagebox ao salvar no fechamento, apenas log
+            messagebox.showinfo("Configuração", "Configuração salva com sucesso.")
             self.log_message("Configuração salva.", "info", use_global_log=True)
         except Exception as e:
             messagebox.showerror("Erro ao Salvar", f"Falha ao salvar configuração:\n{e}")
@@ -1150,9 +1046,6 @@ IMPORTANTE:
             if self.sort_column:
                  # A função sort_treeview precisa saber qual treeview ordenar
                  self.sort_treeview(self.sort_column, tab_id) # Passa tab_id
-                 
-            # Atualiza a exibição de DPS/PDPS
-            self.update_dps_display()
 
         except requests.exceptions.RequestException as req_err:
             self.update_status(f"[{tab_name}] Erro de Rede")
@@ -1163,8 +1056,9 @@ IMPORTANTE:
             self.log_message(f"Erro inesperado search_items: {e}\n{traceback.format_exc()}", "error", tab_id=tab_id)
             messagebox.showerror("Erro Inesperado", f"Ocorreu um erro inesperado:\n{e}\nVerifique o log da aba para detalhes.")
 
-    # --- calculate_dps (Função global, sem mudanças) ---
+    # --- calculate_dps (Função global) ---
     def calculate_dps(self, item_info):
+        """Calcula DPS, PDPS e EDPS de um item."""
         properties = item_info.get("properties", [])
         extended = item_info.get("extended", {})
         dps_val = extended.get("dps")
@@ -1210,9 +1104,9 @@ IMPORTANTE:
              dps_num = pdps_num # If only PDPS is available, use it as DPS
         return dps_num, pdps_num, edps_num
 
-    # --- Versão melhorada de analyze_divine_worth ---
+    # --- analyze_divine_worth (Função global) ---
     def analyze_divine_worth(self, item_data):
-        """Analisa o potencial de melhoria com Divine Orb, priorizando mods que afetam DPS."""
+        """Analisa o potencial do item para melhorias com Divine Orb."""
         item = item_data.get("item", {})
         explicit_mods_text = item.get("explicitMods", []) if isinstance(item.get("explicitMods"), list) else []
         implicit_mods_text = item.get("implicitMods", []) if isinstance(item.get("implicitMods"), list) else []
@@ -1225,6 +1119,7 @@ IMPORTANTE:
         adds_value_regex = re.compile(r'[aA]dds\s+([-+]?\d+(?:.\d+)?)\s+to\s+([-+]?\d+(?:.\d+)?)')
 
         def format_range_display(min_vals, max_vals):
+            # ... (lógica igual) ...
             range_parts = []
             if not isinstance(min_vals, list) or not isinstance(max_vals, list) or len(min_vals) != len(max_vals):
                 return "[Erro Range]"
@@ -1240,6 +1135,7 @@ IMPORTANTE:
             else: return "[N/A]"
 
         def format_current_display(values):
+            # ... (lógica igual) ...
             current_display_parts = []
             if not isinstance(values, list): return "?"
             for val in values:
@@ -1248,13 +1144,6 @@ IMPORTANTE:
                     current_display_parts.append(display)
                 except: current_display_parts.append("?")
             return ", ".join(current_display_parts) if current_display_parts else "?"
-
-        # Verifica se a mod afeta dano
-        def is_damage_mod(mod_name):
-            for damage_mod in DAMAGE_MODS:
-                if damage_mod.lower() in mod_name.lower():
-                    return True
-            return False
 
         idx_to_details = {"explicit": {}, "implicit": {}}
         if extended_mods and isinstance(extended_mods, dict):
@@ -1279,15 +1168,17 @@ IMPORTANTE:
                             if not stat_hash or not isinstance(component_indices, list) or not component_indices: continue
                             component_details = [idx_to_details[scope].get(idx) for idx in component_indices if idx_to_details[scope].get(idx)]
                             if not component_details:
+                                # self.log_message(f"Aviso: Nenhum detalhe mod para índices {component_indices} escopo {scope} (Hash: {stat_hash})", "debug", tab_id=?)
                                 continue
 
-                            # Verifica se este mod afeta dano
-                            affects_damage = False
-                            for detail in component_details:
-                                mod_name = detail.get("name", "")
-                                if is_damage_mod(mod_name):
-                                    affects_damage = True
-                                    break
+                            # Verificar se o mod afeta DPS
+                            mod_name = component_details[0].get("name", "") if component_details else ""
+                            affects_dps = False
+                            if mod_name:
+                                for dps_mod in DPS_AFFECTING_MODS:
+                                    if dps_mod.lower() in mod_name.lower() or mod_name.lower() in dps_mod.lower():
+                                        affects_dps = True
+                                        break
 
                             first_comp_mags = None; is_first_comp = True; valid_range_sum = True
                             for detail_part in component_details:
@@ -1367,9 +1258,7 @@ IMPORTANTE:
                                  status = 'no_text_match'
 
                             chance_str = "N/A"; current_display = "?"; range_display = "[N/A]"; tag = "divine_unknown"
-                            
-                            # Só calcula o potencial se o mod afeta o dano
-                            if range_found and affects_damage:
+                            if range_found:
                                 range_display = format_range_display(summed_min_vals, summed_max_vals)
                                 if text_found and current_values:
                                      current_display = format_current_display(current_values)
@@ -1402,14 +1291,8 @@ IMPORTANTE:
                                           if potential_pct >= 65: tag = "divine_good"
                                           elif potential_pct >= 35: tag = "divine_medium"
                                           else: tag = "divine_bad"
-                                else: 
+                                else: # Range found, no text match
                                      chance_str = "N/A"; tag = "divine_no_text"; status = 'no_text_match'; potential_pct = None; current_display = "?"
-                            elif range_found:
-                                range_display = format_range_display(summed_min_vals, summed_max_vals)
-                                current_display = "?" if not text_found else format_current_display(current_values) if current_values else "?"
-                                chance_str, tag = "Não DPS", "divine_unknown"
-                                status = 'non_dps' if affects_damage == False else 'no_text_match'
-                                potential_pct = None
                             else: # No range found
                                 chance_str, tag, status = "N/A", "divine_unknown", "no_range"; potential_pct = None; range_display = "[N/A]"; current_display = "?"
 
@@ -1417,8 +1300,8 @@ IMPORTANTE:
                                 'scope': scope, 'text': mod_text_display, 'current_str': current_display,
                                 'range_str': range_display, 'tier_str': tier_str,
                                 'potential_str': chance_str, 'potential_pct': potential_pct,
-                                'tag': tag, 'status': status, 'hash': stat_hash,
-                                'affects_damage': affects_damage
+                                'tag': tag, 'status': status, 'hash': stat_hash, 
+                                'affects_dps': affects_dps  # Adicionado flag para indicar mods que afetam DPS
                             })
                        except Exception as e_hash_proc:
                             stat_hash_err = hash_entry[0] if isinstance(hash_entry, (list, tuple)) and len(hash_entry)>0 else "Desconhecido"
@@ -1432,44 +1315,61 @@ IMPORTANTE:
                       current_matches_txt = list(current_value_regex.finditer(text))
                       adds_match_txt = adds_value_regex.search(text)
                       numeric_values = []
+                      
+                      # Verificar se o texto do mod afeta DPS
+                      affects_dps = False
+                      for dps_mod in DPS_AFFECTING_MODS:
+                          if dps_mod.lower() in text.lower():
+                              affects_dps = True
+                              break
+                              
                       try:
                           if adds_match_txt and len(current_matches_txt) >= 2: numeric_values = [float(adds_match_txt.group(1)), float(adds_match_txt.group(2))]
                           elif current_matches_txt: numeric_values = [float(match.group(1)) for match in current_matches_txt]
                       except ValueError: pass
-                      
-                      # Verifica se o texto do mod pode afetar dano
-                      affects_damage = any(damage_mod.lower() in text.lower() for damage_mod in DAMAGE_MODS)
-                      
                       analysis_results.append({
                            'scope': scope, 'text': text, 'current_str': format_current_display(numeric_values) if numeric_values else "?",
-                           'range_str': "[N/A]", 'tier_str': "", 'potential_str': "Não Estimado" if affects_damage else "Não DPS",
-                           'potential_pct': None, 'tag': 'divine_unknown', 'status': 'unmatched_text', 'hash': None,
-                           'affects_damage': affects_damage
+                           'range_str': "[N/A]", 'tier_str': "", 'potential_str': "N/A", 'potential_pct': None,
+                           'tag': 'divine_unknown', 'status': 'unmatched_text', 'hash': None, 
+                           'affects_dps': affects_dps  # Adicionado flag para mods que afetam DPS
                       })
 
-        # Calculate Overall Worth & Sort (Apenas com base em mods que afetam danos)
-        worth_divining = False; max_overall_chance = 0.0; dps_valid_chances = []
+        # Calculate Overall Worth & Sort (Focando em Mods que afetam DPS)
+        worth_divining = False
+        max_overall_chance = 0.0
+        valid_chances = []
+        dps_valid_chances = []  # Só para mods que afetam DPS
+        
         for res in analysis_results:
-             potential = res.get('potential_pct')
-             affects_damage = res.get('affects_damage', False)
-             if isinstance(potential, (int, float)) and res.get('status') == 'ok' and affects_damage:
-                  dps_valid_chances.append(potential)
-                  if potential > 15.0: worth_divining = True
-        if dps_valid_chances: max_overall_chance = max(dps_valid_chances)
+            potential = res.get('potential_pct')
+            affects_dps = res.get('affects_dps', False)
+            
+            if isinstance(potential, (int, float)) and res.get('status') == 'ok':
+                valid_chances.append(potential)
+                if affects_dps:
+                    dps_valid_chances.append(potential)
+                    if potential > 0.1:  # Se tiver pelo menos 0.1% de potencial em um mod que afeta DPS
+                        worth_divining = True
+        
+        # Usa a chance máxima dos mods que afetam DPS se disponível, senão usa a máxima geral
+        if dps_valid_chances:
+            max_overall_chance = max(dps_valid_chances)
+        elif valid_chances:
+            max_overall_chance = max(valid_chances)
 
+        # Função de ordenação que prioriza mods que afetam DPS
         def sort_key(res):
-            # Ordem de prioridade: affeta_dano -> escopo -> status -> potencial
-            affects_damage = 0 if res.get('affects_damage', False) else 1
             scope_order = 0 if res.get('scope') == 'implicit' else (1 if res.get('scope') == 'explicit' else 2)
-            status_prio = 0 if res.get('status') == 'ok' else (1 if res.get('status') == 'no_text_match' else (2 if res.get('status') == 'unmatched_text' else ( 3 if res.get('status') != 'error' else 4)))
+            affects_dps = 0 if res.get('affects_dps', False) else 1  # Prioriza mods que afetam DPS
+            status_prio = 0 if res.get('status') == 'ok' else (1 if res.get('status') == 'no_text_match' else (2 if res.get('status') == 'unmatched_text' else (3 if res.get('status') != 'error' else 4)))
             potential = res.get('potential_pct', -1)
             if potential is None: potential = -2
-            return (affects_damage, scope_order, status_prio, -potential) # Sort afeta_dano, scope, status, potencial (desc)
-            
+            # Ordem: afeta DPS -> escopo -> status -> potencial (decrescente)
+            return (affects_dps, scope_order, status_prio, -potential)
+        
         analysis_results.sort(key=sort_key)
 
         return worth_divining, max_overall_chance, analysis_results
-
 
     def process_item(self, item_data, query_id, tab_id):
         """Processa um item e o adiciona ao Treeview da aba correta."""
@@ -1531,28 +1431,54 @@ IMPORTANTE:
             whisper = listing_info.get("whisper", "N/A")
 
             # Calcula DPS e Divine Worth (funções globais)
-            dps_num, pdps_num, _ = self.calculate_dps(item_info)
+            dps_num, pdps_num, edps_num = self.calculate_dps(item_info)
             worth_divining, max_chance, divine_analysis_results = self.analyze_divine_worth(item_data)
+
+            # Calcula o ganho potencial em porcentagem para DPS e PDPS
+            dps_gain_pct, pdps_gain_pct = 0, 0
+            
+            # Avalia somente os mods que afetam DPS (para melhor estimativa)
+            dps_affecting_mods = [mod for mod in divine_analysis_results if mod.get('affects_dps', False)]
+            if dps_affecting_mods:
+                # Calcula a estimativa de ganho percentual como média dos mods de DPS
+                valid_potentials = [mod.get('potential_pct') for mod in dps_affecting_mods 
+                                   if isinstance(mod.get('potential_pct'), (int, float)) and mod.get('status') == 'ok']
+                if valid_potentials:
+                    dps_gain_pct = sum(valid_potentials) / len(valid_potentials)
+                    # Para PDPS, aplicamos o mesmo valor por enquanto (simplificação)
+                    pdps_gain_pct = dps_gain_pct
+
+            # Estimativa completa de Divine (mantendo o cálculo simplificado, mas separando DPS/pDPS)
+            if dps_num is not None and dps_gain_pct > 0:
+                estimated_max_dps = dps_num * (1 + (dps_gain_pct / 100))
+            else:
+                estimated_max_dps = dps_num
+
+            if pdps_num is not None and pdps_gain_pct > 0:
+                estimated_max_pdps = pdps_num * (1 + (pdps_gain_pct / 100))
+            else:
+                estimated_max_pdps = pdps_num
+
+            # Determina o modo de exibição do DPS no Treeview com base na preferência global
+            dps_display_mode = self.display_mode.get()
+            
+            # Formata a exibição do DPS/PDPS com base no modo de exibição
+            dps_pdps_str = ""
+            if dps_display_mode == "dps" and dps_num is not None:
+                dps_pdps_str = f"{dps_num:.1f}"
+            elif dps_display_mode == "pdps" and pdps_num is not None:
+                dps_pdps_str = f"{pdps_num:.1f}"
+            else:  # modo "both" ou fallback
+                dps_display = f"{dps_num:.1f}" if dps_num is not None else "-"
+                pdps_display = f"{pdps_num:.1f}" if pdps_num is not None else "-"
+                if pdps_display != "-" and pdps_display != dps_display:
+                    dps_pdps_str = f"{dps_display} / {pdps_display}"
+                else:
+                    dps_pdps_str = dps_display
 
             # Monta link e valores para o Treeview
             league_url_part = "poe2/Standard" # Pode ser configurável
             item_link = f"https://www.pathofexile.com/trade/search/{league_url_part}/{query_id}/{item_id}" # Usa query_id da aba
-            
-            # Display de DPS de acordo com o modo selecionado
-            dps_mode = self.dps_display_mode.get()
-            if dps_mode == "DPS":
-                dps_display = f"{dps_num:.1f}" if dps_num is not None else "-"
-                dps_pdps_str = dps_display
-            elif dps_mode == "PDPS":
-                pdps_display = f"{pdps_num:.1f}" if pdps_num is not None else "-"
-                dps_pdps_str = pdps_display
-            else: # "Both"
-                dps_display = f"{dps_num:.1f}" if dps_num is not None else "-"
-                pdps_display = f"{pdps_num:.1f}" if pdps_num is not None else "-"
-                dps_pdps_str = f"{dps_display}"
-                if pdps_display != "-" and pdps_display != dps_display:
-                    dps_pdps_str += f" / {pdps_display}"
-            
             tree_values = (full_name, price_text, dps_pdps_str, seller, listing_date_display, "Copiar" if whisper != "N/A" else "-")
 
             # Define a tag da linha baseado no divine worth
@@ -1597,7 +1523,9 @@ IMPORTANTE:
                 "item_level": item_info.get("ilvl", "?"),
                 "rarity": item_info.get("rarity", "normal").capitalize(),
                 "frameType": item_info.get("frameType", 0),
-                "dps": dps_num, "pdps": pdps_num,
+                "dps": dps_num, "pdps": pdps_num, "edps": edps_num,
+                "max_dps": estimated_max_dps, "max_pdps": estimated_max_pdps,
+                "dps_gain_pct": dps_gain_pct, "pdps_gain_pct": pdps_gain_pct,
                 "worth_divining": worth_divining,
                 "max_divine_chance": max_chance,
                 "divine_analysis": divine_analysis_results,
@@ -1610,7 +1538,7 @@ IMPORTANTE:
              self.log_message(f"Erro crítico processando item {item_id_err}: {e_process}\n{traceback.format_exc()}", "error", tab_id=tab_id)
 
     def sort_treeview(self, column, tab_id=None):
-         """ Ordena o treeview da aba especificada ou da ativa. """
+         """Ordena o treeview da aba especificada ou da ativa."""
          if not tab_id: tab_id = self.active_tab_id
          if not tab_id or tab_id not in self.search_tabs_data:
               # self.log_message("Tentativa de ordenar aba inválida.", "warning", use_global_log=True)
@@ -1785,111 +1713,97 @@ IMPORTANTE:
                       except Exception: pass
             return
 
-        # --- Painel Direito (Análise Divine) ---
+        # --- Painel Direito (Análise Divine Melhorada) ---
         if analysis_widget.winfo_exists():
              try:
                   analysis_widget.config(state=tk.NORMAL, bg=colors["log_bg"])
                   analysis_widget.delete(1.0, tk.END)
                   
-                  # Extrai DPS/PDPS e potencial máximo
-                  dps_num = item_details.get('dps')
-                  pdps_num = item_details.get('pdps')
+                  # Informações do Item e Estimativa de Divine no Topo
+                  dps_display = f"{item_details['dps']:.1f}" if item_details.get('dps') is not None else "-"
+                  max_dps_display = f"{item_details['max_dps']:.1f}" if item_details.get('max_dps') is not None else "-"
+                  pdps_display = f"{item_details['pdps']:.1f}" if item_details.get('pdps') is not None else "-"
+                  max_pdps_display = f"{item_details['max_pdps']:.1f}" if item_details.get('max_pdps') is not None else "-"
+                  dps_gain_pct = item_details.get('dps_gain_pct', 0)
+                  pdps_gain_pct = item_details.get('pdps_gain_pct', 0)
+                  
+                  # Título com nome do item
+                  analysis_widget.insert(tk.END, f"=== ANÁLISE DE DIVINE ORB ===\n", ("title",))
+                  analysis_widget.insert(tk.END, f"{item_details['name']}\n", ("title",))
+                  
+                  # Resumo de DPS com fonte maior
+                  summary_font = {"font": ("Segoe UI", 12, "bold")}
+                  analysis_widget.tag_configure("summary", **summary_font)
+                  
+                  # Adiciona os valores de DPS atuais vs máximos
+                  if item_details.get('dps') is not None:
+                      gain_tag = "divine_good" if dps_gain_pct >= 30 else "divine_medium" if dps_gain_pct >= 15 else "divine_bad"
+                      # Formatação uniforme e organizada
+                      if dps_gain_pct > 0:
+                          analysis_widget.insert(tk.END, f"DPS: {dps_display} → {max_dps_display} (+{dps_gain_pct:.1f}%)\n", (gain_tag,))
+                      else:
+                          analysis_widget.insert(tk.END, f"DPS: {dps_display} (já no máximo)\n", ("divine_max",))
+                  
+                  if item_details.get('pdps') is not None and pdps_display != dps_display:
+                      gain_tag = "divine_good" if pdps_gain_pct >= 30 else "divine_medium" if pdps_gain_pct >= 15 else "divine_bad"
+                      if pdps_gain_pct > 0:
+                          analysis_widget.insert(tk.END, f"PDPS: {pdps_display} → {max_pdps_display} (+{pdps_gain_pct:.1f}%)\n", (gain_tag,))
+                      else:
+                          analysis_widget.insert(tk.END, f"PDPS: {pdps_display} (já no máximo)\n", ("divine_max",))
+                  
+                  # Recomendação Divine (com justificativa)
                   worth_divining = item_details.get('worth_divining', False)
-                  max_divine_chance = item_details.get('max_divine_chance', 0)
-                  
-                  # --- Resumo Visual no Topo ---
-                  analysis_widget.insert(tk.END, "=== Resumo da Análise ===\n", ("title",))
-                  
-                  # Valores de DPS Atual/Máximo
-                  if dps_num is not None or pdps_num is not None:
-                      analysis_widget.insert(tk.END, "• Atual:", ("header",))
-                      if dps_num is not None:
-                          dps_str = f"{dps_num:.1f}"
-                          analysis_widget.insert(tk.END, f" DPS: {dps_str}", ("divine_max" if max_divine_chance < 10 else "divine_bad"))
-                      if pdps_num is not None and pdps_num != dps_num:
-                          pdps_str = f"{pdps_num:.1f}"
-                          analysis_widget.insert(tk.END, f" PDPS: {pdps_str}", ("divine_max" if max_divine_chance < 10 else "divine_bad"))
-                      analysis_widget.insert(tk.END, "\n")
-                      
-                      # Valor máximo DPS estimado
-                      if max_divine_chance > 0 and dps_num is not None:
-                          # Estimativa simples - aumenta o DPS pela proporção máxima
-                          max_dps_est = dps_num * (1 + (max_divine_chance / 100))
-                          analysis_widget.insert(tk.END, "• Máximo estimado:", ("header",))
-                          analysis_widget.insert(tk.END, f" {max_dps_est:.1f}", ("divine_good" if max_divine_chance >= 50 else "divine_medium"))
-                          analysis_widget.insert(tk.END, "\n")
-                          
-                          # Ganho máximo
-                          analysis_widget.insert(tk.END, "• Ganho de DPS Máximo:", ("header",))
-                          tag = "divine_good" if max_divine_chance >= 50 else ("divine_medium" if max_divine_chance >= 30 else "divine_bad")
-                          analysis_widget.insert(tk.END, f" +{max_divine_chance:.1f}%", (tag,))
-                          analysis_widget.insert(tk.END, "\n")
-                      
-                  # Valor do Item (atual/estimado)
-                  price_text = item_details.get('price', 'Sem preço')
-                  analysis_widget.insert(tk.END, "\n=== Análise de Preço ===\n", ("title",))
-                  analysis_widget.insert(tk.END, f"Preço Atual: {price_text}\n", ("header",))
-                  
                   if worth_divining:
-                      est_price = "Valor Aumentado" if max_divine_chance >= 50 else price_text
-                      analysis_widget.insert(tk.END, f"Preço Estimado Após Divine: {est_price}\n", 
-                                           ("divine_good" if max_divine_chance >= 50 else "divine_medium"))
+                      tag = "divine_good" if dps_gain_pct >= 30 else "divine_medium"
+                      recommendation = "Recomendado utilizar Divine" if dps_gain_pct >= 30 else "Divine pode valer a pena"
+                      analysis_widget.insert(tk.END, f"\n✓ {recommendation}\n", (tag,))
                   else:
-                      analysis_widget.insert(tk.END, f"Preço Estimado Após Divine: {price_text}\n", ("divine_unknown"))
+                      analysis_widget.insert(tk.END, f"\n✗ Divine não recomendado\n", ("divine_bad",))
+                      
+                  # Adiciona a linha de separação
+                  analysis_widget.insert(tk.END, "\n" + "-" * 40 + "\n\n", ("debug",))
                   
-                  # --- Detalhes dos Modificadores ---
-                  analysis_widget.insert(tk.END, "\n=== Detalhes dos Modificadores ===\n", ("title",))
+                  # Lista detalhada de mods (somente os que afetam DPS primeiro)
+                  analysis_widget.insert(tk.END, "--- Mods Que Afetam DPS ---\n", ("header",))
                   analysis_results = item_details.get("divine_analysis", [])
-                  if not analysis_results:
-                       analysis_widget.insert(tk.END, "Nenhuma análise disponível.\n", ("divine_unknown",))
+                  
+                  # Separa os mods que afetam o DPS
+                  dps_mods = [res for res in analysis_results if res.get('affects_dps', False)]
+                  other_mods = [res for res in analysis_results if not res.get('affects_dps', False)]
+                  
+                  if not dps_mods:
+                       analysis_widget.insert(tk.END, "Nenhum mod afetando DPS encontrado.\n\n", ("divine_unknown",))
                   else:
-                       mod_w = 36; cur_w = 10; range_w = 22; pot_w = 10
-                       header_line = f"{'Modificador'.ljust(mod_w)} {'Atual'.ljust(cur_w)} {'Range'.ljust(range_w)} {'Potencial'.rjust(pot_w)}\n"
-                       analysis_widget.insert(tk.END, header_line, ("header",))
-                       separator = "-" * (mod_w + cur_w + range_w + pot_w + 3) + "\n"
-                       analysis_widget.insert(tk.END, separator, ("debug",))
-                       
-                       # Filtra para mostrar primeiro os mods que afetam dano
-                       dps_mods = [res for res in analysis_results if res.get('affects_damage', False)]
-                       other_mods = [res for res in analysis_results if not res.get('affects_damage', False)]
-                       
-                       # Primeiro os mods que afetam DPS
-                       current_scope_disp = None
-                       if dps_mods:
-                           for res in dps_mods:
-                                scope = res.get('scope', '')
-                                display_scope = "Implícitos" if scope == "implicit" else ("Explícitos" if scope == "explicit" else "Outros")
-                                if display_scope != current_scope_disp:
-                                     if current_scope_disp is not None: analysis_widget.insert(tk.END, "\n")
-                                     analysis_widget.insert(tk.END, f"--- {display_scope} ---\n", ("header",))
-                                     current_scope_disp = display_scope
-    
-                                mod_text_base = res.get('text', 'Erro Análise'); tier = res.get('tier_str', '')
-                                full_mod_text = (mod_text_base + tier).strip()
-                                display_mod_text = (full_mod_text[:mod_w-3] + '...') if len(full_mod_text) > mod_w else full_mod_text
-                                display_mod_text = display_mod_text.ljust(mod_w)
-                                current_val = res.get('current_str', '?')[:cur_w].ljust(cur_w)
-                                range_val = res.get('range_str', 'N/A')[:rng_w].ljust(rng_w)
-                                potential_val = res.get('potential_str', 'N/A')[:pot_w].rjust(pot_w)
-                                tag = res.get('tag', 'divine_unknown')
-                                if res.get('status') == 'unmatched_text': tag = 'divine_unknown'
-    
-                                # Verifica se a tag existe antes de usar
-                                if not analysis_widget.tag_cget(tag, "foreground"):
-                                     tag = "divine_unknown" # Fallback se tag não configurada
-    
-                                line = f"{display_mod_text} {current_val} {range_val} {potential_val}\n"
-                                analysis_widget.insert(tk.END, line, (tag,))
-                       
-                       # Em seguida os outros mods (opcional - pode ser omitido)
-                       if other_mods:
-                           current_scope_disp = None
-                           analysis_widget.insert(tk.END, "\n--- Outros Modificadores ---\n", ("header",))
-                           # Opcional: mostrar alguns outros mods relevantes como resistências
-                           for res in other_mods[:5]:  # Limita a 5 outros mods para economizar espaço
-                                scope = res.get('scope', '')
-                                mod_text = res.get('text', 'Mod Desconhecido')
-                                tag = "tag_mod_implicit" if scope == "implicit" else "tag_mod_explicit"
+                       # Cabeçalhos formatados
+                       mod_w = 40; cur_w = 10; pot_w = 10
+                       for res in dps_mods:
+                            mod_text = res.get('text', 'Erro Análise')
+                            current_val = res.get('current_str', '?')
+                            range_val = res.get('range_str', 'N/A')
+                            potential_val = res.get('potential_str', 'N/A')
+                            tag = res.get('tag', 'divine_unknown')
+                            
+                            # Formata linha para melhor leitura
+                            analysis_widget.insert(tk.END, f"{mod_text}\n", (tag,))
+                            if current_val != "?" and range_val != "[N/A]":
+                                analysis_widget.insert(tk.END, f"  Atual: {current_val}   Range: {range_val}\n", (tag,))
+                                if potential_val not in ["N/A", "FIXO", "MAX"]:
+                                    analysis_widget.insert(tk.END, f"  Potencial de melhoria: {potential_val}\n", (tag,))
+                            analysis_widget.insert(tk.END, "\n", (tag,))
+                            
+                  # Outros Mods (Fora da análise de DPS)
+                  if other_mods:
+                       analysis_widget.insert(tk.END, "\n--- Outros Mods ---\n", ("header",))
+                       for res in other_mods:
+                            mod_text = res.get('text', '?')
+                            current_val = res.get('current_str', '?')
+                            range_val = res.get('range_str', 'N/A')
+                            tag = "divine_unknown" # Tag padrão para mods não relacionados ao DPS
+                            
+                            # Formato mais compacto para mods sem importância para DPS
+                            if current_val != "?" and range_val != "[N/A]":
+                                analysis_widget.insert(tk.END, f"{mod_text}: {current_val} {range_val}\n", (tag,))
+                            else:
                                 analysis_widget.insert(tk.END, f"{mod_text}\n", (tag,))
                   
                   analysis_widget.config(state=tk.DISABLED)
@@ -1926,8 +1840,11 @@ IMPORTANTE:
                 details_widget.insert(tk.END, f"iLvl: {item_details['item_level']}\n")
                 dps_str = f"{item_details['dps']:.1f}" if item_details.get('dps') is not None else "-"
                 pdps_str = f"{item_details['pdps']:.1f}" if item_details.get('pdps') is not None else "-"
+                edps_str = f"{item_details['edps']:.1f}" if item_details.get('edps') is not None else "-"
                 if dps_str != "-" or pdps_str != "-":
                      dps_line = f"DPS: {dps_str}" + (f" / PDPS: {pdps_str}" if pdps_str != "-" and pdps_str != dps_str else "")
+                     if edps_str != "-" and float(edps_str) > 0: 
+                         dps_line += f" / EDPS: {edps_str}"
                      details_widget.insert(tk.END, dps_line + "\n")
                 if item_details['whisper'] != "N/A":
                      details_widget.insert(tk.END, f"Whisper: {item_details['whisper']}\n")
@@ -2146,13 +2063,16 @@ IMPORTANTE:
         self.style.map('Toolbutton', background=[('active', colors["widget_bg"])])
         self.style.configure('TEntry', fieldbackground=colors["widget_bg"], foreground=colors["widget_fg"], insertcolor=colors["fg"])
         self.style.configure('TCombobox', fieldbackground=colors["widget_bg"], foreground=colors["widget_fg"], selectbackground=colors["widget_bg"], selectforeground=colors["widget_fg"], insertcolor=colors["fg"])
-        self.root.option_add('*TCombobox*List.background', colors["widget_bg"])
-        self.root.option_add('*TCombobox*List.foreground', colors["widget_fg"])
-        self.root.option_add('*TCombobox*List.selectBackground', colors["tree_selected_bg"])
-        self.root.option_add('*TCombobox*List.selectForeground', colors["tree_selected_fg"])
+        self.root.option_add('*TCombobox*Listbox.background', colors["widget_bg"])
+        self.root.option_add('*TCombobox*Listbox.foreground', colors["widget_fg"])
+        self.root.option_add('*TCombobox*Listbox.selectBackground', colors["tree_selected_bg"])
+        self.root.option_add('*TCombobox*Listbox.selectForeground', colors["tree_selected_fg"])
         self.style.configure('TNotebook', background=colors["bg"], borderwidth=1)
         self.style.configure('TNotebook.Tab', background=colors["button_bg"], foreground=colors["button_fg"], padding=[5, 2])
         self.style.map('TNotebook.Tab', background=[('selected', colors["widget_bg"])], foreground=[('selected', colors["widget_fg"])])
+        # Configura Radiobutton (para seletor de modo DPS)
+        self.style.configure('TRadiobutton', background=colors["bg"], foreground=colors["fg"])
+        self.style.map('TRadiobutton', background=[('active', colors["bg"])], foreground=[('active', colors["fg"])])
         self.style.configure('Treeview', background=colors["tree_bg"], foreground=colors["tree_fg"], fieldbackground=colors["tree_bg"], rowheight=22)
         self.style.map('Treeview', background=[('selected', colors["tree_selected_bg"])], foreground=[('selected', colors["tree_selected_fg"])])
         self.style.configure('Treeview.Heading', background=colors["tree_heading_bg"], foreground=colors["tree_heading_fg"], font=("Segoe UI", 9, "bold"))
@@ -2186,7 +2106,7 @@ IMPORTANTE:
                   # Reconfigura tags de linha (importante!)
                   tree.tag_configure('worth_good', background=colors["tree_worth_good_bg"], foreground=colors["tree_fg"]) # Define foreground tbm
                   tree.tag_configure('worth_medium', background=colors["tree_worth_medium_bg"], foreground=colors["tree_fg"])
-                  tree.tag_configure('worth_bad', background=colors["tree_worth_bad_bg"], foreground=colors["tree_fg"])
+                  tree.tag_configure('worth_bad', background=colors["tree_worth_bad_bg"], fore=colors["tree_fg"])
                   tree.tag_configure('not_worth', background=colors["tree_not_worth_bg"], foreground=colors["tree_fg"])
                   # Tenta forçar atualização visual (pode não ser necessário com styles)
                   # try: tree.update_idletasks()
@@ -2200,8 +2120,8 @@ IMPORTANTE:
     def toggle_dark_mode(self):
         """Alterna entre tema claro e escuro."""
         self.apply_theme()
-        # Opcional: Salvar a preferência imediatamente
-        # self.save_config()
+        # Salva a preferência imediatamente
+        self.save_config()
 
 
     def on_closing(self):
